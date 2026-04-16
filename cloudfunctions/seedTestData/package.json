@@ -1,0 +1,9 @@
+{
+  "name": "seedTestData",
+  "version": "1.0.0",
+  "description": "云开发测试数据种子",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

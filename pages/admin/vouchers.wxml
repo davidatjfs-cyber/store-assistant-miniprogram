@@ -1,0 +1,117 @@
+<view class="page">
+  <!-- 顶部 -->
+  <view class="top-bar">
+    <text class="top-title">券模板管理</text>
+    <button class="btn-add" bindtap="onAdd">+ 新增</button>
+  </view>
+
+  <!-- 加载中 -->
+  <view wx:if="{{loading}}" class="state">
+    <text>加载中</text>
+  </view>
+
+  <!-- 空状态 -->
+  <view wx:elif="{{!templates.length}}" class="empty">
+    <text class="empty-title">暂无券模板</text>
+    <text class="empty-desc">点击右上角「+ 新增」创建第一个券模板</text>
+  </view>
+
+  <!-- 列表 -->
+  <view wx:else class="list">
+    <view class="glass-card template-item" wx:for="{{templates}}" wx:key="_id">
+      <view class="template-header">
+        <view class="template-info">
+          <text class="template-name">{{item.name}}</text>
+          <text class="template-type">{{item.type === 'cash' ? '代金券' : item.type === 'discount' ? '折扣券' : '兑换券'}}</text>
+        </view>
+        <switch checked="{{item.is_active}}" data-id="{{item._id}}" bindchange="onToggleActive" color="#ff6a00" />
+      </view>
+      <view class="template-details">
+        <view class="detail-row" wx:if="{{item.type === 'cash'}}">
+          <text class="detail-label">面值</text>
+          <text class="detail-value">{{item.valueYuan}}</text>
+        </view>
+        <view class="detail-row" wx:if="{{item.type === 'discount'}}">
+          <text class="detail-label">折扣</text>
+          <text class="detail-value">{{item.discountText}}折</text>
+        </view>
+        <view class="detail-row">
+          <text class="detail-label">售价</text>
+          <text class="detail-value">{{item.priceYuan}}</text>
+        </view>
+        <view class="detail-row">
+          <text class="detail-label">库存</text>
+          <text class="detail-value">{{item.stock === -1 ? '无限' : item.stock}}</text>
+        </view>
+        <view class="detail-row">
+          <text class="detail-label">有效期</text>
+          <text class="detail-value">{{item.valid_days}}天</text>
+        </view>
+        <view class="detail-row">
+          <text class="detail-label">已售</text>
+          <text class="detail-value">{{item.sold_count || 0}}</text>
+        </view>
+      </view>
+      <view class="template-actions">
+        <button class="action-btn" size="mini" data-id="{{item._id}}" bindtap="onEdit">编辑</button>
+        <button class="action-btn action-btn--danger" size="mini" data-id="{{item._id}}" bindtap="onDelete">删除</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 编辑弹窗 -->
+  <view wx:if="{{showEditModal}}" class="modal">
+    <view class="modal-backdrop" catchtap="onCloseModal"></view>
+    <view class="modal-content">
+      <text class="modal-title">{{editingId ? '编辑券模板' : '新增券模板'}}</text>
+      
+      <view class="form-group">
+        <text class="form-label">券名称</text>
+        <input class="form-input" placeholder="如：100元代金券" value="{{formData.name}}" bindinput="onInputName" />
+      </view>
+
+      <view class="form-group">
+        <text class="form-label">券类型</text>
+        <view class="type-selector">
+          <view class="type-option {{formData.type === 'cash' ? 'active' : ''}}" bindtap="onSelectType" data-type="cash">代金券</view>
+          <view class="type-option {{formData.type === 'discount' ? 'active' : ''}}" bindtap="onSelectType" data-type="discount">折扣券</view>
+        </view>
+      </view>
+
+      <view class="form-group" wx:if="{{formData.type === 'cash'}}">
+        <text class="form-label">面值（元）</text>
+        <input class="form-input" type="digit" placeholder="100" value="{{formData.valueYuan}}" bindinput="onInputValue" />
+      </view>
+
+      <view class="form-group" wx:if="{{formData.type === 'discount'}}">
+        <text class="form-label">折扣（如 8.5 表示 8.5折）</text>
+        <input class="form-input" type="digit" placeholder="8.5" value="{{formData.discount}}" bindinput="onInputDiscount" />
+      </view>
+
+      <view class="form-group">
+        <text class="form-label">售价（元）</text>
+        <input class="form-input" type="digit" placeholder="0 表示免费" value="{{formData.priceYuan}}" bindinput="onInputPrice" />
+      </view>
+
+      <view class="form-group">
+        <text class="form-label">有效期（天）</text>
+        <input class="form-input" type="number" placeholder="30" value="{{formData.valid_days}}" bindinput="onInputDays" />
+      </view>
+
+      <view class="form-group">
+        <text class="form-label">库存（-1 表示无限）</text>
+        <input class="form-input" type="number" placeholder="-1" value="{{formData.stock}}" bindinput="onInputStock" />
+      </view>
+
+      <view class="form-group">
+        <text class="form-label">使用规则</text>
+        <textarea class="form-textarea" placeholder="如：全场通用，不找零" value="{{formData.usage_rule}}" bindinput="onInputRule" />
+      </view>
+
+      <view class="form-actions">
+        <button class="btn-cancel" bindtap="onCloseModal">取消</button>
+        <button class="btn-submit" bindtap="onSave" loading="{{saving}}">保存</button>
+      </view>
+    </view>
+  </view>
+</view>

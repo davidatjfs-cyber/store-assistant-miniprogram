@@ -1,0 +1,26 @@
+{
+  "name": "store-assistant-miniprogram",
+  "version": "1.0.0",
+  "description": "本仓库由单体仓库 [financial-expert](https://github.com/davidatjfs-cyber/financial-expert) 中的 `store-assistant-miniprogram/` **拆分**而来，便于单独迭代、协作与发布。",
+  "main": "app.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/davidatjfs-cyber/store-assistant-miniprogram.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/davidatjfs-cyber/store-assistant-miniprogram/issues"
+  },
+  "homepage": "https://github.com/davidatjfs-cyber/store-assistant-miniprogram#readme",
+  "dependencies": {
+    "weapp-qrcode": "^1.0.0"
+  }
+}

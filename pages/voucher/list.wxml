@@ -1,0 +1,34 @@
+<view class="page">
+  <view class="top-bar">
+    <text class="top-hint">向店员出示详情页二维码即可核销</text>
+    <button class="btn-glass" size="mini" bindtap="onRefresh" loading="{{loading}}">刷新</button>
+  </view>
+
+  <view wx:if="{{loading && !list.length}}" class="state">加载中…</view>
+
+  <view wx:elif="{{!list.length}}" class="state empty">
+    <text>暂无优惠券</text>
+    <text class="sub">支付成功后券将出现在这里</text>
+  </view>
+
+  <view wx:else class="list">
+    <view
+      class="glass-card voucher-item"
+      wx:for="{{list}}"
+      wx:key="_id"
+      data-item="{{item}}"
+      bindtap="onOpenDetail"
+    >
+      <view class="voucher-top">
+        <text class="voucher-name">{{item.displayName}}</text>
+        <text class="badge badge--{{item.status}}">{{statusText[item.status] || item.status}}</text>
+      </view>
+      <view class="voucher-meta">
+        <text class="meta">有效期至 {{item.expireText}}</text>
+      </view>
+      <view class="voucher-foot">
+        <text class="link">查看二维码 ›</text>
+      </view>
+    </view>
+  </view>
+</view>

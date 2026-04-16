@@ -1,0 +1,32 @@
+<view class="page" wx:if="{{item}}">
+  <view class="glass-card">
+    <text class="title">{{displayName}}</text>
+    <text class="rule" wx:if="{{item.template.usage_rule}}">{{item.template.usage_rule}}</text>
+
+    <view class="status-row">
+      <text class="label">状态</text>
+      <text class="val">{{statusText[item.status] || item.status}}</text>
+    </view>
+    <view class="status-row">
+      <text class="label">有效期至</text>
+      <text class="val">{{expireText}}</text>
+    </view>
+  </view>
+
+  <view class="glass-card qr-panel" wx:if="{{item.status === 'unused'}}">
+    <text class="qr-title">核销二维码</text>
+    <text class="qr-tip">请店员扫描下方二维码完成核销</text>
+    <canvas class="qr-canvas" canvas-id="voucherQr" style="width: 400rpx; height: 400rpx;"></canvas>
+    <text class="qr-code-text">{{item.qr_code}}</text>
+  </view>
+
+  <view class="glass-card used-tip" wx:else>
+    <text wx:if="{{item.status === 'used'}}">该券已核销</text>
+    <text wx:elif="{{item.status === 'expired'}}">该券已过期</text>
+    <text wx:else>该券当前不可核销</text>
+  </view>
+</view>
+
+<view class="page miss" wx:else>
+  <text>未找到该券，请返回列表重试</text>
+</view>

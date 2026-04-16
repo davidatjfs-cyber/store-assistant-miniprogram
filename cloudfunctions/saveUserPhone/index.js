@@ -1,5 +1,6 @@
 // 云函数入口文件 - 保存用户手机号并检测老会员
 const cloud = require('wx-server-sdk');
+const { upsertUserByOpenid } = require('./helpers');
 
 cloud.init({
   env: cloud.DYNAMIC_CURRENT_ENV
@@ -66,6 +67,26 @@ async function markLegacyMemberSynced(legacyId) {
 }
 
 /**
+ * 云开发 openapi.phonenumber.getPhoneNumber 不同版本/环境下返回结构不一致：
+ * phone_info（官方文档）、phoneInfo（驼峰）、或号码直接在根对象上。
+ */
+function extractPhoneFromGetPhoneNumberResult(r) {
+  if (!r || typeof r !== 'object') return '';
+  const nests = [r.phone_info, r.phoneInfo].filter(function (o) {
+    return o && typeof o === 'object';
+  });
+  for (var i = 0; i < nests.length; i++) {
+    var o = nests[i];
+    var n = o.phoneNumber || o.purePhoneNumber;
+    if (n) return String(n).trim();
+  }
+  if (r.phoneNumber || r.purePhoneNumber) {
+    return String(r.phoneNumber || r.purePhoneNumber).trim();
+  }
+  return '';
+}
+
+/**
  * 云函数入口
  * 保存用户手机号并检测老会员
  */
@@ -91,29 +112,66 @@ exports.main = async (event, context) => {
         code: code
       });
 
-      if (phoneResult.errcode === 0) {
-        phoneNumber = phoneResult.phone_info.phoneNumber;
+      // 云开发 / 不同版本 SDK 可能返回 errcode 或 errCode；手机号字段可能是 phoneNumber 或 purePhoneNumber
+      const ecRaw =
+        phoneResult.errcode !== undefined && phoneResult.errcode !== null
+          ? phoneResult.errcode
+          : phoneResult.errCode;
+      const emRaw = (phoneResult.errmsg || phoneResult.errMsg || '').trim();
+      const resolvedPhone = extractPhoneFromGetPhoneNumberResult(phoneResult);
+
+      const errcodeOk =
+        ecRaw === 0 ||
+        ecRaw === '0' ||
+        (ecRaw === undefined && resolvedPhone) ||
+        (resolvedPhone && /:ok$/i.test(emRaw));
+
+      if (resolvedPhone && errcodeOk) {
+        phoneNumber = resolvedPhone;
       } else {
-        throw new Error('获取手机号失败: ' + phoneResult.errmsg);
+        console.error('phonenumber.getPhoneNumber 返回非成功:', JSON.stringify(phoneResult));
+        const ec =
+          ecRaw !== undefined && ecRaw !== null ? ecRaw : 'unknown';
+        const snippet = JSON.stringify(phoneResult);
+        // 常见：40029 code 无效/已使用/过期；需用户重新点「立即授权」且勿连点
+        return {
+          success: false,
+          errMsg:
+            `获取手机号失败 [${ec}] ${emRaw}\n\n请检查：① 不要连点授权，失败请关闭弹窗再点一次；② 小程序非个人主体且已微信认证，付费管理内有手机号额度；③ 用户隐私指引已声明处理手机号；④ 本小程序与云开发环境属同一 AppID；⑤ 云函数已「上传并部署」且含 openapi phonenumber.getPhoneNumber。\n\n[调试] ${snippet.length > 400 ? snippet.slice(0, 400) + '…' : snippet}`
+        };
       }
     } catch (err) {
-      console.error('获取手机号失败:', err);
+      console.error('获取手机号异常:', err);
+      const extra =
+        err && typeof err === 'object'
+          ? JSON.stringify({
+              errCode: err.errCode,
+              errMsg: err.errMsg,
+              message: err.message
+            })
+          : '';
       return {
         success: false,
-        errMsg: '获取手机号失败，请重试'
+        errMsg:
+          '获取手机号异常: ' +
+          (err.message || err.errMsg || String(err)) +
+          (extra ? '\n' + extra : '')
       };
     }
 
-    console.log('获取到手机号:', phoneNumber);
+    const maskedPhone = phoneNumber.slice(0, 3) + '****' + phoneNumber.slice(-4);
+    console.log('获取到手机号:', maskedPhone);
+
+    await upsertUserByOpenid(db, OPENID, { phone: phoneNumber });
 
     // ========== 3. 检测老会员 ==========
     const legacyCheck = await checkLegacyMember(phoneNumber);
     const { isLegacy, points, total_spent, member_level, legacy_id } = legacyCheck;
 
-    console.log('老会员检测结果:', legacyCheck);
+    console.log('老会员检测结果:', { isLegacy, hasPoints: !!points, hasLevel: !!member_level });
 
     // ========== 4. 查询用户是否已存在 ==========
-    const userQuery = await db.collection('Users')
+    const userQuery = await db.collection('users')
       .where({
         _openid: OPENID
       })
@@ -148,7 +206,7 @@ exports.main = async (event, context) => {
       // ========== 5. 更新已有用户 ==========
       const userId = userQuery.data[0]._id;
 
-      await db.collection('Users')
+      await db.collection('users')
         .doc(userId)
         .update({
           data: userData
@@ -168,7 +226,7 @@ exports.main = async (event, context) => {
         created_at: db.serverDate()
       };
 
-      await db.collection('Users').add({
+      await db.collection('users').add({
         data: newUserData
       });
 
@@ -180,19 +238,23 @@ exports.main = async (event, context) => {
       await markLegacyMemberSynced(legacy_id);
     }
 
-    // ========== 8. 记录扫码日志 ==========
+    // ========== 8. 记录扫码日志（集合不存在或权限失败时不阻断入会）==========
     if (scanParams) {
-      await db.collection('ScanLogs').add({
-        data: {
-          _openid: OPENID,
-          phone: phoneNumber,
-          table_id: scanParams.table_id,
-          store_id: scanParams.store_id,
-          is_legacy_member: isLegacy,
-          legacy_points: points,
-          created_at: db.serverDate()
-        }
-      });
+      try {
+        await db.collection('ScanLogs').add({
+          data: {
+            _openid: OPENID,
+            phone: phoneNumber,
+            table_id: scanParams.table_id,
+            store_id: scanParams.store_id,
+            is_legacy_member: isLegacy,
+            legacy_points: points,
+            created_at: db.serverDate()
+          }
+        });
+      } catch (logErr) {
+        console.error('ScanLogs 写入失败（可稍后建集合）:', logErr);
+      }
     }
 
     // ========== 9. 返回结果 ==========

@@ -1,0 +1,56 @@
+/* 购买页面 - 液态玻璃风格 */
+page { background: #0a0a0a; }
+
+.page {
+  min-height: 100vh;
+  background: linear-gradient(160deg, #0a0a0a 0%, #1a1a2e 30%, #16213e 60%, #0a0a0a 100%);
+  padding: 32rpx;
+}
+
+.top-bar { margin-bottom: 32rpx; }
+.top-title { font-size: 44rpx; font-weight: 800; color: #ffffff; text-shadow: 0 0 10rpx rgba(255,255,255,0.4); }
+
+.state { text-align: center; padding: 120rpx; color: #C0C0C0; font-size: 28rpx; }
+.empty { text-align: center; padding: 160rpx 48rpx; }
+.empty-title { display: block; font-size: 32rpx; color: #ffffff; margin-bottom: 12rpx; text-shadow: 0 0 10rpx rgba(255,255,255,0.4); }
+.empty-desc { display: block; font-size: 26rpx; color: #B0B0B0; }
+
+.list { display: flex; flex-direction: column; gap: 24rpx; }
+
+.glass-card {
+  background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.04) 100%);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border-radius: 28rpx; padding: 32rpx;
+  border: 1rpx solid rgba(255,255,255,0.15);
+  box-shadow: 0 8rpx 32rpx rgba(0,0,0,0.3), inset 0 1rpx 0 rgba(255,255,255,0.1);
+}
+
+.item-header { display: flex; align-items: flex-start; margin-bottom: 20rpx; }
+
+.item-badge {
+  width: 120rpx; height: 120rpx; display: flex; align-items: center; justify-content: center;
+  border-radius: 20rpx; font-size: 36rpx; font-weight: 800; color: #ffffff; margin-right: 24rpx; flex-shrink: 0;
+}
+.badge-cash { background: linear-gradient(135deg, #ff6a00, #ff8533); box-shadow: 0 4rpx 16rpx rgba(255,106,0,0.4); }
+.badge-discount { background: linear-gradient(135deg, #6c63ff, #a855f7); box-shadow: 0 4rpx 16rpx rgba(108,99,255,0.4); }
+
+.item-info { flex: 1; padding-top: 8rpx; }
+.item-name { display: block; font-size: 30rpx; font-weight: 700; color: #ffffff; text-shadow: 0 0 8rpx rgba(255,255,255,0.3); }
+.item-rule { display: block; font-size: 22rpx; color: #B0B0B0; margin-top: 6rpx; }
+
+.item-details { border-top: 1rpx solid rgba(255,255,255,0.08); padding-top: 16rpx; margin-bottom: 20rpx; }
+.detail-row { display: flex; justify-content: space-between; padding: 8rpx 0; }
+.detail-label { font-size: 24rpx; color: #B0B0B0; }
+.detail-price { font-size: 36rpx; font-weight: 800; color: #ff9a5c; text-shadow: 0 0 10rpx rgba(255,106,0,0.4); }
+.detail-value { font-size: 24rpx; color: #E8E8E8; }
+.out-of-stock { color: #ff6b6b; }
+
+.buy-btn {
+  width: 100%; background: linear-gradient(135deg, #ff6a00, #ff8533) !important;
+  color: #ffffff !important; border: none !important; border-radius: 999rpx !important;
+  font-size: 30rpx !important; height: 88rpx !important; line-height: 88rpx !important;
+  font-weight: 600 !important; letter-spacing: 2rpx !important;
+  box-shadow: 0 8rpx 24rpx rgba(255,106,0,0.4) !important;
+}
+.buy-btn::after { border: none; }
+.buy-btn--disabled { background: rgba(255,255,255,0.1) !important; color: #888888 !important; box-shadow: none !important; }

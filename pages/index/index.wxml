@@ -1,23 +1,79 @@
 <view class="page">
-  <view class="debug">年年有喜小程序</view>
-  <view class="debug">isFromScan: {{isFromScan}}</view>
-  <view class="debug">showAuthModal: {{showAuthModal}}</view>
-  <view class="debug" wx:if="{{scanParams}}">table_id: {{scanParams.table_id}} / store_id: {{scanParams.store_id}}</view>
+  <view class="landing" wx:if="{{pageReady}}">
+    <!-- Hero -->
+    <view class="hero-section">
+      <view class="hero-mark">喜</view>
+      <text class="hero-title">年年有喜</text>
+      <text class="hero-subtitle">扫码入会 · 会员权益 · 便捷点餐</text>
+    </view>
 
-  <view wx:if="{{isFromScan && !showAuthModal}}" style="margin-top: 20rpx;">
-    <button class="modal-btn" open-type="getPhoneNumber" bindgetphonenumber="onGetPhoneNumber">再次弹出授权</button>
-  </view>
+    <!-- 欢迎卡片 -->
+    <view class="glass-card" wx:if="{{isFromScan}}">
+      <text class="card-title">欢迎光临</text>
+      <text class="card-desc">授权手机号后即可同步会员信息并前往点餐页面。</text>
+      <view class="card-meta" wx:if="{{scanParams}}">
+        <view class="meta-row">
+          <text class="meta-label">门店</text>
+          <text class="meta-value">{{scanParams.store_display_name || scanParams.store_id || '—'}}</text>
+        </view>
+        <view class="meta-row">
+          <text class="meta-label">桌台编号</text>
+          <text class="meta-value">{{scanParams.table_id || '—'}}</text>
+        </view>
+      </view>
+    </view>
 
-  <view wx:if="{{showAuthModal}}" class="modal">
-    <view class="modal-content">
-      <view class="modal-title">禧事临门！</view>
-      <view class="modal-desc">请先授权手机号领取会员权益</view>
-      <button class="modal-btn" open-type="getPhoneNumber" bindgetphonenumber="onGetPhoneNumber">立即授权领取</button>
+    <!-- 未扫码提示 -->
+    <view class="glass-card warn-card" wx:if="{{!isFromScan}}">
+      <text class="warn-title">未识别到桌码</text>
+      <text class="warn-desc">请完全关闭本小程序后，重新扫描桌面上的点餐二维码进入。</text>
+    </view>
+
+    <!-- 快捷入口 -->
+    <view class="quick-area" wx:if="{{roleLoaded && entrySections.length}}">
+      <block wx:for="{{entrySections}}" wx:for-item="sec" wx:key="title">
+        <text class="quick-sec-title">{{sec.title}}</text>
+        <view class="quick-grid">
+          <navigator
+            wx:for="{{sec.items}}"
+            wx:for-item="tile"
+            wx:key="key"
+            url="{{tile.url}}"
+            class="glass-tile"
+            hover-class="glass-tile--hover"
+          >
+            <view class="quick-icon">{{tile.icon}}</view>
+            <text class="quick-title">{{tile.title}}</text>
+            <text class="quick-sub">{{tile.sub}}</text>
+          </navigator>
+        </view>
+      </block>
     </view>
   </view>
 
+  <view class="reauth-wrap" wx:if="{{isFromScan && !showAuthModal && !showLegacyMemberTip && pageReady}}">
+    <text class="reauth-hint">未看到授权弹窗，或需要重新授权？</text>
+    <button class="btn-outline" open-type="getPhoneNumber" bindgetphonenumber="onGetPhoneNumber">授权入会</button>
+  </view>
+
+  <!-- 授权弹窗 -->
+  <view wx:if="{{showAuthModal}}" class="modal">
+    <view class="modal-backdrop" catchtap="onModalBackdropTap"></view>
+    <view class="glass-modal">
+      <view class="modal-badge">会员礼遇</view>
+      <view class="modal-title">禧事临门</view>
+      <view class="modal-desc">请先授权手机号领取会员权益</view>
+      <button class="btn-primary" open-type="getPhoneNumber" bindgetphonenumber="onGetPhoneNumber">立即授权领取</button>
+      <view class="modal-foot">点击即表示您已阅读并同意上述说明</view>
+    </view>
+  </view>
+
+  <!-- 老会员提示 -->
   <view wx:if="{{showLegacyMemberTip}}" class="legacy">
-    <view class="legacy-title">检测到老会员</view>
-    <view class="legacy-points">积分已同步 +{{legacyMemberPoints}}</view>
+    <view class="legacy-inner">
+      <view class="legacy-title">欢迎回来</view>
+      <view class="legacy-sub">老会员积分已为您同步</view>
+      <view class="legacy-points">+{{legacyMemberPoints}} 积分</view>
+    </view>
   </view>
 </view>

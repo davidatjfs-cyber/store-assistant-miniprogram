@@ -9,6 +9,40 @@ const db = cloud.database();
 const _ = db.command;
 
 /**
+ * 从 voucher_templates.dish_name 生成订单行 dish_name：
+ * - 单菜品：string
+ * - 套餐：string[]；也可在模板里写「烧鹅 + 肠粉」自动拆成数组写入
+ */
+function buildItemDishName(voucher) {
+  const raw = voucher && voucher.dish_name;
+  if (raw == null || raw === '') {
+    return '';
+  }
+  if (Array.isArray(raw)) {
+    const arr = raw
+      .map(function (s) {
+        return String(s).trim();
+      })
+      .filter(Boolean);
+    if (arr.length === 0) return '';
+    if (arr.length === 1) return arr[0];
+    return arr;
+  }
+  const s = String(raw).trim();
+  if (!s) return '';
+  const parts = s
+    .split(/[+＋、,，]/)
+    .map(function (x) {
+      return x.trim();
+    })
+    .filter(Boolean);
+  if (parts.length > 1) {
+    return parts;
+  }
+  return s;
+}
+
+/**
  * 生成唯一订单号
  * 格式: ORD + YYYYMMDD + 6位随机数
  */
@@ -20,53 +54,12 @@ function generateOrderNo() {
 }
 
 /**
- * 生成唯一券码
- * 格式: VCH + YYYYMMDD + 6位随机数
- */
-function generateVoucherCode() {
-  const date = new Date();
-  const dateStr = date.toISOString().slice(0, 10).replace(/-/g, '');
-  const random = Math.floor(Math.random() * 900000) + 100000;
-  return `VCH${dateStr}${random}`;
-}
-
-/**
- * 生成券码二维码
- * @param {string} voucherCode - 券码
- * @returns {Promise} 二维码云存储路径
- */
-async function generateQRCode(voucherCode) {
-  try {
-    // 调用微信接口生成小程序码
-    const result = await cloud.openapi.wxacode.getUnlimited({
-      scene: voucherCode,
-      page: 'pages/voucher/detail',
-      width: 430,
-      autoColor: false,
-      lineColor: { r: 255, g: 106, b: 0 }, // 橙色主题
-      isHyaline: true
-    });
-
-    // 上传到云存储
-    const uploadResult = await cloud.uploadFile({
-      cloudPath: `qrcodes/${voucherCode}.png`,
-      fileContent: result.buffer
-    });
-
-    return uploadResult.fileID;
-  } catch (err) {
-    console.error('生成二维码失败:', err);
-    throw new Error('二维码生成失败');
-  }
-}
-
-/**
  * 创建支付订单
  * 云函数入口函数
  */
 exports.main = async (event, context) => {
   const { OPENID } = cloud.getWXContext();
-  const { voucher_id, quantity = 1 } = event;
+  const { voucher_id, quantity = 1, store_id } = event;
 
   // ========== 1. 参数校验 ==========
   if (!voucher_id) {
@@ -85,7 +78,7 @@ exports.main = async (event, context) => {
 
   try {
     // ========== 2. 查询券模板信息 ==========
-    const voucherDoc = await db.collection('Vouchers')
+    const voucherDoc = await db.collection('voucher_templates')
       .doc(voucher_id)
       .get();
 
@@ -124,12 +117,14 @@ exports.main = async (event, context) => {
 
     const orderData = {
       _openid: OPENID,
+      store_id: store_id != null ? String(store_id) : '',
       order_no: orderNo,
       type: 'voucher',
       items: [
         {
           voucher_id: voucher._id,
           name: voucher.name,
+          dish_name: buildItemDishName(voucher),
           quantity: quantity,
           price: unitPrice,
           subtotal: totalAmount
@@ -140,7 +135,8 @@ exports.main = async (event, context) => {
       discount_amount: 0,
       payment_method: 'wechat',
       payment_status: 'pending',
-      voucher_codes: [], // 支付成功后填充
+      user_voucher_ids: [],
+      voucher_codes: [],
       created_at: db.serverDate(),
       updated_at: db.serverDate()
     };
@@ -155,11 +151,10 @@ exports.main = async (event, context) => {
     const paymentResult = await cloud.cloudPay.unifiedOrder({
       body: `年年有喜-${voucher.name}`,
       outTradeNo: orderNo,
-      spbillCreateIp: '127.0.0.1', // 云函数固定IP
-      subMchId: '', // 子商户号 (如有)
-      totalFee: totalAmount, // 单位: 分
+      spbillCreateIp: '127.0.0.1',
+      totalFee: totalAmount,
       envId: cloud.DYNAMIC_CURRENT_ENV,
-      functionName: 'paymentCallback', // 支付回调云函数名称
+      functionName: 'paymentCallback',
       nonceStr: Math.random().toString(36).substr(2, 15),
       tradeType: 'JSAPI',
       openid: OPENID

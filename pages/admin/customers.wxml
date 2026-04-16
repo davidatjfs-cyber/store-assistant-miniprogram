@@ -1,0 +1,68 @@
+<view class="page">
+  <view class="top-bar">
+    <text class="top-title">客户管理</text>
+    <view class="search-box">
+      <input class="search-input" placeholder="搜索手机号/姓名" value="{{keyword}}" bindinput="onSearch" />
+    </view>
+  </view>
+
+  <!-- 统计概览 -->
+  <view class="stats-grid">
+    <view class="stat-card">
+      <text class="stat-value">{{stats.totalUsers}}</text>
+      <text class="stat-label">总用户数</text>
+    </view>
+    <view class="stat-card">
+      <text class="stat-value">{{stats.vipUsers}}</text>
+      <text class="stat-label">VIP用户</text>
+    </view>
+    <view class="stat-card">
+      <text class="stat-value">{{stats.newUsers}}</text>
+      <text class="stat-label">本月新增</text>
+    </view>
+  </view>
+
+  <!-- 加载中 -->
+  <view wx:if="{{loading}}" class="state"><text>加载中</text></view>
+
+  <!-- 客户列表 -->
+  <view wx:else class="list">
+    <view class="glass-card customer-item" wx:for="{{customers}}" wx:key="_id">
+      <view class="customer-header">
+        <view class="customer-avatar">
+          <text class="avatar-text">{{item.phone ? item.phone.slice(-4) : '??'}}</text>
+        </view>
+        <view class="customer-info">
+          <view class="customer-name-row">
+            <text class="customer-phone">{{item.phone || '未授权'}}</text>
+            <text class="level-tag level-tag--{{item.user_level || 'new'}}">{{item.user_level === 'vip' ? 'VIP' : item.user_level === 'active' ? '活跃' : '新客'}}</text>
+          </view>
+          <text class="customer-join">加入于 {{item.joinDate || '—'}}</text>
+        </view>
+      </view>
+      <view class="customer-stats">
+        <view class="customer-stat">
+          <text class="c-stat-value">{{item.totalOrders || 0}}</text>
+          <text class="c-stat-label">订单</text>
+        </view>
+        <view class="customer-stat">
+          <text class="c-stat-value">{{item.totalSpentText}}</text>
+          <text class="c-stat-label">消费</text>
+        </view>
+        <view class="customer-stat">
+          <text class="c-stat-value">{{item.voucherCount || 0}}</text>
+          <text class="c-stat-label">持券</text>
+        </view>
+        <view class="customer-stat">
+          <text class="c-stat-value">{{item.lastVisit || '—'}}</text>
+          <text class="c-stat-label">最近到店</text>
+        </view>
+      </view>
+      <view class="action-row">
+        <button class="send-btn" size="mini" data-phone="{{item.phone}}" bindtap="onSendVoucher">
+          🎁 赠送优惠券
+        </button>
+      </view>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,74 @@
+/* 员工核销 - 液态玻璃 (高亮银色) */
+page { background: #0a0a0a; }
+
+.page {
+  min-height: 100vh;
+  background: linear-gradient(160deg, #0a0a0a 0%, #1a1a2e 30%, #16213e 60%, #0a0a0a 100%);
+  padding: 32rpx;
+}
+
+.glass-card {
+  background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.04) 100%);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border-radius: 28rpx; padding: 36rpx; margin-bottom: 24rpx;
+  border: 1rpx solid rgba(255,255,255,0.15);
+  box-shadow: 0 8rpx 32rpx rgba(0,0,0,0.3), inset 0 1rpx 0 rgba(255,255,255,0.1);
+}
+
+.arrivals-card { margin-bottom: 24rpx; }
+
+.title {
+  display: block; font-size: 34rpx; font-weight: 700; color: #ffffff;
+  text-shadow: 0 0 10rpx rgba(255,255,255,0.4);
+}
+
+.desc {
+  display: block; margin-top: 12rpx; font-size: 26rpx;
+  color: #B0B0B0; line-height: 1.5; margin-bottom: 24rpx;
+}
+
+.arrival { margin-top: 24rpx; padding-top: 24rpx; border-top: 1rpx solid rgba(255,255,255,0.08); }
+.arrival--first { margin-top: 12rpx; padding-top: 0; border-top: none; }
+.arrival-head { margin-bottom: 8rpx; }
+.arrival-name-row { display: flex; flex-wrap: wrap; align-items: center; gap: 14rpx; }
+
+.arrival-name {
+  font-size: 32rpx; font-weight: 700; color: #ffffff;
+  text-shadow: 0 0 8rpx rgba(255,255,255,0.3);
+}
+
+.level-tag { font-size: 22rpx; font-weight: 700; padding: 6rpx 16rpx; border-radius: 12rpx; letter-spacing: 1rpx; }
+.level-tag--vip { color: #fff; background: linear-gradient(135deg, #ff1744, #c62828); box-shadow: 0 4rpx 16rpx rgba(198,40,40,0.4); }
+.level-tag--regular { color: #5c4a00; background: linear-gradient(135deg, #ffe082, #ffc107); box-shadow: 0 4rpx 16rpx rgba(255,193,7,0.3); }
+.level-tag--new { color: #fff; background: linear-gradient(135deg, #43a047, #2e7d32); box-shadow: 0 4rpx 16rpx rgba(46,125,50,0.3); }
+
+.arrival-line { display: block; font-size: 26rpx; color: #B0B0B0; margin-top: 6rpx; }
+.arrival-tags { margin-top: 12rpx; display: flex; flex-wrap: wrap; gap: 10rpx; }
+
+.tag {
+  font-size: 22rpx; color: #D0D0D0; background: rgba(255,255,255,0.08);
+  padding: 6rpx 14rpx; border-radius: 10rpx; border: 1rpx solid rgba(255,255,255,0.12);
+}
+
+.field { margin-top: 28rpx; margin-bottom: 24rpx; }
+.field-label { display: block; font-size: 24rpx; color: #B0B0B0; margin-bottom: 10rpx; }
+
+.field-input {
+  background: rgba(255,255,255,0.06); border: 1rpx solid rgba(255,255,255,0.12);
+  border-radius: 16rpx; padding: 20rpx; font-size: 28rpx; color: #ffffff;
+}
+.field-input::placeholder { color: rgba(255,255,255,0.3); }
+
+.btn-primary {
+  margin-top: 12rpx; background: linear-gradient(135deg, #ff6a00, #ff8533);
+  color: #fff; border-radius: 999rpx; font-size: 30rpx; font-weight: 600;
+  box-shadow: 0 8rpx 24rpx rgba(255,106,0,0.4);
+}
+
+.store { display: block; margin-top: 20rpx; font-size: 24rpx; color: #888888; text-align: center; }
+
+.result { text-align: center; }
+.result-icon { width: 80rpx; height: 80rpx; line-height: 80rpx; border-radius: 50%; margin: 0 auto 16rpx; font-size: 44rpx; font-weight: 700; color: #fff; }
+.result-icon.ok { background: linear-gradient(135deg, #43a047, #2e7d32); }
+.result-icon.bad { background: linear-gradient(135deg, #ff1744, #c62828); }
+.result-msg { font-size: 30rpx; color: #E8E8E8; text-shadow: 0 0 8rpx rgba(255,255,255,0.3); }

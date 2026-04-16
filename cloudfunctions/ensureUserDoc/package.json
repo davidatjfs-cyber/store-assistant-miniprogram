@@ -1,0 +1,9 @@
+{
+  "name": "ensure-user-doc",
+  "version": "1.0.0",
+  "description": "按 openid 确保 users 集合存在档案（无需手机号）",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

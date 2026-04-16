@@ -1,15 +1,22 @@
 {
   "pages": [
-    "pages/index/index"
+    "pages/index/index",
+    "pages/voucher/list",
+    "pages/voucher/detail",
+    "pages/staff/verify",
+    "pages/admin/marketing",
+    "pages/admin/dashboard",
+    "pages/admin/vouchers",
+    "pages/admin/customers",
+    "pages/shop/index"
   ],
   "window": {
     "backgroundTextStyle": "light",
-    "navigationBarBackgroundColor": "#FF6A00",
+    "navigationBarBackgroundColor": "#000000",
     "navigationBarTitleText": "年年有喜",
     "navigationBarTextStyle": "white",
-    "backgroundColor": "#F8F5F2"
+    "backgroundColor": "#0a0a0a"
   },
-  "lazyCodeLoading": "requiredComponents",
   "sitemapLocation": "sitemap.json",
   "style": "v2"
 }

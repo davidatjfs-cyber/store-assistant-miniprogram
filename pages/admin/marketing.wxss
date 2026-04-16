@@ -1,0 +1,62 @@
+/* 营销管理 - 液态玻璃 (高亮银色) */
+page { background: #0a0a0a; }
+
+.page {
+  min-height: 100vh;
+  background: linear-gradient(160deg, #0a0a0a 0%, #1a1a2e 30%, #16213e 60%, #0a0a0a 100%);
+  padding: 32rpx;
+}
+
+.hint { font-size: 24rpx; color: #B0B0B0; margin-bottom: 20rpx; }
+.state { text-align: center; padding: 80rpx 24rpx; color: #C0C0C0; font-size: 28rpx; }
+.list { max-height: calc(100vh - 120rpx); display: flex; flex-direction: column; gap: 20rpx; }
+
+.glass-card {
+  background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.04) 100%);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border-radius: 28rpx; padding: 32rpx;
+  border: 1rpx solid rgba(255,255,255,0.15);
+  box-shadow: 0 8rpx 32rpx rgba(0,0,0,0.3), inset 0 1rpx 0 rgba(255,255,255,0.1);
+}
+
+.row { display: flex; align-items: center; justify-content: space-between; }
+.row-top { margin-bottom: 16rpx; }
+
+.name {
+  flex: 1; font-size: 32rpx; font-weight: 600; color: #ffffff; padding-right: 16rpx;
+  text-shadow: 0 0 10rpx rgba(255,255,255,0.4);
+}
+
+.row-meta { margin-bottom: 20rpx; }
+.meta { font-size: 26rpx; color: #B0B0B0; }
+.meta.roi { font-weight: 500; color: #ff9a5c; text-shadow: 0 0 8rpx rgba(255,106,0,0.4); }
+
+.row-actions { justify-content: center; gap: 24rpx; padding-top: 16rpx; border-top: 1rpx solid rgba(255,255,255,0.08); }
+
+.pri-btn {
+  min-width: 72rpx !important; padding: 0 20rpx !important; line-height: 60rpx !important; height: 60rpx !important;
+  background: rgba(255,106,0,0.15) !important; color: #ff9a5c !important;
+  border: 1rpx solid rgba(255,106,0,0.3) !important; border-radius: 14rpx !important;
+  font-size: 34rpx !important; font-weight: 600;
+}
+.pri-btn::after { border: none; }
+.pri-label { font-size: 26rpx; color: #B0B0B0; }
+
+/* 活动码生成器 */
+.generator-section { margin-top: 32rpx; }
+.section-title { display: block; font-size: 28rpx; font-weight: 700; color: #ffffff; margin-bottom: 20rpx; text-shadow: 0 0 10rpx rgba(255,255,255,0.4); }
+.form-row { margin-bottom: 20rpx; }
+.form-label { font-size: 24rpx; color: #B0B0B0; margin-bottom: 8rpx; display: block; }
+.form-input {
+  background: rgba(255,255,255,0.06); border: 1rpx solid rgba(255,255,255,0.12);
+  border-radius: 12rpx; padding: 16rpx; color: #ffffff; font-size: 26rpx;
+}
+.gen-btn {
+  background: linear-gradient(90deg, #6c63ff, #a855f7) !important;
+  color: #ffffff !important; border: none !important; border-radius: 12rpx !important;
+  font-size: 26rpx !important; height: 72rpx !important; line-height: 72rpx !important;
+}
+.gen-btn::after { border: none; }
+.qr-result { margin-top: 24rpx; text-align: center; }
+.qr-img { width: 400rpx; height: 400rpx; border-radius: 16rpx; background: #ffffff; }
+.qr-tip { display: block; font-size: 22rpx; color: #888888; margin-top: 12rpx; }

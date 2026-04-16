@@ -1,0 +1,40 @@
+<view class="page">
+  <view class="hint" wx:if="{{statsDate}}">今日 ROI 统计日：{{statsDate}}（上海）</view>
+
+  <view wx:if="{{loading}}" class="state">加载中…</view>
+
+  <view wx:elif="{{!rules.length}}" class="state">暂无营销规则</view>
+
+  <scroll-view wx:else scroll-y class="list">
+    <view class="glass-card rule-card" wx:for="{{rules}}" wx:key="rule_id">
+      <view class="row row-top">
+        <text class="name">{{item.name || item.rule_id}}</text>
+        <switch checked="{{item.active}}" data-id="{{item.rule_id}}" bindchange="onToggleActive" color="#FF6A00" />
+      </view>
+      <view class="row row-meta">
+        <text class="meta">优先级 {{item.priority}}</text>
+        <text class="meta roi">ROI {{item.roiText}}</text>
+      </view>
+      <view class="row row-actions">
+        <button class="pri-btn" size="mini" data-id="{{item.rule_id}}" bindtap="onPriMinus">−</button>
+        <text class="pri-label">调整优先级</text>
+        <button class="pri-btn" size="mini" data-id="{{item.rule_id}}" bindtap="onPriPlus">+</button>
+      </view>
+    </view>
+  </scroll-view>
+
+  <!-- 企微活动码生成器 -->
+  <view class="glass-card generator-section">
+    <text class="section-title">📢 企微活动码生成器</text>
+    <view class="form-row">
+      <text class="form-label">活动标识 (Scene)</text>
+      <input class="form-input" placeholder="例如: spring_sale" value="{{sceneInput}}" bindinput="onSceneInput" />
+    </view>
+    <button class="gen-btn" bindtap="onGenerateCode" loading="{{generating}}">生成活动码</button>
+    
+    <view class="qr-result" wx:if="{{qrCodeBase64}}">
+      <image class="qr-img" src="data:image/png;base64,{{qrCodeBase64}}" mode="aspectFit" bindtap="previewQr" />
+      <text class="qr-tip">长按保存，发送到企微群/客户</text>
+    </view>
+  </view>
+</view>

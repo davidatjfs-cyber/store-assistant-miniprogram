@@ -2,10 +2,17 @@
   "description": "门店私域助手小程序",
   "packOptions": {
     "ignore": [
-      {
-        "value": ".eslintrc.js",
-        "type": "file"
-      }
+      { "value": ".eslintrc.js", "type": "file" },
+      { "value": "scripts", "type": "folder" },
+      { "value": "test", "type": "folder" },
+      { "value": "docs", "type": "folder" },
+      { "value": "cloudfunctions/seedTestData", "type": "folder" },
+      { "value": "cloudfunctions/runAutomatedTests", "type": "folder" },
+      { "value": "cloudfunctions/migrateUsers", "type": "folder" },
+      { "value": "cloudfunctions/verifyMaijixianSetup", "type": "folder" },
+      { "value": "cloudfunctions/seedMaijixianMarketing", "type": "folder" },
+      { "value": "CLOUD_FUNCTION_STUCK.md", "type": "file" },
+      { "value": "FIXED_TEST_DATA.md", "type": "file" }
     ],
     "include": []
   },
@@ -37,10 +44,10 @@
     "uglifyFileName": false,
     "checkInvalidKey": true,
     "checkSiteMap": true,
-    "uploadWithSourceMap": true,
+    "uploadWithSourceMap": false,
     "compileHotReLoad": false,
     "lazyloadPlaceholderEnable": false,
-    "useMultiFrameRuntime": true,
+    "useMultiFrameRuntime": false,
     "useApiHook": true,
     "useApiHostProcess": true,
     "babelSetting": {

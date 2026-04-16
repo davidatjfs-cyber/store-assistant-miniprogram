@@ -1,4 +1,126 @@
 // pages/index/index.js
+var ENABLE_ONLOAD_DEBUG_MODAL = false;
+
+// 开发模式：无扫码参数时模拟扫码（仅开发调试用，上线前改为 false）
+var DEV_SIMULATE_SCAN = true;
+
+var roleUtil = require('../../utils/role.js');
+
+function buildEntrySections(role) {
+  var sections = [];
+  if (role === 'staff' || role === 'manager' || role === 'admin') {
+    sections.push({
+      title: '门店操作',
+      items: [
+        {
+          key: 'verify',
+          title: '员工核销',
+          sub: '扫码核销优惠券',
+          url: '/pages/staff/verify',
+          icon: '核'
+        }
+      ]
+    });
+  }
+  if (role === 'manager') {
+    sections.push({
+      title: '店长',
+      items: [
+        {
+          key: 'storedash',
+          title: '门店数据',
+          sub: '今日发券与收入',
+          url: '/pages/admin/dashboard',
+          icon: '店'
+        }
+      ]
+    });
+  }
+  if (role === 'admin') {
+    sections.push({
+      title: '总部',
+      items: [
+        {
+          key: 'vouchers',
+          title: '券模板管理',
+          sub: '创建/编辑代金券',
+          url: '/pages/admin/vouchers',
+          icon: '券'
+        },
+        {
+          key: 'marketing',
+          title: '营销管理',
+          sub: '规则开关与优先级',
+          url: '/pages/admin/marketing',
+          icon: '营'
+        },
+        {
+          key: 'customers',
+          title: '客户管理',
+          sub: '用户数据与分析',
+          url: '/pages/admin/customers',
+          icon: '客'
+        },
+        {
+          key: 'dash',
+          title: '数据看板',
+          sub: '全盘经营指标',
+          url: '/pages/admin/dashboard',
+          icon: '数'
+        }
+      ]
+    });
+  }
+  if (!role) {
+    sections.push({
+      title: '会员',
+      items: [
+        {
+          key: 'shop',
+          title: '购买优惠券',
+          sub: '浏览并购买代金券',
+          url: '/pages/shop/index',
+          icon: '购'
+        },
+        {
+          key: 'vouchers',
+          title: '我的优惠券',
+          sub: '查看已获得优惠券',
+          url: '/pages/voucher/list',
+          icon: '券'
+        }
+      ]
+    });
+  }
+  return sections;
+}
+
+/** 拼接跳转点餐小程序的 path，透传扫码 query，避免缺参导致对方白屏 */
+function buildOrderMiniPath(basePath, scanParams, extraStaticQuery) {
+  var skip = { timestamp: 1, scene: 1 };
+  var merged = {};
+  Object.keys(scanParams || {}).forEach(function(k) {
+    if (skip[k]) return;
+    var v = scanParams[k];
+    if (v === undefined || v === null || v === '') return;
+    if (typeof v === 'object') return;
+    merged[k] = v;
+  });
+  extraStaticQuery = extraStaticQuery || {};
+  Object.keys(extraStaticQuery).forEach(function(k) {
+    var v = extraStaticQuery[k];
+    if (v !== undefined && v !== null && v !== '') merged[k] = v;
+  });
+  var parts = [];
+  Object.keys(merged).forEach(function(k) {
+    parts.push(encodeURIComponent(k) + '=' + encodeURIComponent(String(merged[k])));
+  });
+  var qs = parts.join('&');
+  if (!qs) return basePath;
+  var sep = basePath.indexOf('?') >= 0 ? '&' : '?';
+  return basePath + sep + qs;
+}
+
 Page({
   data: {
     isFromScan: false,
@@ -6,14 +128,131 @@ Page({
     showAuthModal: false,
     showLegacyMemberTip: false,
     legacyMemberPoints: 0,
-    inputPhone: ''
+    inputPhone: '',
+    pageReady: false,
+    entrySections: [],
+    roleLoaded: false
+  },
+
+  refreshRoleEntries: function () {
+    var self = this;
+    var app = getApp();
+    if (!app || typeof app.fetchUserRole !== 'function') {
+      self.setData({ entrySections: buildEntrySections(null), roleLoaded: true });
+      return;
+    }
+    app.fetchUserRole(true).then(function () {
+      var role = app.globalData.userRole;
+      self.setData({
+        entrySections: buildEntrySections(role),
+        roleLoaded: true
+      });
+    });
+  },
+
+  /** 云函数：仅保证 users 集合有当前 openid 对应记录（不写 Users、不要手机号） */
+  /**
+   * 扫码进店：先 ensure users，再写 user_arrival_logs（需传 store_id）
+   */
+  invokeDetectUserArrival: function() {
+    if (!wx.cloud || !wx.cloud.callFunction) return;
+    var app = getApp();
+    var scanParams = (app.globalData && app.globalData.scanParams) || {};
+    var storeId = scanParams.store_id;
+    if (!storeId) return;
+    var sid = String(storeId).trim();
+    if (!sid) return;
+    wx.cloud
+      .callFunction({
+        name: 'ensureUserDoc',
+        data: { scanParams: scanParams }
+      })
+      .then(function() {
+        return wx.cloud.callFunction({
+          name: 'detectUserArrival',
+          data: { store_id: sid }
+        });
+      })
+      .then(function(res) {
+        if (res && res.result && res.result.success) {
+          // detectUserArrival ok
+        } else if (res && res.result) {
+          // detectUserArrival skip
+        }
+      })
+      .catch(function(e) {
+        var msg = (e && e.errMsg) || '';
+        if (msg.indexOf('-501000') >= 0 || msg.indexOf('could not be found') >= 0) {
+          return;
+        }
+        console.warn('detectUserArrival 调用失败:', e);
+      });
+  },
+
+  ensureUserDocInCloud: function() {
+    if (!wx.cloud || !wx.cloud.callFunction) return;
+    var app = getApp();
+    var scanParams = (app.globalData && app.globalData.scanParams) || {};
+    wx.cloud
+      .callFunction({
+        name: 'ensureUserDoc',
+        data: { scanParams: scanParams }
+      })
+      .then(function(res) {
+        // ensureUserDoc 结果
+      })
+      .catch(function(e) {
+        var msg = (e && e.errMsg) || '';
+        if (msg.indexOf('-501000') >= 0 || msg.indexOf('could not be found') >= 0) {
+          // ensureUserDoc 尚未上传，已跳过（开发阶段正常）
+          return;
+        }
+        console.warn('ensureUserDoc 调用失败:', e);
+      });
+  },
+
+  syncScanFromApp: function() {
+    try {
+      var app = getApp();
+      var scanParams = app.globalData && app.globalData.scanParams;
+      // console.log('syncScanFromApp scanParams:', scanParams);
+      if (scanParams) {
+        this.setData({
+          isFromScan: true,
+          scanParams: scanParams,
+          showAuthModal: true,
+          pageReady: true
+        });
+      } else if (DEV_SIMULATE_SCAN) {
+        // 开发模式：模拟扫码参数（方便不扫码也能测试）
+        this.setData({
+          isFromScan: true,
+          scanParams: {
+            table_id: 'T01',
+            store_id: 'store_test_001',
+            store_display_name: '测试门店',
+            scene: 1047,
+            timestamp: Date.now()
+          },
+          showAuthModal: true,
+          pageReady: true
+        });
+      } else {
+        this.setData({ pageReady: true });
+      }
+      this.ensureUserDocInCloud();
+    } catch (e) {
+      console.error('syncScanFromApp error:', e);
+      this.setData({ pageReady: true });
+      this.ensureUserDocInCloud();
+    }
   },
 
   onLoad: function(options) {
-    console.log('onLoad options:', options);
+    // console.log('onLoad options:', options);
     try {
       var app = getApp();
-      if (!app.globalData.__debug_modal_shown__) {
+      if (ENABLE_ONLOAD_DEBUG_MODAL && !app.globalData.__debug_modal_shown__) {
         app.globalData.__debug_modal_shown__ = true;
         wx.showModal({
           title: '真机调试',
@@ -21,33 +260,86 @@ Page({
           showCancel: false
         });
       }
-      var scanParams = app.globalData && app.globalData.scanParams;
-      console.log('scanParams:', scanParams);
-      if (scanParams) {
-        this.setData({ isFromScan: true, scanParams: scanParams, showAuthModal: true });
-      }
+      this.syncScanFromApp();
+      this.refreshRoleEntries();
+      this.invokeDetectUserArrival();
     } catch (e) {
       console.error('onLoad error:', e);
+      this.setData({ pageReady: true });
+      this.ensureUserDocInCloud();
+      this.refreshRoleEntries();
+      this.invokeDetectUserArrival();
+    }
+  },
+
+  onShow: function() {
+    this.refreshRoleEntries();
+    // 真机偶现首屏时序问题，onShow 再同步一次 globalData
+    if (!this.data.showAuthModal && !this.data.showLegacyMemberTip) {
+      this.syncScanFromApp();
+    }
+  },
+
+  /** 点击遮罩关闭弹窗，便于阅读落地说明后通过下方「授权入会」再次发起 */
+  onModalBackdropTap: function() {
+    if (this.data.showAuthModal) {
+      this.setData({ showAuthModal: false });
     }
   },
 
   onGetPhoneNumber: function(e) {
-    console.log('授权回调:', e);
+    // console.log('授权回调:', e);
     if (!e.detail || !e.detail.errMsg) {
       wx.showToast({ title: '授权失败，请重试', icon: 'none' });
       return;
     }
 
-    if (e.detail.errMsg !== 'getPhoneNumber:ok') {
-      if (String(e.detail.errMsg).indexOf('no permission') >= 0) {
-        wx.showModal({
-          title: '无法获取手机号',
-          content: '请确认小程序后台已开启"获取手机号"接口权限（个人主体或未完成微信认证的企业无法使用此接口）',
-          showCancel: false
-        });
-        return;
-      }
-      wx.showToast({ title: '用户拒绝授权', icon: 'none' });
+    var errMsg = String(e.detail.errMsg);
+    var lower = errMsg.toLowerCase();
+    var code = e.detail.code;
+
+    // 须先于「用户拒绝」判断：fail no permission 也以 getPhoneNumber:fail 开头
+    if (lower.indexOf('no permission') >= 0) {
+      wx.showModal({
+        title: '暂无法使用手机号登录',
+        content:
+          '当前小程序暂不具备手机号快速验证能力（例如未完成微信认证等）。请联系门店或稍后再试。',
+        showCancel: false
+      });
+      return;
+    }
+
+    // 用户拒绝或取消：无 code，用面向顾客的文案，不误导为后台未配置
+    if (
+      lower.indexOf('user deny') >= 0 ||
+      lower.indexOf('user cancel') >= 0 ||
+      errMsg.indexOf('拒绝') >= 0 ||
+      (lower.indexOf('deny') >= 0 && lower.indexOf('getphonenumber') >= 0) ||
+      (lower.indexOf('cancel') >= 0 && lower.indexOf('getphonenumber') >= 0)
+    ) {
+      wx.showModal({
+        title: '未授权手机号',
+        content:
+          '您未同意授权手机号，将无法完成入会并跳转点餐。如需继续，请点下方「授权入会」或再次打开本页按提示授权。',
+        showCancel: false,
+        confirmText: '我知道了'
+      });
+      return;
+    }
+
+    if (!code) {
+      wx.showModal({
+        title: '暂时无法获取手机号',
+        content:
+          '未拿到授权凭证。若您已在弹窗中点击了同意，请关闭本页后重试一次；若多次失败，请联系店员或稍后再试。（商户侧需在微信公众平台配置隐私指引与手机号相关能力。）',
+        showCancel: false,
+        confirmText: '我知道了'
+      });
+      return;
+    }
+
+    if (errMsg !== 'getPhoneNumber:ok') {
+      wx.showToast({ title: '授权未完成，请重试', icon: 'none' });
       return;
     }
 
@@ -71,10 +363,26 @@ Page({
       },
       success: function(result) {
         wx.hideLoading();
-        console.log('云函数结果:', result);
+        // console.log('云函数完整返回:', result);
+
+        var payload = result && result.result;
+        if (!payload || payload.success === false) {
+          var errText =
+            (payload && payload.errMsg) ||
+            (payload && payload.message) ||
+            (result && result.errMsg) ||
+            '云函数返回异常，请打开云开发控制台查看 saveUserPhone 日志';
+          wx.showModal({
+            title: '入会未成功',
+            content: errText,
+            showCancel: false
+          });
+          return;
+        }
+
         self.setData({ showAuthModal: false });
 
-        var data = result.result && result.result.data;
+        var data = payload.data;
         if (data && data.isLegacyMember && data.legacyPoints > 0) {
           self.setData({ showLegacyMemberTip: true, legacyMemberPoints: data.legacyPoints });
           setTimeout(function() {
@@ -87,34 +395,79 @@ Page({
       },
       fail: function(err) {
         wx.hideLoading();
-        console.error('云函数失败:', err);
-        wx.showToast({ title: '入会失败，请重试', icon: 'none' });
+        console.error('云函数调用失败:', err);
+        var msg = (err && err.errMsg) ? err.errMsg : JSON.stringify(err || {});
+        wx.showModal({
+          title: '云函数调用失败',
+          content:
+            msg +
+            '\n\n请逐项检查：\n1) 云函数 saveUserPhone 已「上传并部署」\n2) app.js 里 wx.cloud.init 的 env 与开发者工具当前云环境一致\n3) 云数据库已创建 Users 集合且权限允许云函数写入',
+          showCancel: false
+        });
       }
     });
   },
 
   navigateToKeruYun: function() {
     var app = getApp();
-    var config = app.globalData.keruYunConfig;
+    var config = app.globalData.keruYunConfig || {};
     var params = this.data.scanParams || {};
-    // 暂时注释掉具体路径，测试是否能正常打开客如云首页
-    // var path = (config.path || 'pages/order/index') + '?table_id=' + (params.table_id || '') + '&store_id=' + (params.store_id || '');
 
-    console.log('准备跳转客如云，AppID:', config.appId);
+    if (!config.appId) {
+      wx.showModal({
+        title: '未配置点餐小程序',
+        content: '请在 app.js 的 globalData.keruYunConfig 中填写正确的点餐端小程序 AppID（如马己仙/二代码点餐提供方）。',
+        showCancel: false
+      });
+      return;
+    }
 
-    wx.navigateToMiniProgram({
-      appId: config.appId,
-      // path: path, // 暂不传 path，默认打开首页
-      envVersion: 'release', // 默认打开正式版
-      fail: function(err) {
-        console.error('跳转失败:', err);
-        // 弹窗显示完整错误信息
+    // 模拟器会提示「跳转成功」但无法真正打开其他小程序，易误以为入会失败
+    try {
+      var sys = wx.getSystemInfoSync();
+      if (sys && sys.platform === 'devtools') {
         wx.showModal({
-          title: '跳转失败',
-          content: '错误: ' + (err.errMsg || JSON.stringify(err)),
+          title: '模拟器无法打开点餐小程序',
+          content:
+            '开发者工具不支持真实跳转到其他小程序。若上一步已保存手机号，入会数据已成功写入云库。\n\n请使用「预览」在真机上扫码，完成跳转点餐。',
+          showCancel: false
+        });
+        return;
+      }
+    } catch (e) {
+      // ignore
+    }
+
+    var basePath =
+      config.path ||
+      'pages/home/index?origin=minpath&path=pages%2Forderfood%2Findex';
+    var path = buildOrderMiniPath(basePath, params, config.extraStaticQuery);
+
+    var envVersion = config.envVersion || 'release';
+
+    // console.log('准备跳转点餐小程序', { appId: config.appId, path: path, envVersion: envVersion });
+
+    var navOpts = {
+      appId: config.appId,
+      path: path,
+      envVersion: envVersion,
+      success: function() {
+        // console.log('navigateToMiniProgram 已触发');
+      },
+      fail: function(err) {
+        console.error('跳转点餐小程序失败:', err);
+        wx.showModal({
+          title: '跳转点餐小程序失败',
+          content:
+            (err.errMsg || JSON.stringify(err)) +
+            '\n\n请到微信公众平台 → 小程序后台：\n• 设置里配置「跳转其他小程序」白名单，加入对方 AppID\n• 若对方仅有体验版，可把 app.js 里 keruYunConfig.envVersion 改为 trial',
           showCancel: false
         });
       }
-    });
+    };
+    if (config.extraData && typeof config.extraData === 'object') {
+      navOpts.extraData = config.extraData;
+    }
+    wx.navigateToMiniProgram(navOpts);
   }
 });

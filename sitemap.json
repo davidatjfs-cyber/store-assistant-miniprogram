@@ -2,6 +2,18 @@
   "desc": "门店私域助手 · 索引配置",
   "rules": [
     {
+      "action": "disallow",
+      "page": "pages/admin/dashboard"
+    },
+    {
+      "action": "disallow",
+      "page": "pages/admin/marketing"
+    },
+    {
+      "action": "disallow",
+      "page": "pages/staff/verify"
+    },
+    {
       "action": "allow",
       "page": "*"
     }

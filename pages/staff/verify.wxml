@@ -1,0 +1,41 @@
+<view class="page">
+  <!-- 到店顾客 -->
+  <view class="glass-card arrivals-card" wx:if="{{arrivalsLoaded && arrivals.length}}">
+    <text class="title">当前到店顾客</text>
+    <text class="desc">最近到店记录（本门店）</text>
+    <view class="arrival {{index === 0 ? 'arrival--first' : ''}}" wx:for="{{arrivals}}" wx:key="user_id">
+      <view class="arrival-head">
+        <view class="arrival-name-row">
+          <text class="arrival-name">{{item.display_name}}{{item.level_suffix}}</text>
+          <text class="level-tag level-tag--vip" wx:if="{{item.user_level === 'vip'}}">VIP</text>
+          <text class="level-tag level-tag--new" wx:elif="{{item.user_level === 'new'}}">新客</text>
+          <text class="level-tag level-tag--regular" wx:else>常客</text>
+        </view>
+      </view>
+      <text class="arrival-line">来店：{{item.total_visits}}次</text>
+      <text class="arrival-line">最近：{{item.recent_label}}</text>
+      <text class="arrival-line" wx:if="{{item.favorite_dish}}">偏好：{{item.favorite_dish}}</text>
+      <view class="arrival-tags" wx:if="{{item.tag_labels.length}}">
+        <text class="tag" wx:for="{{item.tag_labels}}" wx:for-item="tg" wx:for-index="ti" wx:key="ti">{{tg}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 核销 -->
+  <view class="glass-card">
+    <text class="title">门店核销</text>
+    <text class="desc">扫描顾客券详情页展示的二维码</text>
+    <view class="field">
+      <text class="field-label">本单消费金额（分）</text>
+      <input class="field-input" type="number" placeholder="券模板设了最低消费时必填" value="{{orderAmountFen}}" bindinput="onAmountInput" />
+    </view>
+    <button class="btn-primary" type="primary" bindtap="onScan">扫一扫核销</button>
+    <text class="store" wx:if="{{storeId}}">当前门店：{{storeId}}</text>
+  </view>
+
+  <!-- 结果 -->
+  <view class="glass-card result" wx:if="{{lastMessage}}">
+    <view class="result-icon {{lastOk ? 'ok' : 'bad'}}">{{lastOk ? '✓' : '!'}}</view>
+    <text class="result-msg">{{lastMessage}}</text>
+  </view>
+</view>
