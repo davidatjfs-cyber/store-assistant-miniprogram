@@ -1,6 +1,7 @@
 // 云函数入口文件 - 保存用户手机号并检测老会员
 const cloud = require('wx-server-sdk');
 const { upsertUserByOpenid } = require('./helpers');
+const { syncHrmsGrowthEvent } = require('./hrmsGrowthSync');
 
 cloud.init({
   env: cloud.DYNAMIC_CURRENT_ENV
@@ -84,6 +85,11 @@ function extractPhoneFromGetPhoneNumberResult(r) {
     return String(r.phoneNumber || r.purePhoneNumber).trim();
   }
   return '';
+}
+
+function pickCampaignId(scanParams) {
+  if (!scanParams || typeof scanParams !== 'object') return '';
+  return String(scanParams.campaign_id || scanParams.campaignId || scanParams.activity_id || scanParams.scene || '').trim();
 }
 
 /**
@@ -256,6 +262,23 @@ exports.main = async (event, context) => {
         console.error('ScanLogs 写入失败（可稍后建集合）:', logErr);
       }
     }
+
+    await syncHrmsGrowthEvent({
+      event_type: 'phone_authorized',
+      phone: phoneNumber,
+      openid: OPENID,
+      store_id: scanParams && scanParams.store_id,
+      campaign_id: pickCampaignId(scanParams),
+      channel: scanParams && (scanParams.channel || scanParams.source || 'miniprogram'),
+      idempotency_key: 'phone_authorized:' + OPENID + ':' + phoneNumber,
+      metadata: {
+        scanParams: scanParams || {},
+        is_legacy_member: isLegacy,
+        legacy_points: points || 0
+      }
+    }).catch(function (e) {
+      console.warn('HRMS phone_authorized sync failed', e && e.message);
+    });
 
     // ========== 9. 返回结果 ==========
     return {

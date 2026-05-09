@@ -3,12 +3,18 @@
  * 不替代 saveUserPhone（手机号仍须授权后由 saveUserPhone 写入）。
  */
 const cloud = require('wx-server-sdk');
+const { syncHrmsGrowthEvent } = require('./hrmsGrowthSync');
 
 cloud.init({
   env: cloud.DYNAMIC_CURRENT_ENV
 });
 
 const db = cloud.database();
+
+function pickCampaignId(scanParams) {
+  if (!scanParams || typeof scanParams !== 'object') return '';
+  return String(scanParams.campaign_id || scanParams.campaignId || scanParams.activity_id || scanParams.scene || '').trim();
+}
 
 function scanPatchFromEvent(scanParams) {
   const p = {};
@@ -64,6 +70,20 @@ exports.main = async function (event) {
       return { success: false, errMsg: '缺少 OPENID' };
     }
     const userId = await ensureUserByOpenid(OPENID, event && event.scanParams);
+    const scanParams = event && event.scanParams;
+    if (scanParams && typeof scanParams === 'object') {
+      await syncHrmsGrowthEvent({
+        event_type: 'campaign_scan',
+        openid: OPENID,
+        store_id: scanParams.store_id,
+        campaign_id: pickCampaignId(scanParams),
+        channel: scanParams.channel || scanParams.source || 'miniprogram',
+        idempotency_key: 'campaign_scan:' + OPENID + ':' + (pickCampaignId(scanParams) || '') + ':' + Math.floor(Date.now() / 600000),
+        metadata: { scanParams: scanParams }
+      }).catch(function (e) {
+        console.warn('HRMS campaign_scan sync failed', e && e.message);
+      });
+    }
     return { success: true, user_id: userId };
   } catch (e) {
     console.error('ensureUserDoc', e);

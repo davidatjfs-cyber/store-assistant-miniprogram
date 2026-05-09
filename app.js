@@ -36,12 +36,14 @@ App({
    * 解析启动参数
    */
   parseLaunchOptions(options) {
-    // 真机部分场景下 options 可能缺省，解构 undefined 会抛错并导致后续 scanParams 未写入 → 首页全白
     options = options || {};
     const scene = options.scene;
     const query = options.query || {};
+    const campaignId = query.campaign_id || query.campaignId || query.scene_param || '';
+    if (campaignId) {
+      this.globalData.campaignId = campaignId;
+    }
 
-    // 仅在真实扫码场景下设置扫码参数
     if (scene === 1047 || scene === 1011) {
       if (query && (query.table_id || query.store_id || Object.keys(query).length > 0)) {
         this.globalData.scanParams = Object.assign(
@@ -55,6 +57,10 @@ App({
         );
       }
     }
+
+    if (!scene && Object.keys(query).length > 0) {
+      this.globalData.scanParams = Object.assign({ timestamp: Date.now() }, query);
+    }
   },
 
   globalData: {
@@ -67,6 +73,8 @@ App({
     staffStoreId: '',
     // 扫码进入参数
     scanParams: null,
+    // 非扫码入口的活动ID（分享链接、公众号菜单等）
+    campaignId: '',
     // 点餐小程序（马己仙/二代码点餐等；名称以对方后台为准）
     keruYunConfig: {
       appId: 'wxdaa8741d326cf971', // 须与马己仙小程序 AppID 一致，并在公众平台配置跳转白名单

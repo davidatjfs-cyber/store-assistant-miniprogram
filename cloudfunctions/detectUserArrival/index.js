@@ -2,6 +2,7 @@
  * 顾客到店：汇总 users / Users / user_tags，写 user_arrival_logs，返回画像
  */
 const cloud = require('wx-server-sdk');
+const { syncHrmsGrowthEvent } = require('./hrmsGrowthSync');
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
@@ -334,6 +335,20 @@ exports.main = async function (event) {
         throw logErr;
       }
     }
+
+    await syncHrmsGrowthEvent({
+      event_type: 'customer_arrived',
+      phone: userRow.phone,
+      openid: userRow.openid || userRow._openid || OPENID,
+      store_id: storeId,
+      campaign_id: event && event.campaign_id || '',
+      idempotency_key: 'customer_arrived:' + user_id + ':' + storeId + ':' + Math.floor(Date.now() / TEN_MIN_MS),
+      metadata: {
+        profile: profile
+      }
+    }).catch(function (e) {
+      console.warn('HRMS customer_arrived sync failed', e && e.message);
+    });
 
     return { success: true, profile: profile, user_id: user_id, deduped: false };
   } catch (err) {

@@ -2,6 +2,7 @@
 const cloud = require('wx-server-sdk');
 const { ensureUser, logAnalytics } = require('./helpers');
 const userLifecycle = require('./userLifecycle');
+const { syncHrmsGrowthEvent } = require('./hrmsGrowthSync');
 
 cloud.init({
   env: cloud.DYNAMIC_CURRENT_ENV
@@ -68,6 +69,7 @@ exports.main = async (event, context) => {
     const orderId = order._id;
     const userOpenid = order._openid;
     const orderStoreId = order.store_id != null ? String(order.store_id).trim() : '';
+    const orderCampaignId = order.campaign_id != null ? String(order.campaign_id).trim() : '';
 
     const voucherItem = order.items && order.items[0];
     if (!voucherItem || !voucherItem.voucher_id) {
@@ -175,6 +177,24 @@ exports.main = async (event, context) => {
           store_id: orderStoreId
         }
       });
+      await syncHrmsGrowthEvent({
+        event_type: 'payment_success',
+        openid: userOpenid,
+        store_id: orderStoreId,
+        campaign_id: orderCampaignId,
+        coupon_id: voucherItem.voucher_id,
+        order_id: orderId,
+        amount_fen: totalFee,
+        idempotency_key: 'payment_success:' + orderId,
+        metadata: {
+          order_no: outTradeNo,
+          quantity: quantity,
+          template_id: voucherItem.voucher_id,
+          voucher_ids: voucherIds
+        }
+      }).catch(function (e) {
+        console.warn('HRMS payment_success sync failed', e && e.message);
+      });
     }
 
     if (didMarkPaid && need > 0) {
@@ -187,6 +207,24 @@ exports.main = async (event, context) => {
           template_id: voucherItem.voucher_id,
           store_id: orderStoreId
         }
+      });
+      await syncHrmsGrowthEvent({
+        event_type: 'coupon_purchased',
+        openid: userOpenid,
+        store_id: orderStoreId,
+        campaign_id: orderCampaignId,
+        coupon_id: voucherItem.voucher_id,
+        order_id: orderId,
+        amount_fen: totalFee,
+        idempotency_key: 'coupon_purchased:' + orderId,
+        metadata: {
+          order_no: outTradeNo,
+          voucher_ids: voucherIds.slice(-need),
+          template_id: voucherItem.voucher_id,
+          quantity: quantity
+        }
+      }).catch(function (e) {
+        console.warn('HRMS coupon_purchased sync failed', e && e.message);
       });
     }
 

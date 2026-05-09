@@ -7,6 +7,7 @@ const {
   onVerifySuccessUserSide
 } = require('./helpers');
 const userLifecycle = require('./userLifecycle');
+const { syncHrmsGrowthEvent } = require('./hrmsGrowthSync');
 
 cloud.init({
   env: cloud.DYNAMIC_CURRENT_ENV
@@ -226,6 +227,34 @@ exports.main = async (event, context) => {
     });
 
     await onVerifySuccessUserSide(db, row.user_id);
+
+    let userForSync = null;
+    try {
+      const udoc = await db.collection('users').doc(row.user_id).get();
+      userForSync = udoc.data || null;
+    } catch (e) {
+      userForSync = null;
+    }
+
+    await syncHrmsGrowthEvent({
+      event_type: 'coupon_redeemed',
+      phone: userForSync && userForSync.phone,
+      openid: userForSync && (userForSync.openid || userForSync._openid),
+      store_id: verifyStoreId,
+      campaign_id: event && event.campaign_id || '',
+      coupon_id: voucherId,
+      order_id: row.order_id || '',
+      amount_fen: order_amount_fen != null ? parseInt(order_amount_fen, 10) || 0 : 0,
+      idempotency_key: 'coupon_redeemed:' + voucherId,
+      metadata: {
+        template_id: row.template_id,
+        staff_id: staffId,
+        marketing_rule_id: row.marketing_rule_id || '',
+        marketing_user_segment: row.marketing_user_segment || ''
+      }
+    }).catch(function (e) {
+      console.warn('HRMS coupon_redeemed sync failed', e && e.message);
+    });
 
     if (row.marketing_rule_id) {
       let revFen = parseInt(order_amount_fen, 10);

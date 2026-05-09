@@ -3,6 +3,7 @@
  */
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 const ul = require('./userLifecycle');
+const { syncHrmsGrowthEvent } = require('./hrmsGrowthSync');
 
 
 function parseMinPaymentFen(v) {
@@ -215,6 +216,33 @@ async function tryExecuteRule(db, _, userId, rule, ctx) {
       },
       ctx.extraMeta || {}
     )
+  });
+
+  let userForSync = null;
+  try {
+    const udoc = await db.collection('users').doc(userId).get();
+    userForSync = udoc.data || null;
+  } catch (e) {
+    userForSync = null;
+  }
+
+  await syncHrmsGrowthEvent({
+    event_type: 'marketing_triggered',
+    phone: userForSync && userForSync.phone,
+    openid: userForSync && (userForSync.openid || userForSync._openid),
+    store_id: ctx.storeId || '',
+    campaign_id: ctx.campaignId || '',
+    coupon_id: issued.voucher_id,
+    order_id: 'mkt:' + ruleId + ':' + issued.voucher_id,
+    idempotency_key: 'marketing_triggered:' + ruleId + ':' + issued.voucher_id,
+    metadata: Object.assign({
+      rule_id: ruleId,
+      rule_name: rule.name,
+      trigger_type: ctx.triggerType,
+      template_id: issued.template_id
+    }, ctx.extraMeta || {})
+  }).catch(function (e) {
+    console.warn('HRMS marketing_triggered sync failed', e && e.message);
   });
 
   return { ok: true, voucher_id: issued.voucher_id };

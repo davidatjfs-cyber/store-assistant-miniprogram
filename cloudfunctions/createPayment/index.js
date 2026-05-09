@@ -59,7 +59,7 @@ function generateOrderNo() {
  */
 exports.main = async (event, context) => {
   const { OPENID } = cloud.getWXContext();
-  const { voucher_id, quantity = 1, store_id } = event;
+  const { voucher_id, quantity = 1, store_id, campaign_id } = event;
 
   // ========== 1. 参数校验 ==========
   if (!voucher_id) {
@@ -135,6 +135,7 @@ exports.main = async (event, context) => {
       discount_amount: 0,
       payment_method: 'wechat',
       payment_status: 'pending',
+      campaign_id: campaign_id || '',
       user_voucher_ids: [],
       voucher_codes: [],
       created_at: db.serverDate(),
