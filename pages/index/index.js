@@ -121,6 +121,11 @@ function buildOrderMiniPath(basePath, scanParams, extraStaticQuery) {
   return basePath + sep + qs;
 }
 
+function scanSessionKey(scanParams) {
+  var p = scanParams || {};
+  return 'member_authorized_' + String(p.store_id || '') + '_' + String(p.table_id || '') + '_' + String(p.scene || p.campaign_id || '');
+}
+
 Page({
   data: {
     isFromScan: false,
@@ -128,6 +133,14 @@ Page({
     showAuthModal: false,
     showLegacyMemberTip: false,
     legacyMemberPoints: 0,
+    showBenefitModal: false,
+    benefitLoading: false,
+    benefitVouchers: [],
+    benefitVoucherCount: 0,
+    hasAuthorizedMember: false,
+    showActivityModal: false,
+    showProfileModal: false,
+    profileQuestionStep: 1,
     inputPhone: '',
     pageReady: false,
     entrySections: [],
@@ -217,24 +230,31 @@ Page({
       var scanParams = app.globalData && app.globalData.scanParams;
       // console.log('syncScanFromApp scanParams:', scanParams);
       if (scanParams) {
+        var authorized = false;
+        try { authorized = !!wx.getStorageSync(scanSessionKey(scanParams)); } catch (e) {}
         this.setData({
           isFromScan: true,
           scanParams: scanParams,
-          showAuthModal: true,
+          hasAuthorizedMember: authorized,
+          showAuthModal: !authorized,
           pageReady: true
         });
       } else if (DEV_SIMULATE_SCAN) {
         // 开发模式：模拟扫码参数（方便不扫码也能测试）
+        var devScan = {
+          table_id: 'T01',
+          store_id: 'store_test_001',
+          store_display_name: '测试门店',
+          scene: 1047,
+          timestamp: Date.now()
+        };
+        var devAuthorized = false;
+        try { devAuthorized = !!wx.getStorageSync(scanSessionKey(devScan)); } catch (e) {}
         this.setData({
           isFromScan: true,
-          scanParams: {
-            table_id: 'T01',
-            store_id: 'store_test_001',
-            store_display_name: '测试门店',
-            scene: 1047,
-            timestamp: Date.now()
-          },
-          showAuthModal: true,
+          scanParams: devScan,
+          hasAuthorizedMember: devAuthorized,
+          showAuthModal: !devAuthorized,
           pageReady: true
         });
       } else {
@@ -275,7 +295,7 @@ Page({
   onShow: function() {
     this.refreshRoleEntries();
     // 真机偶现首屏时序问题，onShow 再同步一次 globalData
-    if (!this.data.showAuthModal && !this.data.showLegacyMemberTip) {
+    if (!this.data.showAuthModal && !this.data.showLegacyMemberTip && !this.data.showBenefitModal && !this.data.hasAuthorizedMember) {
       this.syncScanFromApp();
     }
   },
@@ -380,17 +400,21 @@ Page({
           return;
         }
 
-        self.setData({ showAuthModal: false });
+        try { wx.setStorageSync(scanSessionKey(self.data.scanParams), true); } catch (e) {}
+        self.setData({ showAuthModal: false, hasAuthorizedMember: true });
 
         var data = payload.data;
+        if (data && data.phone) {
+          self.setData({ _authPhone: data.phone });
+        }
         if (data && data.isLegacyMember && data.legacyPoints > 0) {
           self.setData({ showLegacyMemberTip: true, legacyMemberPoints: data.legacyPoints });
           setTimeout(function() {
             self.setData({ showLegacyMemberTip: false });
-            self.navigateToKeruYun();
+            self.presentBenefitModal();
           }, 1500);
         } else {
-          self.navigateToKeruYun();
+          self.presentBenefitModal();
         }
       },
       fail: function(err) {
@@ -406,6 +430,110 @@ Page({
         });
       }
     });
+  },
+
+  startProfileQuestion: function() {
+    this.setData({ showBenefitModal: false, showProfileModal: true, profileQuestionStep: 1 });
+  },
+
+  presentBenefitModal: function() {
+    var self = this;
+    self.setData({ showBenefitModal: true, benefitLoading: true, benefitVouchers: [], benefitVoucherCount: 0 });
+    self.loadBenefitVouchers();
+    setTimeout(function() {
+      if (self.data.showBenefitModal) self.loadBenefitVouchers();
+    }, 1200);
+  },
+
+  loadBenefitVouchers: function() {
+    var self = this;
+    if (!wx.cloud || !wx.cloud.callFunction) {
+      self.setData({ benefitLoading: false });
+      return;
+    }
+    wx.cloud.callFunction({ name: 'getUserVouchers', data: {} }).then(function(res) {
+      var r = res && res.result || {};
+      var raw = r.success && r.data || [];
+      var vouchers = raw.slice(0, 3).map(function(item) {
+        var t = item.template || {};
+        return {
+          id: item._id,
+          name: t.name || item.displayName || '会员优惠券',
+          status: item.status || 'unused'
+        };
+      });
+      self.setData({
+        benefitLoading: false,
+        benefitVouchers: vouchers,
+        benefitVoucherCount: raw.length
+      });
+    }).catch(function() {
+      self.setData({ benefitLoading: false });
+    });
+  },
+
+  goVoucherList: function() {
+    this.setData({ showBenefitModal: false });
+    wx.navigateTo({ url: '/pages/voucher/list' });
+  },
+
+  goShop: function() {
+    this.setData({ showBenefitModal: false });
+    wx.navigateTo({ url: '/pages/shop/index' });
+  },
+
+  showActivityInfo: function() {
+    this.setData({ showActivityModal: true });
+  },
+
+  closeActivityModal: function() {
+    this.setData({ showActivityModal: false });
+  },
+
+  orderAfterBenefit: function() {
+    this.setData({ showBenefitModal: false, showActivityModal: false });
+    this.navigateToKeruYun();
+  },
+
+  onProfileAnswer: function(e) {
+    var value = e.currentTarget.dataset.value;
+    var step = this.data.profileQuestionStep;
+    var self = this;
+    if (step === 1) {
+      self._reportProfileSignal('occasion', value);
+      self.setData({ profileQuestionStep: 2 });
+    } else if (step === 2) {
+      self._reportProfileSignal('taste_preference', value);
+      self.setData({ showProfileModal: false });
+      self.presentBenefitModal();
+    }
+  },
+
+  skipProfileQuestion: function() {
+    this.setData({ showProfileModal: false });
+    this.presentBenefitModal();
+  },
+
+  _reportProfileSignal: function(key, value) {
+    var scanParams = this.data.scanParams || {};
+    try {
+      wx.request({
+        url: 'https://nnyx.cc/api/growth/profile-signals',
+        method: 'POST',
+        header: { 'X-Miniprogram-Sync-Secret': '5bde6e733281f2b42305a525ccb7411a6fb5f911341703929c3f384ab6047e33', 'Content-Type': 'application/json' },
+        data: {
+          phone: this.data._authPhone || '',
+          store_id: scanParams.store_id || '',
+          campaign_id: scanParams.scene || '',
+          signal_type: 'explicit_preference',
+          signal_key: key,
+          signal_value: value,
+          signal_score: 1,
+          source: 'miniprogram'
+        },
+        fail: function() {}
+      });
+    } catch (e) {}
   },
 
   navigateToKeruYun: function() {

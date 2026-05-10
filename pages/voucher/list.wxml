@@ -1,6 +1,10 @@
 <view class="page">
-  <view class="top-bar">
-    <text class="top-hint">向店员出示详情页二维码即可核销</text>
+  <view class="wallet-hero">
+    <view>
+      <text class="wallet-kicker">MEMBER WALLET</text>
+      <text class="wallet-title">我的券包</text>
+      <text class="top-hint">点开券详情，向店员出示二维码即可核销</text>
+    </view>
     <button class="btn-glass" size="mini" bindtap="onRefresh" loading="{{loading}}">刷新</button>
   </view>
 
@@ -20,14 +24,18 @@
       bindtap="onOpenDetail"
     >
       <view class="voucher-top">
-        <text class="voucher-name">{{item.displayName}}</text>
+        <view>
+          <text class="voucher-label">年年有喜礼遇券</text>
+          <text class="voucher-name">{{item.displayName}}</text>
+        </view>
         <text class="badge badge--{{item.status}}">{{statusText[item.status] || item.status}}</text>
       </view>
       <view class="voucher-meta">
         <text class="meta">有效期至 {{item.expireText}}</text>
       </view>
       <view class="voucher-foot">
-        <text class="link">查看二维码 ›</text>
+        <text class="link">查看核销二维码</text>
+        <text class="arrow">›</text>
       </view>
     </view>
   </view>
