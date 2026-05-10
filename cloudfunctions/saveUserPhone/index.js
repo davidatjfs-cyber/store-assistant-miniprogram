@@ -263,7 +263,8 @@ exports.main = async (event, context) => {
       }
     }
 
-    await syncHrmsGrowthEvent({
+    // Best-effort only: HRMS 同步失败不能阻断手机号授权主流程。
+    syncHrmsGrowthEvent({
       event_type: 'phone_authorized',
       phone: phoneNumber,
       openid: OPENID,
@@ -278,6 +279,24 @@ exports.main = async (event, context) => {
       }
     }).catch(function (e) {
       console.warn('HRMS phone_authorized sync failed', e && e.message);
+    });
+
+    // Best-effort only: 自动营销触发不阻断手机号授权主流程，避免 3s 云函数超时。
+    db.collection('users').where({ _openid: OPENID }).limit(1).get().then(function (refreshedUser) {
+      const userId = refreshedUser.data && refreshedUser.data[0] && refreshedUser.data[0]._id;
+      if (!userId) return null;
+      return cloud.callFunction({
+        name: 'runMarketingEngine',
+        data: {
+          hook: 'post_authorization',
+          user_id: userId,
+          openid: OPENID,
+          store_id: scanParams && scanParams.store_id || '',
+          campaign_id: pickCampaignId(scanParams)
+        }
+      });
+    }).catch(function (mkErr) {
+      console.error('post_authorization runMarketingEngine 调用失败:', mkErr);
     });
 
     // ========== 9. 返回结果 ==========

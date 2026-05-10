@@ -1,14 +1,24 @@
 async function upsertUserByOpenid(db, openid, patch) {
   patch = patch || {};
-  const r = await db
+  let r = await db
     .collection('users')
     .where({ openid: openid })
     .limit(1)
     .get();
 
+  if (!r.data.length) {
+    r = await db
+      .collection('users')
+      .where({ _openid: openid })
+      .limit(1)
+      .get();
+  }
+
   if (r.data.length) {
     const id = r.data[0]._id;
     const data = {
+      openid: openid,
+      _openid: openid,
       phone: patch.phone != null ? String(patch.phone) : r.data[0].phone || '',
       updated_at: db.serverDate()
     };
@@ -22,6 +32,7 @@ async function upsertUserByOpenid(db, openid, patch) {
   const add = await db.collection('users').add({
     data: {
       openid: openid,
+      _openid: openid,
       external_userid: patch.external_userid != null ? String(patch.external_userid) : '',
       phone: patch.phone != null ? String(patch.phone) : '',
       created_at: db.serverDate(),
