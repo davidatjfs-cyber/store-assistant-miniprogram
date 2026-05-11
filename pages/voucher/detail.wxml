@@ -1,32 +1,44 @@
 <view class="page" wx:if="{{item}}">
-  <view class="glass-card">
-    <text class="title">{{displayName}}</text>
-    <text class="rule" wx:if="{{item.template.usage_rule}}">{{item.template.usage_rule}}</text>
+  <view class="ambient ambient-a"></view>
+  <view class="ambient ambient-b"></view>
+  <view class="glass-card hero-card">
+    <view class="hero-shell">
+      <view class="hero-copy">
+        <text class="hero-kicker">VOUCHER DETAIL</text>
+        <text class="title">{{displayName}}</text>
+        <text class="rule" wx:if="{{item.template.usage_rule}}">{{item.template.usage_rule}}</text>
+      </view>
+      <view class="hero-lens"></view>
+    </view>
 
-    <view class="status-row">
-      <text class="label">状态</text>
+    <view class="status-row status-row--first">
+      <text class="label">当前状态</text>
       <text class="val">{{statusText[item.status] || item.status}}</text>
     </view>
     <view class="status-row">
-      <text class="label">有效期至</text>
+      <text class="label">使用截止</text>
       <text class="val">{{expireText}}</text>
     </view>
   </view>
 
   <view class="glass-card qr-panel" wx:if="{{item.status === 'unused'}}">
-    <text class="qr-title">核销二维码</text>
-    <text class="qr-tip">请店员扫描下方二维码完成核销</text>
-    <canvas class="qr-canvas" canvas-id="voucherQr" style="width: 400rpx; height: 400rpx;"></canvas>
+    <view class="panel-shine"></view>
+    <text class="qr-title">到店核销码</text>
+    <text class="qr-tip">请把下方二维码出示给店员扫码完成核销。</text>
+    <view class="qr-frame">
+      <canvas class="qr-canvas" canvas-id="voucherQr"></canvas>
+    </view>
     <text class="qr-code-text">{{item.qr_code}}</text>
   </view>
 
   <view class="glass-card used-tip" wx:else>
-    <text wx:if="{{item.status === 'used'}}">该券已核销</text>
-    <text wx:elif="{{item.status === 'expired'}}">该券已过期</text>
-    <text wx:else>该券当前不可核销</text>
+    <text class="used-tip-title" wx:if="{{item.status === 'used'}}">该券已核销</text>
+    <text class="used-tip-title" wx:elif="{{item.status === 'expired'}}">该券已过期</text>
+    <text class="used-tip-title" wx:else>该券当前不可核销</text>
+    <text class="used-tip-desc">回到券包，还可以继续查看今晚其他可用礼遇。</text>
   </view>
 </view>
 
 <view class="page miss" wx:else>
-  <text>未找到该券，请返回列表重试</text>
+  <text class="miss-text">未找到该券，请返回列表重试</text>
 </view>

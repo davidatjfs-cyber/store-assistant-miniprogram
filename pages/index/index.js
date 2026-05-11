@@ -1,9 +1,4 @@
 // pages/index/index.js
-var ENABLE_ONLOAD_DEBUG_MODAL = false;
-
-// 开发模式：无扫码参数时模拟扫码（仅开发调试用，上线前改为 false）
-var DEV_SIMULATE_SCAN = true;
-
 var roleUtil = require('../../utils/role.js');
 
 function buildEntrySections(role) {
@@ -228,7 +223,6 @@ Page({
     try {
       var app = getApp();
       var scanParams = app.globalData && app.globalData.scanParams;
-      // console.log('syncScanFromApp scanParams:', scanParams);
       if (scanParams) {
         var authorized = false;
         try { authorized = !!wx.getStorageSync(scanSessionKey(scanParams)); } catch (e) {}
@@ -237,24 +231,6 @@ Page({
           scanParams: scanParams,
           hasAuthorizedMember: authorized,
           showAuthModal: !authorized,
-          pageReady: true
-        });
-      } else if (DEV_SIMULATE_SCAN) {
-        // 开发模式：模拟扫码参数（方便不扫码也能测试）
-        var devScan = {
-          table_id: 'T01',
-          store_id: 'store_test_001',
-          store_display_name: '测试门店',
-          scene: 1047,
-          timestamp: Date.now()
-        };
-        var devAuthorized = false;
-        try { devAuthorized = !!wx.getStorageSync(scanSessionKey(devScan)); } catch (e) {}
-        this.setData({
-          isFromScan: true,
-          scanParams: devScan,
-          hasAuthorizedMember: devAuthorized,
-          showAuthModal: !devAuthorized,
           pageReady: true
         });
       } else {
@@ -269,17 +245,8 @@ Page({
   },
 
   onLoad: function(options) {
-    // console.log('onLoad options:', options);
     try {
       var app = getApp();
-      if (ENABLE_ONLOAD_DEBUG_MODAL && !app.globalData.__debug_modal_shown__) {
-        app.globalData.__debug_modal_shown__ = true;
-        wx.showModal({
-          title: '真机调试',
-          content: 'onLoad 已执行',
-          showCancel: false
-        });
-      }
       this.syncScanFromApp();
       this.refreshRoleEntries();
       this.invokeDetectUserArrival();
@@ -308,7 +275,6 @@ Page({
   },
 
   onGetPhoneNumber: function(e) {
-    // console.log('授权回调:', e);
     if (!e.detail || !e.detail.errMsg) {
       wx.showToast({ title: '授权失败，请重试', icon: 'none' });
       return;
@@ -383,8 +349,6 @@ Page({
       },
       success: function(result) {
         wx.hideLoading();
-        // console.log('云函数完整返回:', result);
-
         var payload = result && result.result;
         if (!payload || payload.success === false) {
           var errText =
@@ -517,21 +481,16 @@ Page({
   _reportProfileSignal: function(key, value) {
     var scanParams = this.data.scanParams || {};
     try {
-      wx.request({
-        url: 'https://nnyx.cc/api/growth/profile-signals',
-        method: 'POST',
-        header: { 'X-Miniprogram-Sync-Secret': '5bde6e733281f2b42305a525ccb7411a6fb5f911341703929c3f384ab6047e33', 'Content-Type': 'application/json' },
+      wx.cloud.callFunction({
+        name: 'ensureUserDoc',
         data: {
-          phone: this.data._authPhone || '',
-          store_id: scanParams.store_id || '',
-          campaign_id: scanParams.scene || '',
-          signal_type: 'explicit_preference',
+          action: 'reportProfileSignal',
           signal_key: key,
           signal_value: value,
-          signal_score: 1,
-          source: 'miniprogram'
-        },
-        fail: function() {}
+          store_id: scanParams.store_id || '',
+          campaign_id: scanParams.scene || '',
+          phone: this.data._authPhone || ''
+        }
       });
     } catch (e) {}
   },
@@ -573,15 +532,11 @@ Page({
 
     var envVersion = config.envVersion || 'release';
 
-    // console.log('准备跳转点餐小程序', { appId: config.appId, path: path, envVersion: envVersion });
-
     var navOpts = {
       appId: config.appId,
       path: path,
       envVersion: envVersion,
-      success: function() {
-        // console.log('navigateToMiniProgram 已触发');
-      },
+      success: function() {},
       fail: function(err) {
         console.error('跳转点餐小程序失败:', err);
         wx.showModal({

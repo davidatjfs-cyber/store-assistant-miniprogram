@@ -1,128 +1,138 @@
-/**
- * 门店私域助手 - 液态玻璃风格 (高亮银色)
- */
-
 page {
   height: 100%;
-  background: #0a0a0a;
-  color: #ffffff;
-  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', sans-serif;
+  background: #0d0d0d;
+  color: #e8e0d4;
+  font-family: 'Avenir Next', 'SF Pro Text', 'PingFang SC', 'Hiragino Sans GB', 'Helvetica Neue', sans-serif;
   box-sizing: border-box;
 }
 
 .page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #0a0a0a 100%);
+  background: linear-gradient(175deg, #0d0d0d 0%, #1a1412 35%, #0d0d0d 100%);
   padding: 32rpx;
   box-sizing: border-box;
 }
 
-/* 高亮银色文字 */
+.liquid-panel {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(255,255,255,0.09) 0%, rgba(201,169,110,0.06) 35%, rgba(255,255,255,0.03) 100%);
+  backdrop-filter: blur(24rpx) saturate(140%);
+  -webkit-backdrop-filter: blur(24rpx) saturate(140%);
+  border: 1rpx solid rgba(255,255,255,0.12);
+  box-shadow: 0 20rpx 60rpx rgba(0,0,0,0.38), inset 0 1rpx 0 rgba(255,255,255,0.12);
+}
+
+.liquid-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(255,255,255,0.12), transparent 34%, transparent 68%, rgba(201,169,110,0.06));
+  pointer-events: none;
+}
+
 .title {
   font-size: 40rpx;
   font-weight: 700;
-  color: #ffffff;
-  text-shadow: 0 0 12rpx rgba(255,255,255,0.6);
-  letter-spacing: -0.5rpx;
+  color: #d4b87a;
+  letter-spacing: 1rpx;
+  font-family: 'Avenir Next', 'SF Pro Display', 'PingFang SC', sans-serif;
 }
 
 .subtitle {
   font-size: 28rpx;
-  color: #E8E8E8;
-  text-shadow: 0 0 8rpx rgba(255,255,255,0.3);
+  color: #a89b8c;
 }
 
 .desc {
   font-size: 26rpx;
-  color: #C0C0C0;
+  color: #8a7e72;
   line-height: 1.6;
 }
 
-/* 按钮 */
 button {
   border-radius: 999rpx;
   font-size: 28rpx;
-  font-weight: 600;
+  font-weight: 700;
   border: none;
-  letter-spacing: 1rpx;
+  letter-spacing: 0.5rpx;
+  font-family: 'Avenir Next', 'SF Pro Text', 'PingFang SC', sans-serif;
 }
-
 button::after {
   border: none;
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #ff6a00 0%, #ff8533 100%);
-  color: #ffffff;
-  box-shadow: 0 8rpx 24rpx rgba(255,106,0,0.4);
+  background: linear-gradient(135deg, #c9a96e 0%, #d4b87a 50%, #c9a96e 100%);
+  color: #0d0d0d;
+  box-shadow: 0 8rpx 28rpx rgba(201, 169, 110, 0.25);
 }
 
 .btn-outline {
-  background: rgba(255,255,255,0.1);
-  color: #ffffff;
-  border: 1rpx solid rgba(255,255,255,0.3);
+  background: transparent;
+  color: #d4b87a;
+  border: 1rpx solid rgba(212, 184, 122, 0.35);
 }
 
 .btn-scan {
-  background: linear-gradient(135deg, #ff6a00 0%, #ff8533 100%);
-  color: #ffffff;
-  box-shadow: 0 8rpx 24rpx rgba(255,106,0,0.4);
+  background: linear-gradient(135deg, #c9a96e 0%, #d4b87a 100%);
+  color: #0d0d0d;
+  box-shadow: 0 8rpx 28rpx rgba(201, 169, 110, 0.25);
 }
 
-/* 徽章 */
 .badge {
   display: inline-block;
   padding: 6rpx 16rpx;
   border-radius: 999rpx;
   font-size: 20rpx;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 1rpx;
 }
 
 .badge--unused {
-  background: linear-gradient(135deg, #ff6a00 0%, #ff8533 100%);
-  color: #ffffff;
+  background: linear-gradient(135deg, #c9a96e, #d4b87a);
+  color: #0d0d0d;
 }
 
 .badge--used {
-  background: rgba(255,255,255,0.15);
-  color: #E8E8E8;
+  background: rgba(232, 224, 212, 0.08);
+  color: #8a7e72;
+  border: 1rpx solid rgba(232, 224, 212, 0.1);
 }
 
 .badge--expired {
-  background: rgba(255,255,255,0.15);
-  color: #E8E8E8;
+  background: rgba(232, 224, 212, 0.08);
+  color: #8a7e72;
+  border: 1rpx solid rgba(232, 224, 212, 0.1);
 }
 
-/* 输入框 */
 .field-input {
-  background: rgba(255,255,255,0.08);
-  border: 1rpx solid rgba(255,255,255,0.15);
+  background: rgba(232, 224, 212, 0.06);
+  border: 1rpx solid rgba(212, 184, 122, 0.2);
   border-radius: 16rpx;
   padding: 24rpx;
   font-size: 28rpx;
-  color: #ffffff;
+  color: #e8e0d4;
 }
 
 .field-input::placeholder {
-  color: rgba(255,255,255,0.4);
+  color: rgba(232, 224, 212, 0.3);
 }
 
-/* 状态 */
 .state {
   text-align: center;
   padding: 120rpx 32rpx;
-  color: #C0C0C0;
+  color: #8a7e72;
   font-size: 28rpx;
 }
 
-/* 分隔线 */
 .divider {
   height: 1rpx;
-  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.2) 50%, transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, rgba(212, 184, 122, 0.15) 50%, transparent 100%);
   margin: 32rpx 0;
 }
 
-/* 空状态 */
 .empty {
   text-align: center;
   padding: 160rpx 48rpx;
@@ -130,5 +140,5 @@ button::after {
 
 .empty-text {
   font-size: 28rpx;
-  color: #C0C0C0;
+  color: #8a7e72;
 }

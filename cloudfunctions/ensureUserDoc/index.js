@@ -3,7 +3,7 @@
  * 不替代 saveUserPhone（手机号仍须授权后由 saveUserPhone 写入）。
  */
 const cloud = require('wx-server-sdk');
-const { syncHrmsGrowthEvent } = require('./hrmsGrowthSync');
+const { syncHrmsGrowthEvent, postJson } = require('./hrmsGrowthSync');
 
 cloud.init({
   env: cloud.DYNAMIC_CURRENT_ENV
@@ -69,6 +69,25 @@ exports.main = async function (event) {
     if (!OPENID) {
       return { success: false, errMsg: '缺少 OPENID' };
     }
+
+    if (event && event.action === 'reportProfileSignal') {
+      const signalUrl = (process.env.HRMS_GROWTH_EVENT_URL || 'https://nnyx.cc/api/growth/profile-signals');
+      const signalSecret = process.env.HRMS_GROWTH_EVENT_SECRET || process.env.MINIPROGRAM_SYNC_SECRET;
+      await postJson(signalUrl, {
+        phone: event.phone || '',
+        store_id: event.store_id || '',
+        campaign_id: event.campaign_id || '',
+        signal_type: 'explicit_preference',
+        signal_key: event.signal_key || '',
+        signal_value: event.signal_value || '',
+        signal_score: 1,
+        source: 'miniprogram'
+      }, signalSecret).catch(function (e) {
+        console.warn('profileSignal sync failed', e && e.message);
+      });
+      return { success: true };
+    }
+
     const userId = await ensureUserByOpenid(OPENID, event && event.scanParams);
     const scanParams = event && event.scanParams;
     if (scanParams && typeof scanParams === 'object') {

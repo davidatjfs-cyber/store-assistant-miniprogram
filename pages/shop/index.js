@@ -51,11 +51,13 @@ Page({
 
   claimFreeVoucher: function(templateId) {
     var self = this;
-    var campaignId = getApp().globalData.campaignId || '';
+    var app = getApp();
+    var scanParams = app.globalData.scanParams || {};
+    var campaignId = app.globalData.campaignId || '';
     wx.showLoading({ title: '领取中' });
     wx.cloud.callFunction({
       name: 'createPayment',
-      data: { voucher_id: templateId, quantity: 1, store_id: '', campaign_id: campaignId },
+      data: { voucher_id: templateId, quantity: 1, store_id: scanParams.store_id || '', campaign_id: campaignId },
       success: function(res) {
         wx.hideLoading();
         var r = res.result || {};
@@ -77,11 +79,13 @@ Page({
 
   createPayment: function(templateId, quantity) {
     var self = this;
-    var campaignId = getApp().globalData.campaignId || '';
+    var app = getApp();
+    var scanParams = app.globalData.scanParams || {};
+    var campaignId = app.globalData.campaignId || '';
     wx.showLoading({ title: '创建订单' });
     wx.cloud.callFunction({
       name: 'createPayment',
-      data: { voucher_id: templateId, quantity: quantity, store_id: '', campaign_id: campaignId },
+      data: { voucher_id: templateId, quantity: quantity, store_id: scanParams.store_id || '', campaign_id: campaignId },
       success: function(res) {
         wx.hideLoading();
         var r = res.result || {};

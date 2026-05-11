@@ -11,11 +11,11 @@
     "pages/shop/index"
   ],
   "window": {
-    "backgroundTextStyle": "light",
-    "navigationBarBackgroundColor": "#000000",
+    "backgroundTextStyle": "dark",
+    "navigationBarBackgroundColor": "#111111",
     "navigationBarTitleText": "年年有喜",
     "navigationBarTextStyle": "white",
-    "backgroundColor": "#0a0a0a"
+    "backgroundColor": "#0d0d0d"
   },
   "sitemapLocation": "sitemap.json",
   "style": "v2"

@@ -1,58 +1,115 @@
-page { background: #fbf4e8; color: #261c16; }
+page { background: #0d0d0d; color: #e8e0d4; }
 
 .page {
   min-height: 100vh;
+  position: relative;
+  overflow: hidden;
   padding: 42rpx 32rpx 56rpx;
   box-sizing: border-box;
   background:
-    radial-gradient(circle at 12% 5%, rgba(141,35,45,0.10), transparent 30%),
-    radial-gradient(circle at 86% 16%, rgba(101,122,76,0.12), transparent 34%),
-    linear-gradient(180deg, #fff8ed, #f7ecdc 62%);
+    radial-gradient(ellipse at 15% 0%, rgba(201,169,110,0.05), transparent 50%),
+    radial-gradient(ellipse at 85% 8%, rgba(160,120,60,0.04), transparent 45%),
+    linear-gradient(175deg, #0d0d0d 0%, #1a1412 35%, #0d0d0d 100%);
 }
+
+.ambient { position: absolute; border-radius: 999rpx; pointer-events: none; }
+.ambient-a { width: 300rpx; height: 300rpx; right: -90rpx; top: 60rpx; background: radial-gradient(circle, rgba(255,255,255,0.10), rgba(201,169,110,0.08) 34%, transparent 72%); filter: blur(16rpx); }
+.ambient-b { width: 340rpx; height: 340rpx; left: -120rpx; bottom: 120rpx; background: radial-gradient(circle, rgba(120,160,255,0.06), transparent 74%); filter: blur(24rpx); }
 
 .top-bar { padding: 36rpx 4rpx 28rpx; }
-.top-title { display: block; font-size: 54rpx; line-height: 1.05; font-weight: 900; color: #261c16; letter-spacing: 0; }
-.top-title::before { content: 'DINING DEALS'; display: block; margin-bottom: 14rpx; font-size: 20rpx; line-height: 1; color: #8d232d; letter-spacing: 4rpx; font-weight: 900; }
+.hero-shell {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24rpx;
+  padding: 28rpx 24rpx 28rpx 6rpx;
+  border-radius: 34rpx;
+  background: linear-gradient(135deg, rgba(255,255,255,0.07), rgba(201,169,110,0.04) 40%, rgba(120,160,255,0.04));
+  border: 1rpx solid rgba(255,255,255,0.08);
+  box-shadow: inset 0 1rpx 0 rgba(255,255,255,0.08);
+}
+.hero-copy { flex: 1; min-width: 0; }
+.top-title { display: block; font-size: 54rpx; line-height: 1.02; font-weight: 800; color: #eef2ff; letter-spacing: 1rpx; text-shadow: 0 8rpx 30rpx rgba(157,187,255,0.10); font-family: 'Avenir Next', 'SF Pro Display', 'PingFang SC', sans-serif; }
+.top-title::before { content: 'DINING DEALS'; display: block; margin-bottom: 14rpx; font-size: 18rpx; line-height: 1; color: #c9a96e; letter-spacing: 6rpx; font-weight: 700; }
+.top-subtitle { display: block; margin-top: 18rpx; font-size: 26rpx; line-height: 1.68; color: #99a8c8; }
+.hero-orb {
+  position: relative;
+  width: 152rpx;
+  height: 152rpx;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 25%, rgba(255,255,255,0.28), rgba(255,255,255,0.10) 24%, rgba(201,169,110,0.20) 52%, rgba(120,160,255,0.08) 76%, transparent 100%);
+  border: 1rpx solid rgba(255,255,255,0.14);
+  box-shadow: inset 0 2rpx 10rpx rgba(255,255,255,0.12), 0 18rpx 44rpx rgba(0,0,0,0.28);
+}
+.hero-orb::before { content: ''; position: absolute; top: 18rpx; left: 18rpx; width: 64rpx; height: 30rpx; border-radius: 999rpx; background: linear-gradient(180deg, rgba(255,255,255,0.35), rgba(255,255,255,0.04)); transform: rotate(-18deg); }
+.hero-orb-core {
+  position: absolute;
+  inset: 24rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: linear-gradient(160deg, rgba(255,255,255,0.12), rgba(201,169,110,0.16));
+  color: #f0dfb2;
+  font-size: 46rpx;
+  font-weight: 900;
+  text-shadow: 0 4rpx 16rpx rgba(0,0,0,0.35);
+}
 
-.state { text-align: center; padding: 140rpx 32rpx; color: rgba(38,28,22,0.60); font-size: 28rpx; }
+.state { text-align: center; padding: 140rpx 32rpx; color: #6b5e50; font-size: 28rpx; }
 .empty { text-align: center; padding: 150rpx 44rpx; }
-.empty-title { display: block; font-size: 34rpx; color: #261c16; margin-bottom: 14rpx; font-weight: 900; }
-.empty-desc { display: block; font-size: 26rpx; color: rgba(38,28,22,0.52); }
+.empty-title { display: block; font-size: 34rpx; color: #eef2ff; margin-bottom: 14rpx; font-weight: 800; }
+.empty-desc { display: block; font-size: 26rpx; color: #99a8c8; }
 
-.list { display: flex; flex-direction: column; gap: 22rpx; }
+.list { display: flex; flex-direction: column; gap: 24rpx; }
 
 .glass-card {
-  padding: 30rpx;
-  border-radius: 34rpx;
-  background: #fffaf2;
-  border: 1rpx solid rgba(38,28,22,0.10);
-  box-shadow: 0 18rpx 48rpx rgba(70,45,28,0.10);
+  position: relative;
+  overflow: hidden;
+  padding: 32rpx;
+  border-radius: 26rpx;
+  background: linear-gradient(135deg, rgba(255,255,255,0.13) 0%, rgba(201,169,110,0.07) 34%, rgba(120,160,255,0.06) 72%, rgba(255,255,255,0.03) 100%);
+  backdrop-filter: blur(22rpx) saturate(140%);
+  -webkit-backdrop-filter: blur(22rpx) saturate(140%);
+  border: 1rpx solid rgba(255,255,255,0.16);
+  box-shadow: 0 22rpx 60rpx rgba(0,0,0,0.38), inset 0 1rpx 0 rgba(255,255,255,0.14);
 }
+.glass-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(255,255,255,0.18), transparent 30%, transparent 72%, rgba(120,160,255,0.05));
+  pointer-events: none;
+}
+.card-shine { position: absolute; top: -18rpx; left: 42rpx; width: 180rpx; height: 64rpx; border-radius: 999rpx; background: linear-gradient(180deg, rgba(255,255,255,0.30), rgba(255,255,255,0.02)); transform: rotate(-10deg); filter: blur(2rpx); }
 
-.item-header { display: flex; align-items: flex-start; gap: 22rpx; margin-bottom: 22rpx; }
+.item-header { display: flex; align-items: flex-start; gap: 20rpx; margin-bottom: 22rpx; }
 .item-badge {
-  width: 104rpx; height: 104rpx; display: flex; align-items: center; justify-content: center;
-  border-radius: 28rpx; font-size: 31rpx; font-weight: 900; color: #fffaf2; flex-shrink: 0;
+  width: 96rpx; height: 96rpx; display: flex; align-items: center; justify-content: center;
+  border-radius: 28rpx; font-size: 31rpx; font-weight: 900; flex-shrink: 0;
 }
-.badge-cash { background: #8d232d; }
-.badge-discount { background: #657a4c; }
+.badge-cash { background: linear-gradient(135deg, #c9a96e, #d4b87a); color: #0d0d0d; }
+.badge-discount { background: linear-gradient(135deg, rgba(201,169,110,0.15), rgba(201,169,110,0.08)); color: #d4b87a; border: 1rpx solid rgba(201,169,110,0.2); }
 .item-info { flex: 1; padding-top: 4rpx; }
-.item-name { display: block; font-size: 32rpx; line-height: 1.28; font-weight: 900; color: #261c16; }
-.item-rule { display: block; font-size: 24rpx; color: rgba(38,28,22,0.54); margin-top: 10rpx; line-height: 1.45; }
+.item-kicker { display: block; margin-bottom: 12rpx; font-size: 18rpx; color: #9eb1de; letter-spacing: 5rpx; font-weight: 700; }
+.item-name { display: block; font-size: 32rpx; line-height: 1.22; font-weight: 800; color: #f2f5ff; font-family: 'Avenir Next', 'SF Pro Display', 'PingFang SC', sans-serif; }
+.item-rule { display: block; font-size: 24rpx; color: #99a8c8; margin-top: 10rpx; line-height: 1.58; }
 
-.item-details { border-top: 1rpx solid rgba(38,28,22,0.08); padding-top: 18rpx; margin-bottom: 22rpx; }
-.detail-row { display: flex; justify-content: space-between; align-items: center; padding: 10rpx 0; gap: 18rpx; }
-.detail-label { font-size: 24rpx; color: rgba(38,28,22,0.50); }
-.detail-price { font-size: 36rpx; line-height: 1; font-weight: 900; color: #8d232d; }
-.detail-value { font-size: 24rpx; color: rgba(38,28,22,0.68); text-align: right; }
-.out-of-stock { color: rgba(141,35,45,0.72); }
+.item-details { border-top: 1rpx solid rgba(201,169,110,0.08); padding-top: 18rpx; margin-bottom: 22rpx; }
+.detail-row { display: flex; justify-content: space-between; align-items: center; padding: 12rpx 0; gap: 18rpx; }
+.detail-label { font-size: 24rpx; color: #95a4c7; }
+.detail-price { font-size: 38rpx; line-height: 1; font-weight: 900; color: #d4b87a; }
+.detail-value { font-size: 24rpx; color: #99a8c8; text-align: right; }
+.out-of-stock { color: rgba(201,169,110,0.4); }
 
 .buy-btn {
-  width: 100%; height: 92rpx !important; line-height: 92rpx !important;
-  background: #8d232d !important; color: #fffaf2 !important;
+  width: 100%; height: 96rpx !important; line-height: 96rpx !important;
+  background: linear-gradient(135deg, #c9a96e, #d4b87a) !important; color: #0d0d0d !important;
   border: none !important; border-radius: 999rpx !important;
-  font-size: 28rpx !important; font-weight: 900 !important; letter-spacing: 0 !important;
-  box-shadow: 0 14rpx 34rpx rgba(141,35,45,0.18) !important;
+  font-size: 28rpx !important; font-weight: 800 !important; letter-spacing: 0.5rpx !important;
+  box-shadow: 0 12rpx 36rpx rgba(201,169,110,0.25) !important;
 }
 .buy-btn::after { border: none; }
-.buy-btn--disabled { background: rgba(38,28,22,0.10) !important; color: rgba(38,28,22,0.36) !important; box-shadow: none !important; }
+.buy-btn--disabled { background: rgba(201,169,110,0.08) !important; color: #6b5e50 !important; box-shadow: none !important; }

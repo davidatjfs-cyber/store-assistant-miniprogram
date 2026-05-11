@@ -141,6 +141,12 @@ Page({
     var f = self.data.formData;
     if (!f.name) { wx.showToast({ title: '请输入券名称', icon: 'none' }); return; }
 
+    var app = getApp();
+    var storeId = (app && app.globalData.staffStoreId) || '';
+    if (!storeId) {
+      wx.showToast({ title: '未检测到门店信息，请重新登录', icon: 'none' });
+      return;
+    }
     var data = {
       name: f.name,
       type: f.type,
@@ -149,7 +155,7 @@ Page({
       stock: parseInt(f.stock) != null ? parseInt(f.stock) : -1,
       usage_rule: f.usage_rule,
       is_active: true,
-      store_ids: ['store_test_001'],
+      store_ids: [storeId],
       min_spend: 0,
       valid_time_range: { start: '00:00', end: '23:59' },
       valid_weekdays: [1,2,3,4,5,6,7]
