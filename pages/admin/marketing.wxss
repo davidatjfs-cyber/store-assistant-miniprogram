@@ -185,12 +185,17 @@ page { background: #0d0d0d; }
 .qr-code-area {
   position: relative; z-index: 1;
   padding: 0; border-radius: 14rpx;
-  background: #ffffff;
   display: flex; align-items: center; justify-content: center;
+}
+.qr-code-area::before {
+  content: ''; position: absolute; inset: -20rpx;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(201,169,110,0.12), transparent 70%);
+  pointer-events: none;
 }
 .qr-img {
   display: block; width: 320rpx; height: 320rpx;
-  border-radius: 14rpx; background: #ffffff;
+  border-radius: 14rpx;
 }
 
 .qr-meta {
