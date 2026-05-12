@@ -104,6 +104,39 @@ Page({
     this.patchRule(id, { priority: p });
   },
 
+  onDeleteRule: function (e) {
+    var id = e.currentTarget.dataset.id;
+    var self = this;
+    wx.showModal({
+      title: '确认删除',
+      content: '删除后不可恢复，确定要移除此营销规则吗？',
+      confirmText: '确认删除',
+      confirmColor: '#b86a50',
+      success: function (res) {
+        if (res.confirm) {
+          wx.showLoading({ title: '删除中', mask: true });
+          wx.cloud.callFunction({
+            name: 'deleteMarketingRule',
+            data: { rule_id: id },
+            success: function (res) {
+              wx.hideLoading();
+              if (res.result.success) {
+                wx.showToast({ title: '已删除', icon: 'success' });
+                self.loadRules();
+              } else {
+                wx.showToast({ title: res.result.message || '删除失败', icon: 'none' });
+              }
+            },
+            fail: function () {
+              wx.hideLoading();
+              wx.showToast({ title: '删除失败', icon: 'none' });
+            }
+          });
+        }
+      }
+    });
+  },
+
   patchRule: function (ruleId, update_fields) {
     var self = this;
     wx.showLoading({ title: '保存中', mask: true });

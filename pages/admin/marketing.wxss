@@ -79,6 +79,15 @@ page { background: #0d0d0d; }
 .pri-btn::after { border: none; }
 .pri-label { width: 100%; text-align: center; font-size: 24rpx; color: #99a8c8; order: -1; }
 
+.row-delete { justify-content: center; margin-top: 12rpx; padding-top: 14rpx; border-top: 1rpx solid rgba(180,80,50,0.08); }
+.del-btn {
+  min-width: 160rpx !important; padding: 0 28rpx !important; line-height: 56rpx !important; height: 56rpx !important;
+  background: rgba(180,80,50,0.08) !important; color: #b86a50 !important;
+  border: 1rpx solid rgba(180,80,50,0.18) !important; border-radius: 999rpx !important;
+  font-size: 22rpx !important; font-weight: 600 !important;
+}
+.del-btn::after { border: none; }
+
 .generator-section { margin-top: 32rpx; }
 .generator-head {
   display: flex; align-items: center; gap: 18rpx; margin-bottom: 28rpx;
@@ -112,31 +121,94 @@ page { background: #0d0d0d; }
 
 .qr-preview { margin-top: 36rpx; }
 .qr-card {
-  position: relative; overflow: hidden;
-  padding: 36rpx; border-radius: 28rpx;
-  background: linear-gradient(160deg, rgba(30,28,25,0.95), rgba(20,18,15,0.88));
-  border: 1rpx solid rgba(255,255,255,0.10);
-  box-shadow: 0 24rpx 64rpx rgba(0,0,0,0.5), inset 0 1rpx 0 rgba(255,255,255,0.06);
-  text-align: center;
+  position: relative; overflow: visible;
+  border-radius: 24rpx;
+  background: linear-gradient(160deg, #1a1713 0%, #10100d 50%, #1a1512 100%);
+  border: 1rpx solid rgba(201,169,110,0.2);
+  box-shadow: 0 24rpx 72rpx rgba(0,0,0,0.55), 0 0 0 1rpx rgba(201,169,110,0.06) inset;
+  padding: 0;
 }
-.qr-shine {
-  position: absolute; top: -20rpx; left: 32rpx; width: 200rpx; height: 70rpx;
-  border-radius: 999rpx;
-  background: linear-gradient(180deg, rgba(255,255,255,0.20), rgba(255,255,255,0.02));
-  transform: rotate(-8deg); filter: blur(3rpx); pointer-events: none;
+
+/* 金色四角装饰 */
+.qr-edge {
+  position: absolute; width: 32rpx; height: 32rpx;
+  border-color: #c9a96e; border-style: solid; z-index: 2;
 }
-.qr-frame {
-  display: inline-block; padding: 16rpx; border-radius: 20rpx;
-  background: linear-gradient(135deg, rgba(201,169,110,0.12), rgba(201,169,110,0.04));
-  border: 1rpx solid rgba(201,169,110,0.14);
-  box-shadow: 0 0 40rpx rgba(201,169,110,0.06);
+.qr-edge--tl { top: 12rpx; left: 12rpx; border-width: 2rpx 0 0 2rpx; border-radius: 8rpx 0 0 0; }
+.qr-edge--tr { top: 12rpx; right: 12rpx; border-width: 2rpx 2rpx 0 0; border-radius: 0 8rpx 0 0; }
+.qr-edge--bl { bottom: 12rpx; left: 12rpx; border-width: 0 0 2rpx 2rpx; border-radius: 0 0 0 8rpx; }
+.qr-edge--br { bottom: 12rpx; right: 12rpx; border-width: 0 2rpx 2rpx 0; border-radius: 0 0 8rpx 0; }
+
+/* 顶部金色条纹 */
+.qr-accent-stripe {
+  height: 6rpx;
+  background: linear-gradient(90deg, transparent 8%, #c9a96e 20%, #e8d5a0 35%, #c9a96e 50%, #e8d5a0 65%, #c9a96e 80%, transparent 92%);
+  opacity: 0.7;
+}
+
+/* 品牌区 */
+.qr-brand {
+  padding: 28rpx 36rpx 8rpx;
+  text-align: left;
+}
+.qr-brand-name {
+  display: block;
+  font-size: 36rpx; font-weight: 900;
+  background: linear-gradient(180deg, #fff7df 0%, #f1dfb0 38%, #d9bb72 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-family: 'Avenir Next', 'SF Pro Display', 'PingFang SC', sans-serif;
+}
+.qr-brand-tag {
+  display: block; margin-top: 6rpx;
+  font-size: 18rpx; color: #c9a96e; letter-spacing: 6rpx; font-weight: 700;
+}
+
+/* 二维码主体区 */
+.qr-body {
+  padding: 20rpx 36rpx 36rpx;
+  display: flex; flex-direction: column; align-items: center;
+}
+.qr-border-wrap {
+  padding: 6rpx;
+  border-radius: 20rpx;
+  background: linear-gradient(135deg, rgba(201,169,110,0.35), rgba(201,169,110,0.08) 40%, rgba(201,169,110,0.20));
+  box-shadow: 0 0 48rpx rgba(201,169,110,0.15);
+  position: relative;
+}
+.qr-border-wrap::after {
+  content: ''; position: absolute; inset: 1rpx;
+  border-radius: 16rpx;
+  background: linear-gradient(180deg, rgba(201,169,110,0.08), transparent 50%, rgba(201,169,110,0.04));
+  pointer-events: none;
+}
+.qr-code-area {
+  position: relative; z-index: 1;
+  padding: 0; border-radius: 14rpx;
+  background: #ffffff;
+  display: flex; align-items: center; justify-content: center;
 }
 .qr-img {
-  display: block; width: 380rpx; height: 380rpx; border-radius: 12rpx; background: #ffffff;
+  display: block; width: 320rpx; height: 320rpx;
+  border-radius: 14rpx; background: #ffffff;
 }
-.qr-meta { margin-top: 22rpx; }
-.qr-scene { display: block; font-size: 24rpx; font-weight: 700; color: #eef2ff; letter-spacing: 2rpx; }
-.qr-appid { display: block; margin-top: 6rpx; font-size: 18rpx; color: #6b7a9c; }
+
+.qr-meta {
+  margin-top: 24rpx; text-align: center;
+}
+.qr-scene-label {
+  display: block;
+  font-size: 16rpx; color: #6b7a9c; letter-spacing: 4rpx; font-weight: 700; margin-bottom: 6rpx;
+}
+.qr-scene {
+  display: block;
+  font-size: 28rpx; font-weight: 800; color: #eef2ff; letter-spacing: 2rpx;
+  font-family: 'SF Mono', 'Menlo', 'Courier New', monospace;
+}
+.qr-instruction {
+  display: block; margin-top: 12rpx;
+  font-size: 20rpx; color: #7f8ea8; line-height: 1.5;
+}
 
 .qr-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 14rpx; margin-top: 20rpx; }
 .qr-action-btn { margin-top: 0 !important; }
