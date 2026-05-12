@@ -162,5 +162,27 @@ Page({
         urls: ['data:image/png;base64,' + this.data.qrCodeBase64]
       });
     }
+  },
+
+  saveQrToAlbum: function() {
+    var self = this;
+    if (!self.data.qrCodeBase64) return;
+    var fs = wx.getFileSystemManager();
+    var tmpPath = wx.env.USER_DATA_PATH + '/activity_qr.png';
+    try {
+      var buffer = wx.base64ToArrayBuffer(self.data.qrCodeBase64);
+      fs.writeFileSync(tmpPath, buffer, 'binary');
+      wx.saveImageToPhotosAlbum({
+        filePath: tmpPath,
+        success: function() {
+          wx.showToast({ title: '已保存到相册', icon: 'success' });
+        },
+        fail: function() {
+          wx.showToast({ title: '保存失败，请手动长按保存', icon: 'none' });
+        }
+      });
+    } catch (e) {
+      wx.showToast({ title: '保存失败，请手动长按保存', icon: 'none' });
+    }
   }
 });
