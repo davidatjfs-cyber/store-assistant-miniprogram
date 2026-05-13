@@ -1,3 +1,5 @@
+var roleUtil = require('../../utils/role.js');
+
 Page({
   data: {
     templates: [],
@@ -17,8 +19,22 @@ Page({
     }
   },
 
+  onLoad: function () {
+    var self = this;
+    roleUtil.checkRoleAccess(['admin']).then(function (ok) {
+      if (!ok) {
+        self.setData({ loading: false });
+        wx.showToast({ title: '无访问权限', icon: 'none' });
+        return;
+      }
+      self.loadTemplates();
+    });
+  },
+
   onShow: function() {
-    this.loadTemplates();
+    if (this.data.templates && this.data.templates.length > 0) {
+      this.loadTemplates();
+    }
   },
 
   loadTemplates: function() {
@@ -141,21 +157,15 @@ Page({
     var f = self.data.formData;
     if (!f.name) { wx.showToast({ title: '请输入券名称', icon: 'none' }); return; }
 
-    var app = getApp();
-    var storeId = (app && app.globalData.staffStoreId) || '';
-    if (!storeId) {
-      wx.showToast({ title: '未检测到门店信息，请重新登录', icon: 'none' });
-      return;
-    }
     var data = {
       name: f.name,
       type: f.type,
       price: Math.round(parseFloat(f.priceYuan || '0') * 100),
       valid_days: parseInt(f.valid_days) || 30,
-      stock: parseInt(f.stock) != null ? parseInt(f.stock) : -1,
+      stock: isNaN(parseInt(f.stock)) ? -1 : parseInt(f.stock),
       usage_rule: f.usage_rule,
-      is_active: true,
-      store_ids: [storeId],
+      is_active: self.data.editingId ? (self.data.templateData && self.data.templateData.is_active) : true,
+      store_ids: [],
       min_spend: 0,
       valid_time_range: { start: '00:00', end: '23:59' },
       valid_weekdays: [1,2,3,4,5,6,7]

@@ -1,16 +1,5 @@
 <view class="page">
-  <view class="ambient ambient-a"></view>
-  <view class="ambient ambient-b"></view>
-  <view class="hero">
-    <view class="hero-shell">
-      <view class="hero-copy">
-        <text class="hero-kicker">MARKETING OPS</text>
-        <text class="hero-title">营销规则</text>
-        <view class="hint" wx:if="{{statsDate}}">今日 ROI 统计日：{{statsDate}}（上海）</view>
-      </view>
-      <view class="hero-lens"></view>
-    </view>
-  </view>
+  <view class="hint" wx:if="{{statsDate}}">今日 ROI 统计日：{{statsDate}}（上海）</view>
 
   <view wx:if="{{loading}}" class="state">加载中…</view>
 
@@ -18,10 +7,9 @@
 
   <scroll-view wx:else scroll-y class="list">
     <view class="glass-card rule-card" wx:for="{{rules}}" wx:key="rule_id">
-      <view class="card-shine"></view>
       <view class="row row-top">
         <text class="name">{{item.name || item.rule_id}}</text>
-        <switch checked="{{item.active}}" data-id="{{item.rule_id}}" bindchange="onToggleActive" color="#d4b87a" />
+        <switch checked="{{item.active}}" data-id="{{item.rule_id}}" bindchange="onToggleActive" color="#FF6A00" />
       </view>
       <view class="row row-meta">
         <text class="meta">优先级 {{item.priority}}</text>
@@ -32,61 +20,21 @@
         <text class="pri-label">调整优先级</text>
         <button class="pri-btn" size="mini" data-id="{{item.rule_id}}" bindtap="onPriPlus">+</button>
       </view>
-      <view class="row row-delete">
-        <button class="del-btn" size="mini" data-id="{{item.rule_id}}" bindtap="onDeleteRule">删除此规则</button>
-      </view>
     </view>
   </scroll-view>
 
-  <!-- 活动码生成器 -->
+  <!-- 企微活动码生成器 -->
   <view class="glass-card generator-section">
-    <view class="card-shine"></view>
-    <view class="generator-head">
-      <view class="generator-icon">码</view>
-      <view class="generator-info">
-        <text class="section-title">活动码生成器</text>
-        <text class="section-desc">生成带参小程序码，扫码自动带入活动与门店信息</text>
-      </view>
-    </view>
-
+    <text class="section-title">📢 企微活动码生成器</text>
     <view class="form-row">
-      <text class="form-label">场景值 (Scene)</text>
-      <input class="form-input" placeholder="如: spring_sale 或 store_mjx_table_A1" value="{{sceneInput}}" bindinput="onSceneInput" />
-      <text class="form-hint">扫此码进入小程序时，场景值会自动传入首页逻辑</text>
+      <text class="form-label">活动标识 (Scene)</text>
+      <input class="form-input" placeholder="例如: spring_sale" value="{{sceneInput}}" bindinput="onSceneInput" />
     </view>
-
-    <button class="gen-btn" bindtap="onGenerateCode" loading="{{generating}}">
-      {{generating ? '生成中…' : '生成活动码'}}
-    </button>
-
-    <view class="qr-preview" wx:if="{{qrCodeBase64}}">
-      <view class="qr-card">
-        <view class="qr-edge qr-edge--tl"></view>
-        <view class="qr-edge qr-edge--tr"></view>
-        <view class="qr-edge qr-edge--bl"></view>
-        <view class="qr-edge qr-edge--br"></view>
-        <view class="qr-accent-stripe"></view>
-        <view class="qr-brand">
-          <text class="qr-brand-name">年年有喜</text>
-          <text class="qr-brand-tag">ACTIVITY CODE</text>
-        </view>
-        <view class="qr-body">
-          <view class="qr-border-wrap">
-            <view class="qr-code-area">
-              <image class="qr-img" src="data:image/png;base64,{{qrCodeBase64}}" mode="aspectFit" bindtap="previewQr" />
-            </view>
-          </view>
-          <view class="qr-meta">
-            <text class="qr-scene-label">SCENE</text>
-            <text class="qr-scene">{{sceneInput}}</text>
-            <text class="qr-instruction">扫码进入小程序 · 自动带入场景参数</text>
-          </view>
-        </view>
-      </view>
-      <view class="qr-actions">
-        <button class="btn-primary qr-action-btn" bindtap="previewQr">预览大图</button>
-        <button class="btn-outline qr-action-btn" bindtap="saveQrToAlbum">保存到相册</button>
-      </view>
+    <button class="gen-btn" bindtap="onGenerateCode" loading="{{generating}}">生成活动码</button>
+    
+    <view class="qr-result" wx:if="{{qrCodeBase64}}">
+      <image class="qr-img" src="data:image/png;base64,{{qrCodeBase64}}" mode="aspectFit" bindtap="previewQr" />
+      <text class="qr-tip">长按保存，发送到企微群/客户</text>
     </view>
   </view>
 </view>

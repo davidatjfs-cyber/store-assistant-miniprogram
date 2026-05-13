@@ -8,14 +8,15 @@
     "pages/admin/dashboard",
     "pages/admin/vouchers",
     "pages/admin/customers",
-    "pages/shop/index"
+    "pages/shop/index",
+    "pages/user/send-to-wecom/send-to-wecom"
   ],
   "window": {
-    "backgroundTextStyle": "dark",
-    "navigationBarBackgroundColor": "#111111",
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#000000",
     "navigationBarTitleText": "年年有喜",
     "navigationBarTextStyle": "white",
-    "backgroundColor": "#0d0d0d"
+    "backgroundColor": "#0a0a0a"
   },
   "sitemapLocation": "sitemap.json",
   "style": "v2"

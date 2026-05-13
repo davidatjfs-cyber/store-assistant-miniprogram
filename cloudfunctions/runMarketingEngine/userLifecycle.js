@@ -632,9 +632,7 @@ async function updateUserTags(db, _, userId, hints) {
     desired.push('inactive');
   }
 
-  if (hints.auth_just_granted && totalOrders <= 0) {
-    desired.push('new');
-  } else if (totalOrders === 1 || (hints.is_first_order && totalOrders <= 1)) {
+  if (totalOrders === 1 || (hints.is_first_order && totalOrders <= 1)) {
     desired.push('new');
   }
 

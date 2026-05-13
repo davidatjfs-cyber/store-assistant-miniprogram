@@ -263,8 +263,7 @@ exports.main = async (event, context) => {
       }
     }
 
-    // Best-effort only: HRMS 同步失败不能阻断手机号授权主流程。
-    syncHrmsGrowthEvent({
+    await syncHrmsGrowthEvent({
       event_type: 'phone_authorized',
       phone: phoneNumber,
       openid: OPENID,
@@ -279,39 +278,6 @@ exports.main = async (event, context) => {
       }
     }).catch(function (e) {
       console.warn('HRMS phone_authorized sync failed', e && e.message);
-    });
-
-    // P2-5: 自动反查企微客户匹配（不阻断主流程）
-    var wechatMatch = null;
-    db.collection('users').where({ _openid: OPENID }).limit(1).get().then(function(uDoc) {
-      const phoneFromDb = uDoc.data && uDoc.data[0] && uDoc.data[0].phone;
-      if (!phoneFromDb) return;
-      return syncHrmsGrowthEvent({
-        event_type: 'wechat_match_check',
-        phone: phoneNumber || phoneFromDb,
-        openid: OPENID,
-        store_id: scanParams && scanParams.store_id,
-        metadata: { match_check: true }
-      }).catch(function() {});
-    }).catch(function() {});
-
-    // Best-effort only: 自动营销触发不阻断手机号授权主流程，避免 3s 云函数超时。
-    // P3-3: 带客户标签区分差异化发券
-    db.collection('users').where({ _openid: OPENID }).limit(1).get().then(function (refreshedUser) {
-      const userId = refreshedUser.data && refreshedUser.data[0] && refreshedUser.data[0]._id;
-      if (!userId) return null;
-      return cloud.callFunction({
-        name: 'runMarketingEngine',
-        data: {
-          hook: 'post_authorization',
-          user_id: userId,
-          openid: OPENID,
-          store_id: scanParams && scanParams.store_id || '',
-          campaign_id: pickCampaignId(scanParams)
-        }
-      });
-    }).catch(function (mkErr) {
-      console.error('post_authorization runMarketingEngine 调用失败:', mkErr);
     });
 
     // ========== 9. 返回结果 ==========

@@ -268,11 +268,13 @@ exports.main = async (event, context) => {
           newTotalSpent = (user.total_spent || 0) + totalFee;
           newTotalOrders = (user.total_orders || 0) + 1;
           const autoTags = await autoTagUser(userOpenid, newTotalSpent, newTotalOrders);
+          const existingTags = user.tags || [];
+          const mergedTags = [...new Set([...existingTags, ...autoTags])];
           await db.collection('users').doc(user._id).update({
             data: {
               total_spent: newTotalSpent,
               total_orders: newTotalOrders,
-              tags: autoTags,
+              tags: mergedTags,
               last_visit: db.serverDate(),
               updated_at: db.serverDate()
             }

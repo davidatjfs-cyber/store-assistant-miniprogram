@@ -1,18 +1,7 @@
 <view class="page">
-  <view class="ambient ambient-a"></view>
-  <view class="ambient ambient-b"></view>
-
   <!-- 顶部 -->
   <view class="top-bar">
-    <view class="hero-shell">
-      <view class="hero-copy">
-        <text class="top-title">甄选礼遇</text>
-        <text class="top-subtitle">点餐前先挑一张更适合今晚的礼遇，优惠会更从容。</text>
-      </view>
-      <view class="hero-orb">
-        <view class="hero-orb-core">礼</view>
-      </view>
-    </view>
+    <text class="top-title">购买优惠券</text>
   </view>
 
   <!-- 加载中 -->
@@ -22,43 +11,41 @@
 
   <!-- 空状态 -->
   <view wx:elif="{{!templates.length}}" class="empty">
-    <text class="empty-title">今晚暂时没有可选礼遇</text>
-    <text class="empty-desc">稍后回来看看，新的礼遇上架后会出现在这里。</text>
+    <text class="empty-title">暂无可购买的券</text>
+    <text class="empty-desc">管理员可在后台添加券模板</text>
   </view>
 
   <!-- 券列表 -->
   <view wx:else class="list">
     <view class="glass-card shop-item" wx:for="{{templates}}" wx:key="_id">
-      <view class="card-shine"></view>
       <view class="item-header">
         <view class="item-badge {{item.type === 'cash' ? 'badge-cash' : 'badge-discount'}}">
           {{item.type === 'cash' ? '¥' + (item.value/100) : (item.value/10) + '折'}}
         </view>
         <view class="item-info">
-          <text class="item-kicker">CURATED DINING PRIVILEGE</text>
           <text class="item-name">{{item.name}}</text>
           <text class="item-rule" wx:if="{{item.usage_rule}}">{{item.usage_rule}}</text>
         </view>
       </view>
       <view class="item-details">
         <view class="detail-row">
-          <text class="detail-label">到手价</text>
-          <text class="detail-price">¥{{item.priceYuan}}</text>
+          <text class="detail-label">售价</text>
+          <text class="detail-price">{{item.priceYuan}}</text>
         </view>
         <view class="detail-row">
-          <text class="detail-label">使用期限</text>
-          <text class="detail-value">下单后{{item.valid_days}}天内可用</text>
+          <text class="detail-label">有效期</text>
+          <text class="detail-value">购买后{{item.valid_days}}天内有效</text>
         </view>
         <view class="detail-row">
           <text class="detail-label">库存</text>
           <text class="detail-value {{item.stock === 0 ? 'out-of-stock' : ''}}">{{item.stock === -1 ? '充足' : item.stock === 0 ? '已售罄' : '剩余' + item.stock + '张'}}</text>
         </view>
       </view>
-      <button class="buy-btn {{item.stock === 0 ? 'buy-btn--disabled' : ''}}"
-              disabled="{{item.stock === 0}}"
-              data-id="{{item._id}}"
+      <button class="buy-btn {{item.stock === 0 ? 'buy-btn--disabled' : ''}}" 
+              disabled="{{item.stock === 0}}" 
+              data-id="{{item._id}}" 
               bindtap="onBuy">
-          {{item.stock === 0 ? '暂时售罄' : item.price === 0 ? '直接领取' : '立即锁定'}}
+        {{item.stock === 0 ? '已售罄' : item.price === 0 ? '免费领取' : '立即购买'}}
       </button>
     </view>
   </view>

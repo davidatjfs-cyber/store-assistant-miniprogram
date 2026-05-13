@@ -1,16 +1,27 @@
+var roleUtil = require('../../utils/role.js');
+
 Page({
   data: {
     customers: [],
     stats: { totalUsers: 0, vipUsers: 0, newUsers: 0 },
     loading: true,
-    keyword: '',
-    voucherTemplates: [],
-    sendingPhone: ''
+    keyword: ''
+  },
+
+  onLoad: function () {
+    var self = this;
+    roleUtil.checkRoleAccess(['admin']).then(function (ok) {
+      if (!ok) {
+        self.setData({ loading: false });
+        wx.showToast({ title: '无访问权限', icon: 'none' });
+        return;
+      }
+      self.loadData();
+    });
   },
 
   onShow: function() {
     this.loadData();
-    this.loadVoucherTemplates();
   },
 
   loadData: function() {
@@ -24,7 +35,7 @@ Page({
         if (r.success) {
           var list = (r.data || []).map(function(c) {
             return Object.assign({}, c, {
-              totalSpentText: c.totalSpent ? '¥' + Math.round(c.totalSpent / 100) : '¥0'
+              totalSpentText: c.totalSpent ? '¥' + (c.totalSpent / 100).toFixed(2) : '¥0.00'
             });
           });
           self.setData({
@@ -43,73 +54,41 @@ Page({
     });
   },
 
-  loadVoucherTemplates: function() {
-    var self = this;
-    wx.cloud.callFunction({
-      name: 'getVoucherTemplates',
-      data: {},
-      success: function(res) {
-        var r = res.result || {};
-        if (r.success && r.data) {
-          self.setData({ voucherTemplates: r.data });
-        }
-      },
-      fail: function() {}
-    });
-  },
-
   onSearch: function(e) {
     this.setData({ keyword: e.detail.value });
+    this.loadData();
   },
 
   onSendVoucher: function(e) {
-    var self = this;
     var phone = e.currentTarget.dataset.phone;
     if (!phone) return wx.showToast({ title: '未知用户', icon: 'none' });
 
-    var tpls = self.data.voucherTemplates;
-    if (!tpls.length) {
-      wx.showToast({ title: '暂无可用的券模板', icon: 'none' });
-      return;
-    }
-    self.setData({ sendingPhone: phone });
-
-    var itemList = tpls.map(function(t) {
-      var desc = t.name;
-      if (t.type === 'cash') desc += ' (¥' + (t.value / 100).toFixed(2) + ')';
-      else if (t.type === 'discount') desc += ' (' + (t.value / 10).toFixed(1) + '折)';
-      return desc;
-    });
-
-    wx.showActionSheet({
-      itemList: itemList,
-      success: function(res) {
-        var tpl = tpls[res.tapIndex];
-        wx.showModal({
-          title: '确认发券',
-          content: '确定给 ' + phone + ' 发送一张【' + tpl.name + '】吗？',
-          success: function(modalRes) {
-            if (modalRes.confirm) {
-              wx.showLoading({ title: '发送中' });
-              wx.cloud.callFunction({
-                name: 'manualSendVoucher',
-                data: { phone: phone, templateId: tpl._id },
-                success: function(res) {
-                  wx.hideLoading();
-                  if (res.result.success) {
-                    wx.showToast({ title: '发送成功', icon: 'success' });
-                  } else {
-                    wx.showToast({ title: res.result.msg || '发送失败', icon: 'none' });
-                  }
-                },
-                fail: function() {
-                  wx.hideLoading();
-                  wx.showToast({ title: '网络错误', icon: 'none' });
-                }
-              });
+    wx.showModal({
+      title: '确认发券',
+      content: '确定给 ' + phone + ' 发送一张【100元代金券】吗？',
+      success: (res) => {
+        if (res.confirm) {
+          wx.showLoading({ title: '发送中' });
+          wx.cloud.callFunction({
+            name: 'manualSendVoucher',
+            data: { 
+              phone: phone, 
+              templateId: ''
+            },
+            success: (res) => {
+              wx.hideLoading();
+              if (res.result.success) {
+                wx.showToast({ title: '发送成功', icon: 'success' });
+              } else {
+                wx.showToast({ title: res.result.msg, icon: 'none' });
+              }
+            },
+            fail: () => {
+              wx.hideLoading();
+              wx.showToast({ title: '网络错误', icon: 'none' });
             }
-          }
-        });
+          });
+        }
       }
     });
   }

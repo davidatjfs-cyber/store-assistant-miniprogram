@@ -10,7 +10,7 @@ const db = cloud.database();
 
 exports.main = async (event, context) => {
   const { OPENID } = cloud.getWXContext();
-  const { status } = event || {};
+  const { status, voucherId } = event || {};
 
   if (!OPENID) {
     return { success: false, message: '未登录', data: [] };
@@ -26,38 +26,59 @@ exports.main = async (event, context) => {
       };
     }
 
+    if (voucherId) {
+      const singleRes = await db
+        .collection('user_vouchers')
+        .doc(voucherId)
+        .get();
+
+      if (!singleRes.data) {
+        return { success: true, data: [] };
+      }
+
+      const row = singleRes.data;
+      let templateData = null;
+      if (row.template_id) {
+        try {
+          const tdoc = await db.collection('voucher_templates').doc(row.template_id).get();
+          templateData = tdoc.data || null;
+        } catch (e) {
+          templateData = null;
+        }
+      }
+
+      return { success: true, data: { ...row, template: templateData } };
+    }
+
+    const whereCondition = { user_id: userId };
+    if (status && typeof status === 'string') {
+      whereCondition.status = status;
+    }
+
     const res = await db
       .collection('user_vouchers')
-      .where({ user_id: userId })
+      .where(whereCondition)
       .orderBy('created_at', 'desc')
       .get();
 
     let rows = res.data;
-    if (status && typeof status === 'string') {
-      rows = rows.filter(function (r) {
-        return r.status === status;
-      });
-    }
 
+    const templateIds = [...new Set(rows.map(r => r.template_id).filter(Boolean))];
     const templateCache = {};
-    const list = [];
-
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i];
-      const tid = row.template_id;
-      if (tid && !templateCache[tid]) {
-        try {
-          const tdoc = await db.collection('voucher_templates').doc(tid).get();
-          templateCache[tid] = tdoc.data || null;
-        } catch (e) {
-          templateCache[tid] = null;
-        }
+    if (templateIds.length > 0) {
+      const templateRes = await db
+        .collection('voucher_templates')
+        .where({ _id: db.command.in(templateIds) })
+        .get();
+      for (const t of templateRes.data) {
+        templateCache[t._id] = t;
       }
-      list.push({
-        ...row,
-        template: templateCache[tid] || null
-      });
     }
+
+    const list = rows.map(row => ({
+      ...row,
+      template: templateCache[row.template_id] || null
+    }));
 
     return { success: true, data: list };
   } catch (err) {

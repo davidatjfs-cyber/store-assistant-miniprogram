@@ -333,87 +333,6 @@ async function processPaymentRules(db, _, event) {
   };
 }
 
-async function processAuthorizationRules(db, _, event) {
-  const userId = event.user_id;
-  const storeId = event.store_id || '';
-  const campaignId = event.campaign_id || '';
-  const dateKey = ul.shanghaiDateKey();
-  if (!userId) {
-    return { success: false, message: '缺少 user_id' };
-  }
-  if (await ul.isMarketingFatigued(db, _, userId)) {
-    await ul.logMarketingBlocked(db, userId, {
-      reason: 'marketing_frequency_cap',
-      context: 'post_authorization'
-    });
-    return { success: true, winner_rule_id: null, results: [], skipped: 'marketing_frequency_cap' };
-  }
-
-  try {
-    await ul.updateUserTags(db, _, userId, { openid: event.openid, auth_just_granted: true, is_first_order: false, single_pay_fen: 0 });
-  } catch (e) {
-    console.warn('updateUserTags(post_authorization)', e);
-  }
-
-  const snap = await db.collection('marketing_rules').where({ active: true }).get();
-  const candidates = [];
-  for (let i = 0; i < snap.data.length; i++) {
-    const rule = snap.data[i];
-    if (rule.action_type !== 'send_voucher') continue;
-    if (rule.trigger_type !== 'authorization' && rule.trigger_type !== 'phone_authorized') continue;
-    const cd = cooldownDaysForRule(rule, 'authorization');
-    if (await alreadyFiredRecently(db, _, userId, rule._id, cd)) continue;
-    candidates.push(rule);
-  }
-
-  // 兼容历史配置：如果线上尚未创建 authorization 类型规则，
-  // 则回退到现有 active send_voucher 规则中，按用户标签挑选最匹配的一条。
-  if (!candidates.length) {
-    for (let i = 0; i < snap.data.length; i++) {
-      const rule = snap.data[i];
-      if (rule.action_type !== 'send_voucher') continue;
-      if (!rule.active) continue;
-      if (!Array.isArray(rule.target_tags) || !rule.target_tags.length) continue;
-      const cd = cooldownDaysForRule(rule, 'authorization');
-      if (await alreadyFiredRecently(db, _, userId, rule._id, cd)) continue;
-      candidates.push(Object.assign({}, rule, {
-        _fallback_authorization: true
-      }));
-    }
-  }
-
-  candidates.sort(function (a, b) {
-    return ul.effectiveRulePriority(b) - ul.effectiveRulePriority(a);
-  });
-
-  const results = [];
-  let winnerIdx = -1;
-  for (let j = 0; j < candidates.length; j++) {
-    const rule = candidates[j];
-    const r = await tryExecuteRule(db, _, userId, rule, {
-      dateKey: dateKey,
-      storeId: storeId,
-      campaignId: campaignId,
-      triggerType: 'authorization',
-      fireMeta: { hook: 'post_authorization' },
-      extraMeta: { phone_authorized: true }
-    });
-    if (r.ok) {
-      winnerIdx = j;
-      results.push({ rule_id: rule._id, ok: true, voucher_id: r.voucher_id });
-      break;
-    }
-    if (r.error) results.push({ rule_id: rule._id, error: r.error });
-    else results.push({ rule_id: rule._id, skipped: true });
-  }
-
-  return {
-    success: true,
-    winner_rule_id: winnerIdx >= 0 ? candidates[winnerIdx]._id : null,
-    results: results
-  };
-}
-
 async function processInactivityRules(db, _, cloud) {
   const rulesSnap = await db
     .collection('marketing_rules')
@@ -690,7 +609,6 @@ async function processDailyReconcile(db, _, event) {
 }
 
 module.exports = {
-  processAuthorizationRules,
   processPaymentRules,
   processInactivityRules,
   processManual,

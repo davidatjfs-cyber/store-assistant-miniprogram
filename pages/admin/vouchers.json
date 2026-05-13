@@ -1,5 +1,5 @@
 {
   "navigationBarTitleText": "券模板管理",
   "enablePullDownRefresh": true,
-  "backgroundTextStyle": "dark"
+  "usingComponents": {}
 }

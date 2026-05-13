@@ -20,7 +20,7 @@ Page({
     var self = this;
     roleUtil.checkRoleAccess(['staff', 'manager', 'admin']).then(function (ok) {
       if (!ok) {
-        self.setData({ arrivalsLoaded: true });
+        self.setData({ arrivalsLoaded: true, storeLocked: true });
         wx.showToast({ title: '无访问权限', icon: 'none' });
         return;
       }
@@ -51,7 +51,7 @@ Page({
       return;
     }
     wx.cloud
-      .callFunction({ name: 'getRecentArrivals', data: {} })
+      .callFunction({ name: 'getRecentArrivals', data: { store_id: self.data.storeId } })
       .then(function (res) {
         var r = (res && res.result) || {};
         var raw = r.items || [];

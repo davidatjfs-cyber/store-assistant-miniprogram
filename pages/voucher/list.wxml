@@ -1,20 +1,14 @@
 <view class="page">
-  <view class="ambient ambient-a"></view>
-  <view class="ambient ambient-b"></view>
-  <view class="wallet-hero">
-    <view class="wallet-copy">
-      <text class="wallet-kicker">MEMBER WALLET</text>
-      <text class="wallet-title">今晚的券包</text>
-      <text class="top-hint">点开任一礼遇，出示二维码给店员扫码即可使用。</text>
-    </view>
+  <view class="top-bar">
+    <text class="top-hint">向店员出示详情页二维码即可核销</text>
     <button class="btn-glass" size="mini" bindtap="onRefresh" loading="{{loading}}">刷新</button>
   </view>
 
   <view wx:if="{{loading && !list.length}}" class="state">加载中…</view>
 
   <view wx:elif="{{!list.length}}" class="state empty">
-    <text>还没有可用礼遇</text>
-    <text class="sub">购买或领取成功后，这里会第一时间出现。</text>
+    <text>暂无优惠券</text>
+    <text class="sub">支付成功后券将出现在这里</text>
   </view>
 
   <view wx:else class="list">
@@ -25,21 +19,15 @@
       data-item="{{item}}"
       bindtap="onOpenDetail"
     >
-      <view class="voucher-shine"></view>
-      <view class="voucher-seal">喜</view>
       <view class="voucher-top">
-        <view>
-          <text class="voucher-label">今晚可用礼遇</text>
-          <text class="voucher-name">{{item.displayName}}</text>
-        </view>
+        <text class="voucher-name">{{item.displayName}}</text>
         <text class="badge badge--{{item.status}}">{{statusText[item.status] || item.status}}</text>
       </view>
       <view class="voucher-meta">
-        <text class="meta">使用截止 {{item.expireText}}</text>
+        <text class="meta">有效期至 {{item.expireText}}</text>
       </view>
       <view class="voucher-foot">
-        <text class="link">打开核销二维码</text>
-        <text class="arrow">›</text>
+        <text class="link">查看二维码 ›</text>
       </view>
     </view>
   </view>

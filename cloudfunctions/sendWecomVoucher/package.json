@@ -1,0 +1,9 @@
+{
+  "name": "sendWecomVoucher",
+  "version": "1.0.0",
+  "description": "发送优惠券到企业微信",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

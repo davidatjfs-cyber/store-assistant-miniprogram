@@ -1,0 +1,38 @@
+<view class="page">
+  <view wx:if="{{loading}}" class="state">加载中…</view>
+
+  <view wx:elif="{{wecomLinked}}" class="linked-section">
+    <view class="glass-card status-card">
+      <text class="status-icon">✅</text>
+      <text class="status-title">已关联企业微信</text>
+      <text class="status-desc" wx:if="{{wecomInfo.external_userid}}">企微ID: {{wecomInfo.external_userid}}</text>
+    </view>
+
+    <view class="section-header">
+      <text class="section-title">发送优惠券到企业微信</text>
+    </view>
+
+    <view wx:if="{{!vouchers.length}}" class="glass-card empty-card">
+      <text class="empty-text">暂无可发送的优惠券</text>
+    </view>
+
+    <scroll-view wx:else scroll-y class="voucher-list">
+      <view class="glass-card voucher-card" wx:for="{{vouchers}}" wx:key="_id">
+        <view class="voucher-info">
+          <text class="voucher-name">{{item.name || item.template_name || '优惠券'}}</text>
+          <text class="voucher-amount">{{item.face_value || item.amount || ''}}</text>
+        </view>
+        <button class="send-btn" size="mini" data-voucher-id="{{item._id}}" bindtap="sendToWecom">发送到企微</button>
+      </view>
+    </scroll-view>
+  </view>
+
+  <view wx:else class="unlinked-section">
+    <view class="glass-card link-card">
+      <text class="link-icon">🔗</text>
+      <text class="link-title">关联企业微信</text>
+      <text class="link-desc">关联后可在企业微信中接收优惠券和活动通知</text>
+      <button class="link-btn" bindtap="associateWecom">立即关联</button>
+    </view>
+  </view>
+</view>

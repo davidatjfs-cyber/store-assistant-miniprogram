@@ -30,19 +30,26 @@ Page({
         return;
       }
       var role = roleUtil.getUserRoleSync();
+      var storeId = '';
+      try {
+        storeId = getApp().globalData.staffStoreId || '';
+      } catch (e) {}
+
       if (role === 'manager') {
         wx.setNavigationBarTitle({ title: '门店数据' });
         self.setData({ subtitle: '本门店今日数据' });
       } else {
         self.setData({ subtitle: '全部门店今日汇总' });
       }
-      self.loadDashboard();
+      self.loadDashboard(role === 'manager' ? storeId : '');
     });
   },
 
   onPullDownRefresh: function () {
     var self = this;
-    this.loadDashboard().then(
+    var currentStoreId = '';
+    try { currentStoreId = getApp().globalData.staffStoreId || ''; } catch(e) {}
+    this.loadDashboard(currentStoreId).then(
       function () {
         wx.stopPullDownRefresh();
       },
@@ -52,7 +59,7 @@ Page({
     );
   },
 
-  loadDashboard: function () {
+  loadDashboard: function (storeId) {
     var self = this;
     if (!wx.cloud || !wx.cloud.callFunction) {
       self.setData({ loading: false });
@@ -60,7 +67,7 @@ Page({
     }
     self.setData({ loading: true });
     return wx.cloud
-      .callFunction({ name: 'getMarketingDashboard', data: {} })
+      .callFunction({ name: 'getMarketingDashboard', data: { store_id: storeId || '' } })
       .then(function (res) {
         var r = (res && res.result) || {};
         if (!r.success) {

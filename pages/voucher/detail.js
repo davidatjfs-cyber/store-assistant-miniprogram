@@ -66,15 +66,19 @@ Page({
     }
     wx.cloud.callFunction({
       name: 'getUserVouchers',
-      data: {},
+      data: { voucherId: id },
       success: function (res) {
         var r = res.result || {};
-        var list = (r.success && r.data) || [];
+        var list = (r.success && (Array.isArray(r.data) ? r.data : (r.data ? [r.data] : []))) || [];
         var found = null;
-        for (var i = 0; i < list.length; i++) {
-          if (list[i]._id === id) {
-            found = list[i];
-            break;
+        if (r.success && r.data && r.data._id === id) {
+          found = r.data;
+        } else if (Array.isArray(r.data)) {
+          for (var i = 0; i < r.data.length; i++) {
+            if (r.data[i]._id === id) {
+              found = r.data[i];
+              break;
+            }
           }
         }
         if (found) {

@@ -19,13 +19,6 @@ exports.main = async (event, context) => {
       return await internal.processPaymentRules(db, _, event);
     }
 
-    if (hook === 'post_authorization') {
-      if (!event.user_id) {
-        return { success: false, message: '缺少 user_id' };
-      }
-      return await internal.processAuthorizationRules(db, _, event);
-    }
-
     if (hook === 'inactivity_scan') {
       return await internal.processInactivityRules(db, _, cloud);
     }
@@ -46,7 +39,7 @@ exports.main = async (event, context) => {
     return {
       success: true,
       message:
-        '请使用 hook: post_payment | post_authorization | inactivity_scan | manual | daily_reconcile。当前仅列出活跃规则数。',
+        '请使用 hook: post_payment | inactivity_scan | manual | daily_reconcile。当前仅列出活跃规则数。',
       active_rule_count: rules.data.length
     };
   } catch (err) {

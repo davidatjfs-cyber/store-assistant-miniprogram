@@ -1,9 +1,6 @@
 <view class="page">
   <view class="top-bar">
-    <view class="top-copy">
-      <text class="top-title">客户管理</text>
-      <text class="top-subtitle">查看会员分层、消费趋势与定向发券入口</text>
-    </view>
+    <text class="top-title">客户管理</text>
     <view class="search-box">
       <input class="search-input" placeholder="搜索手机号/姓名" value="{{keyword}}" bindinput="onSearch" />
     </view>
@@ -36,7 +33,6 @@
           <text class="avatar-text">{{item.phone ? item.phone.slice(-4) : '??'}}</text>
         </view>
         <view class="customer-info">
-          <text class="customer-kicker">CUSTOMER PROFILE</text>
           <view class="customer-name-row">
             <text class="customer-phone">{{item.phone || '未授权'}}</text>
             <text class="level-tag level-tag--{{item.user_level || 'new'}}">{{item.user_level === 'vip' ? 'VIP' : item.user_level === 'active' ? '活跃' : '新客'}}</text>

@@ -32,7 +32,7 @@ function postJson(url, payload, secret) {
 
 async function syncHrmsGrowthEvent(payload) {
   const url = process.env.HRMS_GROWTH_EVENT_URL || process.env.HRMS_MINIPROGRAM_EVENT_URL || 'https://nnyx.cc/api/miniprogram/events';
-  const secret = process.env.HRMS_GROWTH_EVENT_SECRET || process.env.MINIPROGRAM_SYNC_SECRET || '';
+  const secret = process.env.HRMS_GROWTH_EVENT_SECRET || process.env.MINIPROGRAM_SYNC_SECRET || '5bde6e733281f2b42305a525ccb7411a6fb5f911341703929c3f384ab6047e33';
   const result = await postJson(url, payload, secret);
   if (!result.ok && !result.skipped) console.warn('HRMS growth sync failed', result);
   return result;

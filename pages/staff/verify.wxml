@@ -1,20 +1,6 @@
 <view class="page">
-  <view class="ambient ambient-a"></view>
-  <view class="ambient ambient-b"></view>
-  <view class="hero">
-    <view class="hero-shell">
-      <view class="hero-copy">
-        <text class="hero-kicker">STAFF VERIFY</text>
-        <text class="hero-title">门店核销台</text>
-        <text class="hero-desc">查看到店顾客画像，并在收银前快速完成验券。</text>
-      </view>
-      <view class="hero-lens"></view>
-    </view>
-  </view>
-
   <!-- 到店顾客 -->
   <view class="glass-card arrivals-card" wx:if="{{arrivalsLoaded && arrivals.length}}">
-    <view class="panel-shine"></view>
     <text class="title">当前到店顾客</text>
     <text class="desc">最近到店记录（本门店）</text>
     <view class="arrival {{index === 0 ? 'arrival--first' : ''}}" wx:for="{{arrivals}}" wx:key="user_id">
@@ -37,7 +23,6 @@
 
   <!-- 核销 -->
   <view class="glass-card">
-    <view class="panel-shine"></view>
     <text class="title">门店核销</text>
     <text class="desc">扫描顾客券详情页展示的二维码</text>
     <view class="field">

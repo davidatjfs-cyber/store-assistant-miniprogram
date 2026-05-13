@@ -44,35 +44,22 @@ App({
       this.globalData.campaignId = campaignId;
     }
 
-    var decoded = {};
-    if (query.scene && typeof query.scene === 'string') {
-      var sceneStr = decodeURIComponent(query.scene);
-      sceneStr.split('&').forEach(function(pair) {
-        var kv = pair.split('=');
-        if (kv.length === 2) decoded[kv[0]] = kv[1];
-        else if (kv.length === 1) decoded.scene_key = kv[0];
-      });
-    }
-
-    var merged = Object.assign({}, query, decoded);
-    delete merged.scene;
-
-    if (scene === 1047 || scene === 1011 || scene === 1007 || scene === 1008) {
-      if (merged && (merged.table_id || merged.store_id || merged.scene_key || Object.keys(merged).length > 1)) {
+    if (scene === 1047 || scene === 1011) {
+      if (query && (query.table_id || query.store_id || Object.keys(query).length > 0)) {
         this.globalData.scanParams = Object.assign(
           {
-            table_id: merged.table_id || '',
-            store_id: merged.store_id || '',
+            table_id: query.table_id || '',
+            store_id: query.store_id || '',
             scene: scene,
             timestamp: Date.now()
           },
-          merged
+          query
         );
       }
     }
 
     if (!scene && Object.keys(query).length > 0) {
-      this.globalData.scanParams = Object.assign({ timestamp: Date.now() }, query, decoded);
+      this.globalData.scanParams = Object.assign({ timestamp: Date.now() }, query);
     }
   },
 

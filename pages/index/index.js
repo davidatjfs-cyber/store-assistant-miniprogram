@@ -1,4 +1,9 @@
 // pages/index/index.js
+var ENABLE_ONLOAD_DEBUG_MODAL = false;
+
+// 开发模式：无扫码参数时模拟扫码（仅开发调试用，上线前改为 false）
+var DEV_SIMULATE_SCAN = false;
+
 var roleUtil = require('../../utils/role.js');
 
 function buildEntrySections(role) {
@@ -116,11 +121,6 @@ function buildOrderMiniPath(basePath, scanParams, extraStaticQuery) {
   return basePath + sep + qs;
 }
 
-function scanSessionKey(scanParams) {
-  var p = scanParams || {};
-  return 'member_authorized_' + String(p.store_id || '') + '_' + String(p.table_id || '') + '_' + String(p.scene || p.campaign_id || '');
-}
-
 Page({
   data: {
     isFromScan: false,
@@ -128,14 +128,6 @@ Page({
     showAuthModal: false,
     showLegacyMemberTip: false,
     legacyMemberPoints: 0,
-    showBenefitModal: false,
-    benefitLoading: false,
-    benefitVouchers: [],
-    benefitVoucherCount: 0,
-    hasAuthorizedMember: false,
-    showActivityModal: false,
-    showProfileModal: false,
-    profileQuestionStep: 1,
     inputPhone: '',
     pageReady: false,
     entrySections: [],
@@ -223,14 +215,26 @@ Page({
     try {
       var app = getApp();
       var scanParams = app.globalData && app.globalData.scanParams;
+      // console.log('syncScanFromApp scanParams:', scanParams);
       if (scanParams) {
-        var authorized = false;
-        try { authorized = !!wx.getStorageSync(scanSessionKey(scanParams)); } catch (e) {}
         this.setData({
           isFromScan: true,
           scanParams: scanParams,
-          hasAuthorizedMember: authorized,
-          showAuthModal: !authorized,
+          showAuthModal: true,
+          pageReady: true
+        });
+      } else if (DEV_SIMULATE_SCAN) {
+        // 开发模式：模拟扫码参数（方便不扫码也能测试）
+        this.setData({
+          isFromScan: true,
+          scanParams: {
+            table_id: 'T01',
+            store_id: 'store_test_001',
+            store_display_name: '测试门店',
+            scene: 1047,
+            timestamp: Date.now()
+          },
+          showAuthModal: true,
           pageReady: true
         });
       } else {
@@ -245,8 +249,17 @@ Page({
   },
 
   onLoad: function(options) {
+    // console.log('onLoad options:', options);
     try {
       var app = getApp();
+      if (ENABLE_ONLOAD_DEBUG_MODAL && !app.globalData.__debug_modal_shown__) {
+        app.globalData.__debug_modal_shown__ = true;
+        wx.showModal({
+          title: '真机调试',
+          content: 'onLoad 已执行',
+          showCancel: false
+        });
+      }
       this.syncScanFromApp();
       this.refreshRoleEntries();
       this.invokeDetectUserArrival();
@@ -262,7 +275,7 @@ Page({
   onShow: function() {
     this.refreshRoleEntries();
     // 真机偶现首屏时序问题，onShow 再同步一次 globalData
-    if (!this.data.showAuthModal && !this.data.showLegacyMemberTip && !this.data.showBenefitModal && !this.data.hasAuthorizedMember) {
+    if (!this.data.showAuthModal && !this.data.showLegacyMemberTip) {
       this.syncScanFromApp();
     }
   },
@@ -275,6 +288,7 @@ Page({
   },
 
   onGetPhoneNumber: function(e) {
+    // console.log('授权回调:', e);
     if (!e.detail || !e.detail.errMsg) {
       wx.showToast({ title: '授权失败，请重试', icon: 'none' });
       return;
@@ -349,6 +363,8 @@ Page({
       },
       success: function(result) {
         wx.hideLoading();
+        // console.log('云函数完整返回:', result);
+
         var payload = result && result.result;
         if (!payload || payload.success === false) {
           var errText =
@@ -364,21 +380,17 @@ Page({
           return;
         }
 
-        try { wx.setStorageSync(scanSessionKey(self.data.scanParams), true); } catch (e) {}
-        self.setData({ showAuthModal: false, hasAuthorizedMember: true });
+        self.setData({ showAuthModal: false });
 
         var data = payload.data;
-        if (data && data.phone) {
-          self.setData({ _authPhone: data.phone });
-        }
         if (data && data.isLegacyMember && data.legacyPoints > 0) {
           self.setData({ showLegacyMemberTip: true, legacyMemberPoints: data.legacyPoints });
           setTimeout(function() {
             self.setData({ showLegacyMemberTip: false });
-            self.presentBenefitModal();
+            self.navigateToKeruYun();
           }, 1500);
         } else {
-          self.presentBenefitModal();
+          self.navigateToKeruYun();
         }
       },
       fail: function(err) {
@@ -394,105 +406,6 @@ Page({
         });
       }
     });
-  },
-
-  startProfileQuestion: function() {
-    this.setData({ showBenefitModal: false, showProfileModal: true, profileQuestionStep: 1 });
-  },
-
-  presentBenefitModal: function() {
-    var self = this;
-    self.setData({ showBenefitModal: true, benefitLoading: true, benefitVouchers: [], benefitVoucherCount: 0 });
-    self.loadBenefitVouchers();
-    setTimeout(function() {
-      if (self.data.showBenefitModal) self.loadBenefitVouchers();
-    }, 1200);
-  },
-
-  loadBenefitVouchers: function() {
-    var self = this;
-    if (!wx.cloud || !wx.cloud.callFunction) {
-      self.setData({ benefitLoading: false });
-      return;
-    }
-    wx.cloud.callFunction({ name: 'getUserVouchers', data: {} }).then(function(res) {
-      var r = res && res.result || {};
-      var raw = r.success && r.data || [];
-      var vouchers = raw.slice(0, 3).map(function(item) {
-        var t = item.template || {};
-        return {
-          id: item._id,
-          name: t.name || item.displayName || '会员优惠券',
-          status: item.status || 'unused'
-        };
-      });
-      self.setData({
-        benefitLoading: false,
-        benefitVouchers: vouchers,
-        benefitVoucherCount: raw.length
-      });
-    }).catch(function() {
-      self.setData({ benefitLoading: false });
-    });
-  },
-
-  goVoucherList: function() {
-    this.setData({ showBenefitModal: false });
-    wx.navigateTo({ url: '/pages/voucher/list' });
-  },
-
-  goShop: function() {
-    this.setData({ showBenefitModal: false });
-    wx.navigateTo({ url: '/pages/shop/index' });
-  },
-
-  showActivityInfo: function() {
-    this.setData({ showActivityModal: true });
-  },
-
-  closeActivityModal: function() {
-    this.setData({ showActivityModal: false });
-  },
-
-  orderAfterBenefit: function() {
-    this.setData({ showBenefitModal: false, showActivityModal: false });
-    this.navigateToKeruYun();
-  },
-
-  onProfileAnswer: function(e) {
-    var value = e.currentTarget.dataset.value;
-    var step = this.data.profileQuestionStep;
-    var self = this;
-    if (step === 1) {
-      self._reportProfileSignal('occasion', value);
-      self.setData({ profileQuestionStep: 2 });
-    } else if (step === 2) {
-      self._reportProfileSignal('taste_preference', value);
-      self.setData({ showProfileModal: false });
-      self.presentBenefitModal();
-    }
-  },
-
-  skipProfileQuestion: function() {
-    this.setData({ showProfileModal: false });
-    this.presentBenefitModal();
-  },
-
-  _reportProfileSignal: function(key, value) {
-    var scanParams = this.data.scanParams || {};
-    try {
-      wx.cloud.callFunction({
-        name: 'ensureUserDoc',
-        data: {
-          action: 'reportProfileSignal',
-          signal_key: key,
-          signal_value: value,
-          store_id: scanParams.store_id || '',
-          campaign_id: scanParams.scene || '',
-          phone: this.data._authPhone || ''
-        }
-      });
-    } catch (e) {}
   },
 
   navigateToKeruYun: function() {
@@ -532,11 +445,15 @@ Page({
 
     var envVersion = config.envVersion || 'release';
 
+    // console.log('准备跳转点餐小程序', { appId: config.appId, path: path, envVersion: envVersion });
+
     var navOpts = {
       appId: config.appId,
       path: path,
       envVersion: envVersion,
-      success: function() {},
+      success: function() {
+        // console.log('navigateToMiniProgram 已触发');
+      },
       fail: function(err) {
         console.error('跳转点餐小程序失败:', err);
         wx.showModal({

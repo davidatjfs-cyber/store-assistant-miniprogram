@@ -4,16 +4,9 @@
  */
 async function resolveUserIdFromOpenid(db, openid) {
   if (!openid) return null;
-  let r = await db
+  const r = await db
     .collection('users')
     .where({ openid: openid })
-    .limit(1)
-    .get();
-  if (r.data.length) return r.data[0]._id;
-
-  r = await db
-    .collection('users')
-    .where({ _openid: openid })
     .limit(1)
     .get();
   return r.data.length ? r.data[0]._id : null;
