@@ -4,17 +4,33 @@ cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
 var db = cloud.database();
 
+async function loadStoreWecomConfig(storeId) {
+  if (!storeId) return null;
+  try {
+    var res = await db.collection('store_wecom_configs').where({ store_id: storeId }).limit(1).get();
+    return res.data.length ? res.data[0] : null;
+  } catch (e) {
+    return null;
+  }
+}
+
 exports.main = async function (event, context) {
   var wxContext = cloud.getWXContext();
   var openid = wxContext.OPENID;
   var unionid = event.unionid || wxContext.UNIONID || '';
+  var storeId = event.store_id || '';
 
   try {
     if (!openid) {
       return { success: false, error: '无法获取用户 openid' };
     }
 
-    var tokenRes = await wecomConfig.getWecomAccessToken();
+    var storeConfig = await loadStoreWecomConfig(storeId);
+    var corpId = storeConfig ? storeConfig.corp_id : wecomConfig.WE_COM_CORP_ID;
+    var corpSecret = storeConfig ? storeConfig.corp_secret : wecomConfig.WE_COM_APP_SECRET;
+    var agentId = storeConfig ? storeConfig.agent_id : String(wecomConfig.WE_COM_APP_ID);
+
+    var tokenRes = await wecomConfig.getWecomAccessToken(corpId, corpSecret);
     if (!tokenRes.success) {
       return { success: false, error: tokenRes.error };
     }
@@ -36,8 +52,9 @@ exports.main = async function (event, context) {
         data: {
           openid: openid,
           unionid: unionid,
-          corpid: wecomConfig.WE_COM_CORP_ID,
-          agentid: wecomConfig.WE_COM_APP_ID,
+          store_id: storeId,
+          corpid: corpId,
+          agentid: agentId,
           external_userid: external_userid,
           created_at: db.serverDate(),
           updated_at: db.serverDate()
@@ -50,7 +67,7 @@ exports.main = async function (event, context) {
           .update({
             data: {
               wecomId: external_userid,
-              wecomCorpId: wecomConfig.WE_COM_CORP_ID,
+              wecomCorpId: corpId,
               wecomLinked: !!external_userid,
               wecomLinkedAt: db.serverDate()
             }
@@ -66,15 +83,16 @@ exports.main = async function (event, context) {
         is_new: true
       };
     } else {
+      var updateData = {
+        unionid: unionid,
+        external_userid: external_userid || mappingRes.data[0].external_userid,
+        updated_at: db.serverDate()
+      };
+      if (storeId) updateData.store_id = storeId;
+      if (corpId) updateData.corpid = corpId;
       await db.collection('customer_wecom_mapping')
         .where({ openid: openid })
-        .update({
-          data: {
-            unionid: unionid,
-            external_userid: external_userid || mappingRes.data[0].external_userid,
-            updated_at: db.serverDate()
-          }
-        });
+        .update({ data: updateData });
 
       return {
         success: true,

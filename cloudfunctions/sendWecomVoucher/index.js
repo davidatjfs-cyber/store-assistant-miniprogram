@@ -4,11 +4,22 @@ cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
 var db = cloud.database();
 
+async function loadStoreWecomConfig(storeId) {
+  if (!storeId) return null;
+  try {
+    var res = await db.collection('store_wecom_configs').where({ store_id: storeId }).limit(1).get();
+    return res.data.length ? res.data[0] : null;
+  } catch (e) {
+    return null;
+  }
+}
+
 exports.main = async function (event, context) {
   var userId = event.userId || event.openid;
   var voucherId = event.voucherId || '';
   var messageType = event.messageType || 'text';
   var content = event.content || '';
+  var storeId = event.store_id || '';
 
   try {
     var mappingRes = await db.collection('customer_wecom_mapping')
@@ -26,7 +37,12 @@ exports.main = async function (event, context) {
       return { success: false, error: '企微 external_userid 为空，无法发送' };
     }
 
-    var tokenRes = await wecomConfig.getWecomAccessToken();
+    var storeConfig = storeId ? await loadStoreWecomConfig(storeId) : null;
+    var corpId = storeConfig ? storeConfig.corp_id : wecomConfig.WE_COM_CORP_ID;
+    var corpSecret = storeConfig ? storeConfig.corp_secret : wecomConfig.WE_COM_APP_SECRET;
+    var agentId = storeConfig ? (storeConfig.agent_id || wecomConfig.WE_COM_APP_ID) : wecomConfig.WE_COM_APP_ID;
+
+    var tokenRes = await wecomConfig.getWecomAccessToken(corpId, corpSecret);
     if (!tokenRes.success) {
       return { success: false, error: tokenRes.error };
     }
@@ -55,7 +71,7 @@ exports.main = async function (event, context) {
       tokenRes.access_token,
       externalUserId,
       msgContent,
-      wecomConfig.WE_COM_APP_ID
+      agentId
     );
 
     await db.collection('message_logs').add({
@@ -67,6 +83,8 @@ exports.main = async function (event, context) {
         content: msgContent,
         send_result: result.success ? 'sent' : 'failed',
         send_error: result.success ? '' : (result.error || ''),
+        store_id: storeId,
+        corp_id: corpId,
         created_at: db.serverDate()
       }
     });

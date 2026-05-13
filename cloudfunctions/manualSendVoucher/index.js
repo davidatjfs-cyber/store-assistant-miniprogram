@@ -4,7 +4,7 @@ cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
 
 exports.main = async (event, context) => {
-  const { phone, templateId } = event
+  const { phone, templateId, store_id } = event
   const { OPENID } = cloud.getWXContext()
 
   try {
@@ -53,7 +53,7 @@ exports.main = async (event, context) => {
         _id: voucherId,
         user_id: user._id,
         template_id: templateId,
-        store_id: tpl.store_ids[0],
+        store_id: store_id || (Array.isArray(tpl.store_ids) ? tpl.store_ids[0] : ''),
         status: 'unused',
         qr_code: `voucher:${voucherId}`,
         created_at: db.serverDate(),
