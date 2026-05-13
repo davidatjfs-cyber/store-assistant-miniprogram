@@ -13,7 +13,7 @@ cloud.init({
 
 const db = cloud.database();
 
-const STORE_ID = 'maijixian_sh';
+const STORE_ID = '51866138';
 /** 对外展示用门店名（与小程序 scanParams.store_display_name、第三方自检脚本 storeName 对齐） */
 const STORE_DISPLAY_NAME = '马己仙广东小馆（上海音乐广场店）';
 const BRAND = '马己仙广东小馆';

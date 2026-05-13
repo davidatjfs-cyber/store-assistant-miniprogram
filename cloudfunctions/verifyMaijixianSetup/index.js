@@ -27,7 +27,7 @@ cloud.init({
   env: cloud.DYNAMIC_CURRENT_ENV
 });
 
-const STORE_ID = 'maijixian_sh';
+const STORE_ID = '51866138';
 
 const TEMPLATE_IDS = [
   'mjx_tpl_new_001',
