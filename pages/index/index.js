@@ -229,8 +229,8 @@ Page({
           isFromScan: true,
           scanParams: {
             table_id: 'T01',
-            store_id: 'store_test_001',
-            store_display_name: '测试门店',
+            store_id: '51866138',
+            store_display_name: '马己仙广东小馆(测试)',
             scene: 1047,
             timestamp: Date.now()
           },

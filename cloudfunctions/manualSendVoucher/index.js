@@ -8,9 +8,18 @@ exports.main = async (event, context) => {
   const { OPENID } = cloud.getWXContext()
 
   try {
-    // 1. 权限校验：必须是员工
-    const staffRes = await db.collection('staff').where({ openid: OPENID, active: true }).get()
+    // 1. 权限校验：必须是员工/店长/管理员
+    const staffRes = await db.collection('staff').where({ openid: OPENID, active: true }).limit(1).get()
     if (staffRes.data.length === 0) return { success: false, msg: '无权限操作' }
+    const staffRow = staffRes.data[0]
+    const role = (staffRow.role || 'staff').toLowerCase()
+    if (role !== 'staff' && role !== 'manager' && role !== 'admin') {
+      return { success: false, msg: '无权限操作' }
+    }
+
+    // 2. 确定门店：优先用员工绑定门店，其次用传入的 store_id
+    const staffStoreId = String(staffRow.store_id || staffRow.storeId || '').trim()
+    const effectiveStoreId = staffStoreId || (store_id ? String(store_id).trim() : '')
 
     // 2. 清洗手机号（去除空格、横杠等）
     const cleanPhone = phone.replace(/[\s\-]/g, '')
@@ -46,6 +55,13 @@ exports.main = async (event, context) => {
     // 5. 检查库存
     if (tpl.stock !== -1 && tpl.stock <= 0) return { success: false, msg: '库存不足' }
 
+    // 5.5 检查券模板是否适用于当前门店
+    if (effectiveStoreId && Array.isArray(tpl.store_ids) && tpl.store_ids.length > 0) {
+      if (tpl.store_ids.indexOf(effectiveStoreId) < 0 && tpl.store_ids.indexOf('*') < 0) {
+        return { success: false, msg: '该券不可在本门店使用' }
+      }
+    }
+
     // 6. 发券
     const voucherId = `mv_${Date.now()}_${Math.floor(Math.random()*1000)}`
     await db.collection('user_vouchers').add({
@@ -53,7 +69,7 @@ exports.main = async (event, context) => {
         _id: voucherId,
         user_id: user._id,
         template_id: templateId,
-        store_id: store_id || (Array.isArray(tpl.store_ids) ? tpl.store_ids[0] : ''),
+        store_id: effectiveStoreId || (Array.isArray(tpl.store_ids) ? tpl.store_ids[0] : ''),
         status: 'unused',
         qr_code: `voucher:${voucherId}`,
         created_at: db.serverDate(),

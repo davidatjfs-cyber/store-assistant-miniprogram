@@ -27,6 +27,9 @@ exports.main = async (event, context) => {
     return { success: false, message: '仅店长/管理员可撤销核销' };
   }
 
+  // 检查店长是否属于同一个门店
+  const staffStoreId = String(staff.store_id || staff.storeId || '').trim();
+
   try {
     const vdoc = await db.collection('user_vouchers').doc(voucher_id).get();
     const v = vdoc.data;
@@ -35,6 +38,9 @@ exports.main = async (event, context) => {
     }
     if (v.status !== 'used') {
       return { success: false, message: '仅已核销的券可撤销' };
+    }
+    if (staffStoreId && v.store_id && String(v.store_id).trim() !== staffStoreId) {
+      return { success: false, message: '仅可撤销本门店的券' };
     }
 
     const usedMs = v.used_at ? new Date(v.used_at).getTime() : 0;

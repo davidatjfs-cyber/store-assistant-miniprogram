@@ -45,9 +45,11 @@ Page({
       self.setData({ loading: false });
       return Promise.resolve();
     }
+    var app = getApp();
+    var storeId = (app.globalData.staffStoreId || (app.globalData.scanParams || {}).store_id) || '';
     self.setData({ loading: true });
     return wx.cloud
-      .callFunction({ name: 'getMarketingRules', data: {} })
+      .callFunction({ name: 'getMarketingRules', data: { store_id: storeId } })
       .then(function (res) {
         var r = (res && res.result) || {};
         if (!r.success) {

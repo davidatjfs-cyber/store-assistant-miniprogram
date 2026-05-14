@@ -1,6 +1,6 @@
-var WE_COM_CORP_ID = 'wwc4222f318e24068';
+var WE_COM_CORP_ID = process.env.WECOM_CORP_ID || '';
 var WE_COM_APP_ID = 1000004;
-var WE_COM_APP_SECRET = 'MaT18AlbLHCRiQ2v49OO1lBnZkJuyytmszjG6a13GHc';
+var WE_COM_APP_SECRET = process.env.WECOM_APP_SECRET || '';
 
 var TOKEN_CACHE = {};
 

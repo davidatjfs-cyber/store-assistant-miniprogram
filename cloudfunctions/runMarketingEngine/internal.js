@@ -268,12 +268,16 @@ async function processPaymentRules(db, _, event) {
     };
   }
 
+  const ruleWhere = {
+    active: true,
+    trigger_type: 'payment'
+  };
+  if (storeId) {
+    ruleWhere.store_id = storeId;
+  }
   const snap = await db
     .collection('marketing_rules')
-    .where({
-      active: true,
-      trigger_type: 'payment'
-    })
+    .where(ruleWhere)
     .get();
 
   const candidates = [];
@@ -406,7 +410,7 @@ async function processInactivityRules(db, _, cloud) {
 
         const res = await tryExecuteRule(db, _, user._id, rule, {
           dateKey: dateKey,
-          storeId: '',
+          storeId: rule.store_id || '',
           triggerType: 'inactivity',
           fireMeta: { hook: 'inactivity_scan' },
           extraMeta: { inactive_days: days }

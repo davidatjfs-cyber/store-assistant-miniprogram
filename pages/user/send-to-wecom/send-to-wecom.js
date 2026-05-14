@@ -60,7 +60,7 @@ Page({
 
         wx.cloud.callFunction({
           name: 'associateWecom',
-          data: {},
+          data: { store_id: (getApp().globalData.scanParams || {}).store_id || '' },
           success: function (res) {
             var result = (res && res.result) || {};
             if (result.success) {
@@ -94,7 +94,8 @@ Page({
       data: {
         voucherId: voucherId,
         messageType: 'text',
-        content: ''
+        content: '',
+        store_id: (getApp().globalData.scanParams || {}).store_id || ''
       },
       success: function (res) {
         wx.hideLoading();
@@ -116,9 +117,11 @@ Page({
     var self = this;
     if (!wx.cloud || !wx.cloud.callFunction) return;
 
+    var app = getApp();
+    var storeId = (app.globalData.scanParams || {}).store_id || '';
     wx.cloud.callFunction({
       name: 'getUserVouchers',
-      data: {},
+      data: { store_id: storeId },
       success: function (res) {
         var result = (res && res.result) || {};
         if (result.success && result.data) {

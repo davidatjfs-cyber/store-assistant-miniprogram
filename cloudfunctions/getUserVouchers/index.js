@@ -10,7 +10,7 @@ const db = cloud.database();
 
 exports.main = async (event, context) => {
   const { OPENID } = cloud.getWXContext();
-  const { status, voucherId } = event || {};
+  const { status, voucherId, store_id } = event || {};
 
   if (!OPENID) {
     return { success: false, message: '未登录', data: [] };
@@ -53,6 +53,9 @@ exports.main = async (event, context) => {
     const whereCondition = { user_id: userId };
     if (status && typeof status === 'string') {
       whereCondition.status = status;
+    }
+    if (store_id) {
+      whereCondition.store_id = store_id;
     }
 
     const res = await db

@@ -5,37 +5,45 @@ const _ = db.command
 
 exports.main = async (event, context) => {
   try {
-    const { keyword } = event
+    const { keyword, store_id } = event
     let query = {}
     if (keyword) {
       query.phone = db.RegExp({ regexp: keyword, options: 'i' })
     }
 
-    // 获取用户列表
     const usersRes = await db.collection('users')
       .where(query)
       .orderBy('created_at', 'desc')
       .limit(100)
       .get()
 
-    // 统计数据
+    // If store_id provided, filter to users who have vouchers at this store
+    let userIdsInStore = null
+    if (store_id) {
+      const vouchersRes = await db.collection('user_vouchers')
+        .where({ store_id: store_id })
+        .limit(1000)
+        .get()
+      userIdsInStore = new Set(vouchersRes.data.map(v => v.user_id))
+    }
+
     const totalRes = await db.collection('users').count()
     
-    // 获取用户标签统计
     const tagsRes = await db.collection('user_tags').get()
     const vipSet = new Set()
     tagsRes.data.forEach(t => {
       if (t.tags && t.tags.includes('vip')) vipSet.add(t.user_id)
     })
 
-    // 获取每个用户的券数量
-    const vouchersRes = await db.collection('user_vouchers').get()
+    const vouchersRes2 = await db.collection('user_vouchers').get()
     const voucherCountMap = {}
-    vouchersRes.data.forEach(v => {
+    vouchersRes2.data.forEach(v => {
       voucherCountMap[v.user_id] = (voucherCountMap[v.user_id] || 0) + 1
     })
 
-    const customers = usersRes.data.map(u => {
+    const customers = usersRes.data
+      .filter(u => !userIdsInStore || userIdsInStore.has(u._id))
+      .map(u => {
       const joinDate = u.created_at ? new Date(u.created_at).toLocaleDateString('zh-CN') : '—'
       const lastVisit = u.last_visit ? new Date(u.last_visit).toLocaleDateString('zh-CN') : '—'
       return {

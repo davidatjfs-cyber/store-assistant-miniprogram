@@ -26,10 +26,12 @@ Page({
 
   loadData: function() {
     var self = this;
+    var app = getApp();
+    var storeId = (app.globalData.staffStoreId || (app.globalData.scanParams || {}).store_id) || '';
     self.setData({ loading: true });
     wx.cloud.callFunction({
       name: 'getCustomerList',
-      data: { keyword: self.data.keyword },
+      data: { keyword: self.data.keyword, store_id: storeId },
       success: function(res) {
         var r = res.result || {};
         if (r.success) {
@@ -61,34 +63,57 @@ Page({
 
   onSendVoucher: function(e) {
     var phone = e.currentTarget.dataset.phone;
-    if (!phone) return wx.showToast({ title: '未知用户', icon: 'none' });
+    var userId = e.currentTarget.dataset.id;
+    if (!phone && !userId) return wx.showToast({ title: '未知用户', icon: 'none' });
 
-    wx.showModal({
-      title: '确认发券',
-      content: '确定给 ' + phone + ' 发送一张【100元代金券】吗？',
-      success: (res) => {
-        if (res.confirm) {
-          wx.showLoading({ title: '发送中' });
-          wx.cloud.callFunction({
-            name: 'manualSendVoucher',
-            data: { 
-              phone: phone, 
-              templateId: ''
-            },
-            success: (res) => {
-              wx.hideLoading();
-              if (res.result.success) {
-                wx.showToast({ title: '发送成功', icon: 'success' });
-              } else {
-                wx.showToast({ title: res.result.msg, icon: 'none' });
-              }
-            },
-            fail: () => {
-              wx.hideLoading();
-              wx.showToast({ title: '网络错误', icon: 'none' });
-            }
-          });
+    var self = this;
+    var app = getApp();
+    var app = getApp();
+    var storeId = (app.globalData.staffStoreId || (app.globalData.scanParams || {}).store_id) || '';
+
+    wx.cloud.callFunction({
+      name: 'getVoucherTemplates',
+      data: { store_id: storeId },
+      success: function(res) {
+        var r = res.result || {};
+        var templates = (r.success && r.data) || [];
+        var activeTemplates = templates.filter(function(t) { return t.is_active && (t.stock === -1 || t.stock > 0); });
+        if (activeTemplates.length === 0) {
+          wx.showToast({ title: '暂无可用券模板', icon: 'none' });
+          return;
         }
+        var items = activeTemplates.map(function(t) { return t.name; });
+        wx.showActionSheet({
+          itemList: items,
+          success: function(sheetRes) {
+            var tpl = activeTemplates[sheetRes.tapIndex];
+            wx.showLoading({ title: '发送中' });
+            wx.cloud.callFunction({
+              name: 'manualSendVoucher',
+              data: { 
+                phone: phone, 
+                templateId: tpl._id,
+                store_id: storeId
+              },
+              success: function(vRes) {
+                wx.hideLoading();
+                var vr = vRes.result || {};
+                if (vr.success) {
+                  wx.showToast({ title: '发送成功', icon: 'success' });
+                } else {
+                  wx.showToast({ title: vr.msg || '发送失败', icon: 'none' });
+                }
+              },
+              fail: function() {
+                wx.hideLoading();
+                wx.showToast({ title: '网络错误', icon: 'none' });
+              }
+            });
+          }
+        });
+      },
+      fail: function() {
+        wx.showToast({ title: '加载券模板失败', icon: 'none' });
       }
     });
   }

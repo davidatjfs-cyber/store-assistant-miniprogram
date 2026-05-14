@@ -43,10 +43,11 @@ function isDbCollectionMissingError(err) {
 
 exports.main = async function (event, context) {
   const { OPENID } = cloud.getWXContext();
+  const { store_id } = event || {};
   try {
     const staff = await getActiveStaffByOpenid(OPENID);
     const role = normalizeRole(staff);
-    if (role !== 'admin') {
+    if (role !== 'admin' && role !== 'manager') {
       return { success: false, message: '无权限', rules: [] };
     }
 
@@ -78,7 +79,11 @@ exports.main = async function (event, context) {
       aggByRule[rid].revenue_fen += row.revenue || 0;
     }
 
-    const rulesSnap = await db.collection('marketing_rules').limit(200).get();
+    let rulesWhere = {};
+    if (store_id) {
+      rulesWhere.store_id = store_id;
+    }
+    const rulesSnap = await db.collection('marketing_rules').where(rulesWhere).limit(200).get();
     const rules = [];
     for (let j = 0; j < rulesSnap.data.length; j++) {
       const doc = rulesSnap.data[j];

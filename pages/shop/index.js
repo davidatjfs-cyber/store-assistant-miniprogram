@@ -10,10 +10,12 @@ Page({
 
   loadTemplates: function() {
     var self = this;
+    var app = getApp();
+    var storeId = (app.globalData.scanParams || {}).store_id || '';
     self.setData({ loading: true });
     wx.cloud.callFunction({
       name: 'getVoucherTemplates',
-      data: {},
+      data: { store_id: storeId },
       success: function(res) {
         var r = res.result || {};
         var list = (r.success && r.data) || [];

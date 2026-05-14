@@ -40,9 +40,11 @@ Page({
       return;
     }
 
+    var app = getApp();
+    var storeId = (app.globalData.scanParams || {}).store_id || '';
     wx.cloud.callFunction({
       name: 'getUserVouchers',
-      data: {},
+      data: { store_id: storeId },
       success: function (res) {
         var r = res.result || {};
         var raw = (r.success && r.data) || [];

@@ -107,6 +107,17 @@ exports.main = async (event, context) => {
       };
     }
 
+    // 检查券模板是否适用于当前门店
+    if (store_id) {
+      var sid = String(store_id);
+      var tplStoreIds = voucher.store_ids;
+      if (Array.isArray(tplStoreIds) && tplStoreIds.length > 0) {
+        if (tplStoreIds.indexOf(sid) < 0 && tplStoreIds.indexOf('*') < 0) {
+          return { success: false, errMsg: '该券不可在当前门店使用' };
+        }
+      }
+    }
+
     // ========== 3. 计算订单金额 ==========
     const unitPrice = voucher.price; // 单价 (分)
     const totalAmount = unitPrice * quantity; // 总金额 (分)

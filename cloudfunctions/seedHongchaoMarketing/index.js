@@ -1,8 +1,8 @@
 /**
- * 马己仙广东小馆 · 首家门店券模板 + 营销规则种子数据（幂等 upsert）
+ * 洪潮门店 · 券模板 + 营销规则种子数据（幂等 upsert）
  * 调用：wx.cloud.callFunction({
- *   name: 'seedMaijixianMarketing',
- *   data: { confirm: 'CONFIRM_SEED_MAIJIXIAN' }
+ *   name: 'seedHongchaoMarketing',
+ *   data: { confirm: 'CONFIRM_SEED_HONGCHAO' }
  * })
  */
 const cloud = require('wx-server-sdk');
@@ -13,23 +13,22 @@ cloud.init({
 
 const db = cloud.database();
 
-const STORE_ID = '51866138';
-/** 对外展示用门店名（与小程序 scanParams.store_display_name、第三方自检脚本 storeName 对齐） */
-const STORE_DISPLAY_NAME = '马己仙上海音乐广场门店';
-const BRAND = '马己仙广东小馆';
+const STORE_ID = '64822111';
+const STORE_DISPLAY_NAME = '洪潮门店';
+const BRAND = '洪潮';
 
 const TEMPLATE_IDS = {
-  new_user: 'mjx_tpl_new_001',
-  return_user: 'mjx_tpl_return_001',
-  recall: 'mjx_tpl_recall_001',
-  vip: 'mjx_tpl_vip_001'
+  new_user: 'hc_tpl_new_001',
+  return_user: 'hc_tpl_return_001',
+  recall: 'hc_tpl_recall_001',
+  vip: 'hc_tpl_vip_001'
 };
 
 const RULE_IDS = {
-  new_convert: 'mjx_rule_new_convert',
-  repurchase: 'mjx_rule_repurchase',
-  recall7d: 'mjx_rule_recall_7d',
-  vip_boost: 'mjx_rule_vip_boost'
+  new_convert: 'hc_rule_new_convert',
+  repurchase: 'hc_rule_repurchase',
+  recall7d: 'hc_rule_recall_7d',
+  vip_boost: 'hc_rule_vip_boost'
 };
 
 async function docExists(ref) {
@@ -37,7 +36,6 @@ async function docExists(ref) {
     const snap = await ref.get();
     return !!(snap && snap.data);
   } catch (e) {
-    // 部分环境下文档不存在时 get 会抛错而非返回空 data
     return false;
   }
 }
@@ -88,10 +86,10 @@ async function upsertStore(storeId, fields) {
 }
 
 exports.main = async function (event, context) {
-  if (!event || event.confirm !== 'CONFIRM_SEED_MAIJIXIAN') {
+  if (!event || event.confirm !== 'CONFIRM_SEED_HONGCHAO') {
     return {
       success: false,
-      message: '缺少 confirm: CONFIRM_SEED_MAIJIXIAN，已拒绝执行'
+      message: '缺少 confirm: CONFIRM_SEED_HONGCHAO，已拒绝执行'
     };
   }
 
@@ -102,7 +100,7 @@ exports.main = async function (event, context) {
       brand: BRAND,
       is_active: true,
       city: '上海',
-      address: '上海市徐汇区音乐广场'
+      address: '上海市'
     });
 
     const tplResults = [];
@@ -110,8 +108,7 @@ exports.main = async function (event, context) {
     tplResults.push(
       await upsertVoucherTemplate(TEMPLATE_IDS.new_user, {
         name: '新人专享券',
-        /** 映射到真实菜品（到店画像 favorite_dish 优先用此字段） */
-        dish_name: '烧鹅',
+        dish_name: '招牌推荐',
         type: 'cash',
         value: 2000,
         cost_fen: 2000,
@@ -122,7 +119,7 @@ exports.main = async function (event, context) {
         price: 2000,
         stock: -1,
         sold_count: 0,
-        usage_rule: BRAND + ' · 新人专享 · 限门店 ' + STORE_ID + ' · 满80元可用 · 详见券说明',
+        usage_rule: BRAND + ' · 新人专享 · 限门店 ' + STORE_ID + ' · 满80元可用',
         brand_name: BRAND,
         store_id_default: STORE_ID,
         store_display_name: STORE_DISPLAY_NAME,
@@ -133,8 +130,7 @@ exports.main = async function (event, context) {
     tplResults.push(
       await upsertVoucherTemplate(TEMPLATE_IDS.return_user, {
         name: '回头客福利券',
-        /** 套餐：多菜品（亦可写成 dish_name: '烧鹅 + 肠粉'） */
-        dish_name: ['烧鹅', '肠粉'],
+        dish_name: '热销菜品',
         type: 'cash',
         value: 1500,
         cost_fen: 1500,
@@ -156,7 +152,7 @@ exports.main = async function (event, context) {
     tplResults.push(
       await upsertVoucherTemplate(TEMPLATE_IDS.recall, {
         name: '想你了专属券',
-        dish_name: '腊味煲仔饭',
+        dish_name: '经典菜品',
         type: 'cash',
         value: 2500,
         cost_fen: 2500,
@@ -178,7 +174,7 @@ exports.main = async function (event, context) {
     tplResults.push(
       await upsertVoucherTemplate(TEMPLATE_IDS.vip, {
         name: 'VIP专享券',
-        dish_name: '白切鸡',
+        dish_name: '招牌菜',
         type: 'cash',
         value: 3000,
         cost_fen: 3000,
@@ -298,10 +294,10 @@ exports.main = async function (event, context) {
         results: ruleResults
       },
       note:
-        '券模板使用 is_active（非 status）。复购规则 target_tags 为 general：需在第二单及以后由 updateUserTags 写入 general（已合入 runMarketingEngine/userLifecycle）。'
+        '洪潮门店种子数据。券模板使用 is_active（非 status）。调用 seedHongchaoMarketing 之后再部署 uploadVoucherTemplate / uploadMarketingRule（如有）。'
     };
   } catch (err) {
-    console.error('seedMaijixianMarketing', err);
+    console.error('seedHongchaoMarketing', err);
     return {
       success: false,
       message: err.message || String(err)

@@ -7,6 +7,7 @@ Page({
     showEditModal: false,
     editingId: '',
     saving: false,
+    templateData: null,
     formData: {
       name: '',
       type: 'cash',
@@ -39,10 +40,12 @@ Page({
 
   loadTemplates: function() {
     var self = this;
+    var app = getApp();
+    var storeId = (app.globalData.staffStoreId || (app.globalData.scanParams || {}).store_id) || '';
     self.setData({ loading: true });
     wx.cloud.callFunction({
       name: 'getVoucherTemplates',
-      data: {},
+      data: { store_id: storeId },
       success: function(res) {
         var r = res.result || {};
         var raw = (r.success && r.data) || [];
@@ -86,6 +89,7 @@ Page({
     this.setData({
       showEditModal: true,
       editingId: id,
+      templateData: tpl,
       formData: {
         name: tpl.name || '',
         type: tpl.type || 'cash',
@@ -157,6 +161,15 @@ Page({
     var f = self.data.formData;
     if (!f.name) { wx.showToast({ title: '请输入券名称', icon: 'none' }); return; }
 
+    var app = getApp();
+    var currentStoreId = (app.globalData.staffStoreId || (app.globalData.scanParams || {}).store_id) || '';
+    var existingStoreIds = [];
+    if (self.data.editingId && self.data.templateData && self.data.templateData.store_ids) {
+      existingStoreIds = self.data.templateData.store_ids;
+    }
+    if (!self.data.editingId && currentStoreId) {
+      existingStoreIds = [currentStoreId];
+    }
     var data = {
       name: f.name,
       type: f.type,
@@ -164,8 +177,8 @@ Page({
       valid_days: parseInt(f.valid_days) || 30,
       stock: isNaN(parseInt(f.stock)) ? -1 : parseInt(f.stock),
       usage_rule: f.usage_rule,
-      is_active: self.data.editingId ? (self.data.templateData && self.data.templateData.is_active) : true,
-      store_ids: [],
+      is_active: self.data.editingId ? !!(self.data.templateData && self.data.templateData.is_active) : true,
+      store_ids: existingStoreIds,
       min_spend: 0,
       valid_time_range: { start: '00:00', end: '23:59' },
       valid_weekdays: [1,2,3,4,5,6,7]
