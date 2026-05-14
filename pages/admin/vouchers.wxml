@@ -1,7 +1,10 @@
 <view class="page">
   <!-- 顶部 -->
   <view class="top-bar">
-    <text class="top-title">券模板管理</text>
+    <view class="top-copy">
+      <text class="top-title">券模板管理</text>
+      <text class="top-subtitle">配置可售礼遇券及其库存、价格与使用规则</text>
+    </view>
     <button class="btn-add" bindtap="onAdd">+ 新增</button>
   </view>
 
@@ -21,10 +24,11 @@
     <view class="glass-card template-item" wx:for="{{templates}}" wx:key="_id">
       <view class="template-header">
         <view class="template-info">
+          <text class="template-kicker">VOUCHER TEMPLATE</text>
           <text class="template-name">{{item.name}}</text>
           <text class="template-type">{{item.type === 'cash' ? '代金券' : item.type === 'discount' ? '折扣券' : '兑换券'}}</text>
         </view>
-        <switch checked="{{item.is_active}}" data-id="{{item._id}}" bindchange="onToggleActive" color="#ff6a00" />
+        <switch checked="{{item.is_active}}" data-id="{{item._id}}" bindchange="onToggleActive" color="#d4b87a" />
       </view>
       <view class="template-details">
         <view class="detail-row" wx:if="{{item.type === 'cash'}}">
@@ -63,6 +67,7 @@
   <view wx:if="{{showEditModal}}" class="modal">
     <view class="modal-backdrop" catchtap="onCloseModal"></view>
     <view class="modal-content">
+      <text class="modal-kicker">FORM</text>
       <text class="modal-title">{{editingId ? '编辑券模板' : '新增券模板'}}</text>
       
       <view class="form-group">

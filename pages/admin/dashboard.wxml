@@ -1,23 +1,34 @@
 <view class="page">
-  <text class="sub" wx:if="{{subtitle}}">{{subtitle}}</text>
-  <text class="date" wx:if="{{date}}">统计日 {{date}}</text>
+  <view class="ambient ambient-a"></view>
+  <view class="ambient ambient-b"></view>
+  <view class="hero">
+    <view class="hero-shell">
+      <view class="hero-copy">
+        <text class="hero-kicker">ADMIN DASHBOARD</text>
+        <text class="hero-title">经营概览</text>
+        <text class="sub" wx:if="{{subtitle}}">{{subtitle}}</text>
+        <text class="date" wx:if="{{date}}">统计日 {{date}}</text>
+      </view>
+      <view class="hero-lens"></view>
+    </view>
+  </view>
 
   <view wx:if="{{loading}}" class="state">加载中…</view>
 
   <block wx:else>
     <view class="glass-card metrics-grid">
       <view class="metric">
-        <text class="metric-icon">券</text>
+        <text class="metric-kicker">ISSUED</text>
         <text class="metric-val">{{issuedToday}}</text>
         <text class="metric-label">今日发券</text>
       </view>
       <view class="metric">
-        <text class="metric-icon">核</text>
+        <text class="metric-kicker">USED</text>
         <text class="metric-val">{{usedToday}}</text>
         <text class="metric-label">今日核销</text>
       </view>
       <view class="metric metric-wide">
-        <text class="metric-icon">收</text>
+        <text class="metric-kicker">REVENUE</text>
         <text class="metric-val metric-money">¥{{revenueYuan}}</text>
         <text class="metric-label">今日收入</text>
       </view>

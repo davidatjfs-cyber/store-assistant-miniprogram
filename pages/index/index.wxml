@@ -1,16 +1,34 @@
 <view class="page">
   <view class="landing" wx:if="{{pageReady}}">
+    <view class="ambient ambient-a"></view>
+    <view class="ambient ambient-b"></view>
+    <view class="ambient ambient-c"></view>
+    <view class="ambient ambient-d"></view>
+
     <!-- Hero -->
     <view class="hero-section">
-      <view class="hero-mark">喜</view>
-      <text class="hero-title">年年有喜</text>
-      <text class="hero-subtitle">扫码入会 · 会员权益 · 便捷点餐</text>
+      <view class="hero-shell">
+        <view class="hero-copy">
+          <view class="hero-kicker">PRIVATE DINING BENEFITS</view>
+          <text class="hero-title">年年有喜</text>
+          <text class="hero-subtitle">入会先看礼遇，点餐之前把今晚能用的优惠先选好。</text>
+        </view>
+        <view class="hero-orb">
+          <view class="hero-orb-core">喜</view>
+        </view>
+      </view>
     </view>
 
     <!-- 欢迎卡片 -->
-    <view class="glass-card" wx:if="{{isFromScan}}">
-      <text class="card-title">欢迎光临</text>
-      <text class="card-desc">授权手机号后即可同步会员信息并前往点餐页面。</text>
+    <view class="arrival-card" wx:if="{{isFromScan}}">
+      <view class="arrival-top">
+        <view>
+          <text class="arrival-label">今日到店</text>
+          <text class="card-title">到店礼遇，先收进券包</text>
+        </view>
+        <view class="hero-mark">喜</view>
+      </view>
+      <text class="card-desc">完成授权后，今日可领的会员券与活动礼遇会先同步到券包，点餐前看一眼，更容易选到最划算的用法。</text>
       <view class="card-meta" wx:if="{{scanParams}}">
         <view class="meta-row">
           <text class="meta-label">门店</text>
@@ -25,14 +43,17 @@
 
     <!-- 未扫码提示 -->
     <view class="glass-card warn-card" wx:if="{{!isFromScan}}">
-      <text class="warn-title">未识别到桌码</text>
-      <text class="warn-desc">请完全关闭本小程序后，重新扫描桌面上的点餐二维码进入。</text>
+      <text class="warn-title">这次没有识别到桌码</text>
+      <text class="warn-desc">请先退出当前页面，再重新扫描桌面二维码进入，这样门店和桌台信息才能一并带入。</text>
     </view>
 
     <!-- 快捷入口 -->
     <view class="quick-area" wx:if="{{roleLoaded && entrySections.length}}">
       <block wx:for="{{entrySections}}" wx:for-item="sec" wx:key="title">
-        <text class="quick-sec-title">{{sec.title}}</text>
+        <view class="section-head">
+          <text class="quick-sec-title">{{sec.title}}</text>
+          <text class="section-glow"></text>
+        </view>
         <view class="quick-grid">
           <navigator
             wx:for="{{sec.items}}"
@@ -51,9 +72,15 @@
     </view>
   </view>
 
-  <view class="reauth-wrap" wx:if="{{isFromScan && !showAuthModal && !showLegacyMemberTip && pageReady}}">
-    <text class="reauth-hint">未看到授权弹窗，或需要重新授权？</text>
-    <button class="btn-outline" open-type="getPhoneNumber" bindgetphonenumber="onGetPhoneNumber">授权入会</button>
+  <view class="reauth-wrap" wx:if="{{isFromScan && !showAuthModal && !showLegacyMemberTip && !showBenefitModal && pageReady}}">
+    <text class="reauth-hint" wx:if="{{!hasAuthorizedMember}}">入会后可先查看今晚可用礼遇，再决定怎么点更合适。</text>
+    <text class="reauth-hint" wx:else>今晚的礼遇已经就位，先挑一张顺手的，再去点餐。</text>
+    <button wx:if="{{!hasAuthorizedMember}}" class="btn-outline" open-type="getPhoneNumber" bindgetphonenumber="onGetPhoneNumber">授权入会并查看礼遇</button>
+    <view wx:else class="post-auth-actions">
+      <button class="btn-primary" bindtap="goVoucherList">打开今晚的券包</button>
+      <button class="btn-outline" bindtap="goShop">看看可买礼遇</button>
+      <button class="btn-quiet" bindtap="orderAfterBenefit">去点餐</button>
+    </view>
   </view>
 
   <!-- 授权弹窗 -->
@@ -61,10 +88,84 @@
     <view class="modal-backdrop" catchtap="onModalBackdropTap"></view>
     <view class="glass-modal">
       <view class="modal-badge">会员礼遇</view>
-      <view class="modal-title">禧事临门</view>
-      <view class="modal-desc">请先授权手机号领取会员权益</view>
-      <button class="btn-primary" open-type="getPhoneNumber" bindgetphonenumber="onGetPhoneNumber">立即授权领取</button>
-      <view class="modal-foot">点击即表示您已阅读并同意上述说明</view>
+      <view class="modal-title">先把礼遇领好，再慢慢点餐</view>
+      <view class="modal-desc">授权后会同步会员券、活动礼遇和桌台信息。您可以先看看今晚有什么能用，再决定怎么点更划算。</view>
+      <view class="benefit-preview">
+        <view class="benefit-mini"><text class="benefit-num">1</text><text>入会权益</text></view>
+        <view class="benefit-mini"><text class="benefit-num">券</text><text>到店优惠</text></view>
+        <view class="benefit-mini"><text class="benefit-num">桌</text><text>桌台点餐</text></view>
+      </view>
+      <button class="btn-primary" open-type="getPhoneNumber" bindgetphonenumber="onGetPhoneNumber">授权并查看今晚礼遇</button>
+      <view class="modal-foot">仅用于会员识别、发券和同步到店礼遇</view>
+    </view>
+  </view>
+
+  <!-- 授权后权益确认 -->
+  <view wx:if="{{showBenefitModal}}" class="modal">
+    <view class="modal-backdrop"></view>
+    <view class="glass-modal benefit-modal">
+      <view class="modal-badge">权益已准备好</view>
+      <view class="modal-title">先看今晚能用哪张</view>
+      <view class="modal-desc">本次到店礼遇已经同步完成。点餐前先确认可用券，结账时就不容易错过更好的优惠组合。</view>
+
+      <view class="wallet-card">
+        <view class="wallet-left">
+          <text class="wallet-label">今晚可用礼遇</text>
+          <text class="wallet-count" wx:if="{{!benefitLoading}}">{{benefitVoucherCount}} 张</text>
+          <text class="wallet-count" wx:else>查询中</text>
+        </view>
+        <view class="wallet-seal">券</view>
+      </view>
+
+      <view class="benefit-list" wx:if="{{benefitVouchers.length}}">
+        <view class="benefit-row" wx:for="{{benefitVouchers}}" wx:key="id">
+          <text class="benefit-dot"></text>
+          <text class="benefit-name">{{item.name}}</text>
+          <text class="benefit-state">可用</text>
+        </view>
+      </view>
+      <view class="benefit-empty" wx:else>
+        <text wx:if="{{benefitLoading}}">正在读取您的会员权益…</text>
+        <text wx:else>礼遇可能仍在同步中，点“打开今晚的券包”可以再刷新确认。</text>
+      </view>
+
+      <button class="btn-primary" bindtap="goVoucherList">打开今晚的券包</button>
+      <button class="btn-outline" bindtap="goShop">再挑一张可买礼遇</button>
+      <button class="btn-quiet" bindtap="showActivityInfo">看看活动与储值</button>
+      <button class="btn-quiet" bindtap="orderAfterBenefit">直接去点餐</button>
+      <view class="modal-foot" bindtap="startProfileQuestion">告诉我们一点偏好，下次推荐会更准</view>
+    </view>
+  </view>
+
+  <!-- 活动与充值说明弹窗 -->
+  <view wx:if="{{showActivityModal}}" class="modal">
+    <view class="modal-backdrop" catchtap="closeActivityModal"></view>
+    <view class="glass-modal activity-modal">
+      <view class="modal-badge">活动中心</view>
+      <view class="modal-title">今晚的优惠可以这样用</view>
+      <view class="modal-desc">您可以先买礼遇券、先看券包，再去点餐。储值功能也可以做，但需要门店完成微信支付储值能力配置后再上线。</view>
+
+      <view class="activity-list">
+        <view class="activity-row">
+          <view class="activity-icon">券</view>
+          <view class="activity-copy">
+            <text class="activity-title">先买一张礼遇券</text>
+            <text class="activity-desc">适合点餐前先把优惠锁定，付款后会直接进入券包。</text>
+          </view>
+        </view>
+        <view class="activity-row">
+          <view class="activity-icon muted">储</view>
+          <view class="activity-copy">
+            <text class="activity-title">会员储值</text>
+            <text class="activity-desc">后续可支持充值送礼，但需要先配置支付、余额账户和退款规则。</text>
+          </view>
+        </view>
+      </view>
+
+      <button class="btn-primary" bindtap="goShop">去挑一张礼遇券</button>
+      <button class="btn-outline" bindtap="goVoucherList">回到今晚的券包</button>
+      <button class="btn-quiet" bindtap="orderAfterBenefit">先去点餐</button>
+      <view class="modal-foot" bindtap="closeActivityModal">关闭</view>
     </view>
   </view>
 
@@ -72,8 +173,34 @@
   <view wx:if="{{showLegacyMemberTip}}" class="legacy">
     <view class="legacy-inner">
       <view class="legacy-title">欢迎回来</view>
-      <view class="legacy-sub">老会员积分已为您同步</view>
+      <view class="legacy-sub">老会员积分已为您同步到账</view>
       <view class="legacy-points">+{{legacyMemberPoints}} 积分</view>
+    </view>
+  </view>
+
+  <!-- 画像采集弹窗 -->
+  <view wx:if="{{showProfileModal}}" class="modal">
+    <view class="modal-backdrop" catchtap="skipProfileQuestion"></view>
+    <view class="glass-modal">
+      <view class="modal-badge">了解您更多</view>
+      <view class="modal-title" wx:if="{{profileQuestionStep === 1}}">这次是？</view>
+      <view class="modal-title" wx:if="{{profileQuestionStep === 2}}">今天更想要？</view>
+      <view class="modal-desc">选一个更接近今晚心情的答案，让下次推荐更贴近您。</view>
+      <view wx:if="{{profileQuestionStep === 1}}" class="choice-stack">
+        <button class="btn-primary" bindtap="onProfileAnswer" data-value="date">约会</button>
+        <button class="btn-outline choice-btn" bindtap="onProfileAnswer" data-value="family">家庭聚餐</button>
+        <button class="btn-outline choice-btn" bindtap="onProfileAnswer" data-value="business">商务</button>
+        <button class="btn-outline choice-btn" bindtap="onProfileAnswer" data-value="solo">一个人</button>
+        <button class="btn-outline choice-btn" bindtap="onProfileAnswer" data-value="friends">朋友聚会</button>
+      </view>
+      <view wx:if="{{profileQuestionStep === 2}}" class="choice-stack">
+        <button class="btn-primary" bindtap="onProfileAnswer" data-value="qingdan">清淡</button>
+        <button class="btn-outline choice-btn" bindtap="onProfileAnswer" data-value="guoyin">过瘾</button>
+        <button class="btn-outline choice-btn" bindtap="onProfileAnswer" data-value="zhaopai">招牌</button>
+        <button class="btn-outline choice-btn" bindtap="onProfileAnswer" data-value="xinpin">新品</button>
+        <button class="btn-outline choice-btn" bindtap="onProfileAnswer" data-value="xingjiabi">性价比</button>
+      </view>
+      <view class="modal-foot" bindtap="skipProfileQuestion">跳过，以后再说</view>
     </view>
   </view>
 </view>
