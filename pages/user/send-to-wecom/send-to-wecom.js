@@ -5,7 +5,8 @@ Page({
     loading: true,
     wecomLinked: false,
     wecomInfo: null,
-    vouchers: []
+    vouchers: [],
+    wecomAvailable: true
   },
 
   onLoad: function () {
@@ -23,14 +24,25 @@ Page({
       self.setData({ loading: false });
       return;
     }
+    var app = getApp();
+    var storeId = (app.globalData.scanParams || {}).store_id || '';
     wx.cloud.callFunction({
       name: 'queryWecomMapping',
-      data: {},
+      data: { store_id: storeId },
       success: function (res) {
         var result = (res && res.result) || {};
-        if (result.success && result.hasMapping) {
+        if (!result.success) {
+          self.setData({ loading: false, wecomLinked: false, wecomAvailable: true });
+          return;
+        }
+        if (!result.wecomAvailable) {
+          self.setData({ loading: false, wecomAvailable: false });
+          return;
+        }
+        if (result.hasMapping) {
           self.setData({
             loading: false,
+            wecomAvailable: true,
             wecomLinked: true,
             wecomInfo: {
               external_userid: result.external_userid,
@@ -40,6 +52,7 @@ Page({
         } else {
           self.setData({
             loading: false,
+            wecomAvailable: true,
             wecomLinked: false
           });
         }

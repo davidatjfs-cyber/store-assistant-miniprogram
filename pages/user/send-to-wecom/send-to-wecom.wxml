@@ -1,6 +1,8 @@
 <view class="page">
   <view wx:if="{{loading}}" class="state">加载中…</view>
 
+  <view wx:elif="{{!wecomAvailable}}" class="page"></view>
+
   <view wx:elif="{{wecomLinked}}" class="linked-section">
     <view class="glass-card status-card">
       <text class="status-icon">✅</text>
