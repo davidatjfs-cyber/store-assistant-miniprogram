@@ -18,6 +18,12 @@ exports.main = async function (event, context) {
       if (staffRow) {
         storeId = staffRow.store_id || staffRow.storeId || '';
       }
+      if (!storeId) {
+        var anyConfig = await db.collection('store_wecom_configs').limit(1).get();
+        if (anyConfig.data.length) {
+          storeId = anyConfig.data[0].store_id;
+        }
+      }
     }
 
     var wecomAvailable = false;
