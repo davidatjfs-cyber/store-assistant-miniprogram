@@ -88,16 +88,21 @@ function buildEntrySections(role) {
           sub: '查看已获得优惠券',
           url: '/pages/voucher/list',
           icon: '券'
-        },
-        {
-          key: 'wecom',
-          title: '企业微信',
-          sub: '关联企微接收优惠券',
-          url: '/pages/user/send-to-wecom/send-to-wecom',
-          icon: '企'
         }
       ]
     });
+  }
+  if (role === 'staff' || role === 'manager' || role === 'admin' || !role) {
+    var lastSection = sections[sections.length - 1];
+    if (lastSection) {
+      lastSection.items.push({
+        key: 'wecom',
+        title: '企业微信',
+        sub: '关联企微接收优惠券',
+        url: '/pages/user/send-to-wecom/send-to-wecom',
+        icon: '企'
+      });
+    }
   }
   return sections;
 }
