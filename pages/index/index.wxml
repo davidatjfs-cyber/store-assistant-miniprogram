@@ -77,9 +77,10 @@
     <text class="reauth-hint" wx:else>今晚的礼遇已经就位，先挑一张顺手的，再去点餐。</text>
     <button wx:if="{{!hasAuthorizedMember}}" class="btn-outline" open-type="getPhoneNumber" bindgetphonenumber="onGetPhoneNumber">授权入会并查看礼遇</button>
     <view wx:else class="post-auth-actions">
-      <button class="btn-primary" bindtap="goVoucherList">打开今晚的券包</button>
+      <button class="btn-primary" bindtap="associateAndOrder">加企微领券→去点餐</button>
+      <button class="btn-outline" bindtap="goVoucherList">打开今晚的券包</button>
       <button class="btn-outline" bindtap="goShop">看看可买礼遇</button>
-      <button class="btn-quiet" bindtap="orderAfterBenefit">去点餐</button>
+      <button class="btn-quiet" bindtap="orderAfterBenefit">直接去点餐</button>
     </view>
   </view>
 
@@ -129,9 +130,9 @@
         <text wx:else>礼遇可能仍在同步中，点“打开今晚的券包”可以再刷新确认。</text>
       </view>
 
-      <button class="btn-primary" bindtap="goVoucherList">打开今晚的券包</button>
+      <button class="btn-primary" bindtap="associateAndOrder">加企微领券→去点餐</button>
+      <button class="btn-outline" bindtap="goVoucherList">打开今晚的券包</button>
       <button class="btn-outline" bindtap="goShop">再挑一张可买礼遇</button>
-      <button class="btn-quiet" bindtap="showActivityInfo">看看活动与储值</button>
       <button class="btn-quiet" bindtap="orderAfterBenefit">直接去点餐</button>
       <view class="modal-foot" bindtap="startProfileQuestion">告诉我们一点偏好，下次推荐会更准</view>
     </view>

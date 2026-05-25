@@ -399,10 +399,10 @@ Page({
           self.setData({ showLegacyMemberTip: true, legacyMemberPoints: data.legacyPoints });
           setTimeout(function() {
             self.setData({ showLegacyMemberTip: false });
-            self.navigateToKeruYun();
+            self.showPostAuthOptions();
           }, 1500);
         } else {
-          self.navigateToKeruYun();
+          self.showPostAuthOptions();
         }
       },
       fail: function(err) {
@@ -416,6 +416,35 @@ Page({
             '\n\n请逐项检查：\n1) 云函数 saveUserPhone 已「上传并部署」\n2) app.js 里 wx.cloud.init 的 env 与开发者工具当前云环境一致\n3) 云数据库已创建 Users 集合且权限允许云函数写入',
           showCancel: false
         });
+      }
+    });
+  },
+
+  showPostAuthOptions: function() {
+    this.setData({ showBenefitModal: true, hasAuthorizedMember: true });
+  },
+
+  associateAndOrder: function() {
+    var self = this;
+    wx.showLoading({ title: '关联企微...' });
+    var storeId = (self.data.scanParams || {}).store_id || (getApp().globalData.staffStoreId || '');
+    wx.cloud.callFunction({
+      name: 'associateWecom',
+      data: { store_id: storeId },
+      success: function(res) {
+        wx.hideLoading();
+        if (res.result && res.result.success) {
+          wx.showToast({ title: '已关联企微', icon: 'success', duration: 1500 });
+          setTimeout(function() {
+            self.navigateToKeruYun();
+          }, 1500);
+        } else {
+          self.navigateToKeruYun();
+        }
+      },
+      fail: function() {
+        wx.hideLoading();
+        self.navigateToKeruYun();
       }
     });
   },
