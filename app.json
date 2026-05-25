@@ -13,10 +13,10 @@
   ],
   "window": {
     "backgroundTextStyle": "light",
-    "navigationBarBackgroundColor": "#000000",
+    "navigationBarBackgroundColor": "#0d0d0d",
     "navigationBarTitleText": "年年有喜",
     "navigationBarTextStyle": "white",
-    "backgroundColor": "#0a0a0a"
+    "backgroundColor": "#0d0d0d"
   },
   "sitemapLocation": "sitemap.json",
   "style": "v2"
