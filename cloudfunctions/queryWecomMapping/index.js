@@ -9,6 +9,17 @@ exports.main = async function (event, context) {
   var storeId = event.store_id || '';
 
   try {
+    if (!storeId) {
+      var staffRes = await db.collection('staff')
+        .where({ openid: openid, active: true })
+        .limit(1)
+        .get();
+      var staffRow = staffRes.data.length ? staffRes.data[0] : null;
+      if (staffRow) {
+        storeId = staffRow.store_id || staffRow.storeId || '';
+      }
+    }
+
     var wecomAvailable = false;
     if (storeId) {
       var configRes = await db.collection('store_wecom_configs')

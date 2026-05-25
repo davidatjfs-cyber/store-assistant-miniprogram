@@ -32,11 +32,6 @@ Page({
       return;
     }
     var storeId = self.getStoreId();
-    var app = getApp();
-    console.log('[wecom] storeId:', storeId, 'scanParams:', JSON.stringify(app.globalData.scanParams), 'staffStoreId:', app.globalData.staffStoreId);
-    if (!storeId) {
-      wx.showToast({ title: 'store_id为空', icon: 'none', duration: 3000 });
-    }
     wx.cloud.callFunction({
       name: 'queryWecomMapping',
       data: { store_id: storeId },
