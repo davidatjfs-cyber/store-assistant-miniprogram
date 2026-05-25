@@ -191,6 +191,11 @@ page { background: #0d0d0d; color: #e8e0d4; }
 .btn-outline::after,
 .btn-quiet::after { border: none; }
 
+.icp-footer {
+  text-align: center; font-size: 22rpx; color: rgba(138,126,114,0.5);
+  padding: 40rpx 32rpx 20rpx; letter-spacing: 2rpx;
+}
+
 .legacy { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(160deg, #1a1412, #0d0d0d); z-index: 1000; display: flex; align-items: center; justify-content: center; }
 .legacy-inner { text-align: center; padding: 48rpx; }
 .legacy-title { color: #d4b87a; font-size: 52rpx; font-weight: 900; margin-bottom: 16rpx; letter-spacing: 4rpx; }

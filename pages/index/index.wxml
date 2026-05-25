@@ -178,6 +178,8 @@
     </view>
   </view>
 
+  <view class="icp-footer">沪ICP备2025128139号-2X</view>
+
   <!-- 画像采集弹窗 -->
   <view wx:if="{{showProfileModal}}" class="modal">
     <view class="modal-backdrop" catchtap="skipProfileQuestion"></view>
