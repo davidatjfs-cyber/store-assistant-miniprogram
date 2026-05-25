@@ -5,9 +5,14 @@ cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 var db = cloud.database();
 
 async function loadStoreWecomConfig(storeId) {
-  if (!storeId) return null;
+  if (storeId) {
+    try {
+      var res = await db.collection('store_wecom_configs').where({ store_id: storeId }).limit(1).get();
+      if (res.data.length) return res.data[0];
+    } catch (e) {}
+  }
   try {
-    var res = await db.collection('store_wecom_configs').where({ store_id: storeId }).limit(1).get();
+    var res = await db.collection('store_wecom_configs').limit(1).get();
     return res.data.length ? res.data[0] : null;
   } catch (e) {
     return null;
@@ -37,7 +42,7 @@ exports.main = async function (event, context) {
       return { success: false, error: '企微 external_userid 为空，无法发送' };
     }
 
-    var storeConfig = storeId ? await loadStoreWecomConfig(storeId) : null;
+    var storeConfig = await loadStoreWecomConfig(storeId);
     var corpId = storeConfig ? storeConfig.corp_id : wecomConfig.WE_COM_CORP_ID;
     var corpSecret = storeConfig ? storeConfig.corp_secret : wecomConfig.WE_COM_APP_SECRET;
     var agentId = storeConfig ? (storeConfig.agent_id || wecomConfig.WE_COM_APP_ID) : wecomConfig.WE_COM_APP_ID;

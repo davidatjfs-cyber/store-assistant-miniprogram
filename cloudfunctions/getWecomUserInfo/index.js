@@ -5,9 +5,14 @@ cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 var db = cloud.database();
 
 async function loadStoreWecomConfig(storeId) {
-  if (!storeId) return null;
+  if (storeId) {
+    try {
+      var res = await db.collection('store_wecom_configs').where({ store_id: storeId }).limit(1).get();
+      if (res.data.length) return res.data[0];
+    } catch (e) {}
+  }
   try {
-    var res = await db.collection('store_wecom_configs').where({ store_id: storeId }).limit(1).get();
+    var res = await db.collection('store_wecom_configs').limit(1).get();
     return res.data.length ? res.data[0] : null;
   } catch (e) {
     return null;

@@ -38,24 +38,49 @@ App({
   parseLaunchOptions(options) {
     options = options || {};
     const scene = options.scene;
-    const query = options.query || {};
+    let query = options.query || {};
+
+    // 微信小程序码场景：参数编码在 options.scene 字符串中，不在 query 里
+    if (!query.store_id && !query.table_id && options.scene && typeof options.scene === 'string' && options.scene.indexOf('=') >= 0) {
+      try {
+        var decoded = decodeURIComponent(options.scene);
+        decoded.split('&').forEach(function(pair) {
+          var kv = pair.split('=');
+          if (kv.length === 2 && kv[0]) {
+            query[kv[0]] = kv[1];
+          }
+        });
+      } catch(e) {
+        // decode failed, keep original query
+      }
+    }
+
     const campaignId = query.campaign_id || query.campaignId || query.scene_param || '';
     if (campaignId) {
       this.globalData.campaignId = campaignId;
     }
 
-    if (scene === 1047 || scene === 1011) {
-      if (query && (query.table_id || query.store_id || Object.keys(query).length > 0)) {
-        this.globalData.scanParams = Object.assign(
-          {
-            table_id: query.table_id || '',
-            store_id: query.store_id || '',
-            scene: scene,
-            timestamp: Date.now()
-          },
-          query
-        );
-      }
+    var isScanScene = scene === 1047 || scene === 1011 || scene === 1027 || scene === 1012 || scene === 1013 || scene === 1020 || scene === 1036 || scene === 1038 || scene === 1048 || scene === 1049;
+    if (query && (query.table_id || query.store_id || query.store_display_name)) {
+      this.globalData.scanParams = Object.assign(
+        {
+          table_id: query.table_id || '',
+          store_id: query.store_id || '',
+          scene: scene || '',
+          timestamp: Date.now()
+        },
+        query
+      );
+    } else if (isScanScene && query && Object.keys(query).length > 0) {
+      this.globalData.scanParams = Object.assign(
+        {
+          table_id: query.table_id || '',
+          store_id: query.store_id || '',
+          scene: scene,
+          timestamp: Date.now()
+        },
+        query
+      );
     }
 
     if (!scene && Object.keys(query).length > 0) {

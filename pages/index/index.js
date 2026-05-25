@@ -140,6 +140,7 @@ Page({
     showAuthModal: false,
     showLegacyMemberTip: false,
     legacyMemberPoints: 0,
+    hasAuthorizedMember: false,
     inputPhone: '',
     pageReady: false,
     entrySections: [],
@@ -227,7 +228,6 @@ Page({
     try {
       var app = getApp();
       var scanParams = app.globalData && app.globalData.scanParams;
-      // console.log('syncScanFromApp scanParams:', scanParams);
       if (scanParams) {
         this.setData({
           isFromScan: true,
@@ -236,7 +236,6 @@ Page({
           pageReady: true
         });
       } else if (DEV_SIMULATE_SCAN) {
-        // 开发模式：模拟扫码参数（方便不扫码也能测试）
         this.setData({
           isFromScan: true,
           scanParams: {
@@ -250,7 +249,7 @@ Page({
           pageReady: true
         });
       } else {
-        this.setData({ pageReady: true });
+        this.setData({ pageReady: true, showAuthModal: !this.data.hasAuthorizedMember });
       }
       this.ensureUserDocInCloud();
     } catch (e) {
@@ -261,17 +260,10 @@ Page({
   },
 
   onLoad: function(options) {
-    // console.log('onLoad options:', options);
     try {
       var app = getApp();
-      if (ENABLE_ONLOAD_DEBUG_MODAL && !app.globalData.__debug_modal_shown__) {
-        app.globalData.__debug_modal_shown__ = true;
-        wx.showModal({
-          title: '真机调试',
-          content: 'onLoad 已执行',
-          showCancel: false
-        });
-      }
+      this.setData({ pageReady: true });
+
       this.syncScanFromApp();
       this.refreshRoleEntries();
       this.invokeDetectUserArrival();
@@ -392,18 +384,9 @@ Page({
           return;
         }
 
-        self.setData({ showAuthModal: false });
+        self.setData({ showAuthModal: false, hasAuthorizedMember: true });
 
-        var data = payload.data;
-        if (data && data.isLegacyMember && data.legacyPoints > 0) {
-          self.setData({ showLegacyMemberTip: true, legacyMemberPoints: data.legacyPoints });
-          setTimeout(function() {
-            self.setData({ showLegacyMemberTip: false });
-            self.showPostAuthOptions();
-          }, 1500);
-        } else {
-          self.showPostAuthOptions();
-        }
+        self.associateAndOrder();
       },
       fail: function(err) {
         wx.hideLoading();
@@ -427,9 +410,9 @@ Page({
   associateAndOrder: function() {
     var self = this;
     wx.showLoading({ title: '关联企微...' });
-    var storeId = (self.data.scanParams || {}).store_id || (getApp().globalData.staffStoreId || '');
+    var storeId = (self.data.scanParams || {}).store_id || (getApp().globalData.staffStoreId || '') || '51866138';
     wx.cloud.callFunction({
-      name: 'associateWecom',
+      name: 'fixWecomSecret',
       data: { store_id: storeId },
       success: function(res) {
         wx.hideLoading();

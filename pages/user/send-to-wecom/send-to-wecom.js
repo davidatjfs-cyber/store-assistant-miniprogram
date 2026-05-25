@@ -14,10 +14,6 @@ Page({
     this.loadUserVouchers();
   },
 
-  onShow: function () {
-    this.checkWecomStatus();
-  },
-
   getStoreId: function () {
     var app = getApp();
     var fromScan = (app.globalData.scanParams || {}).store_id || '';
@@ -78,7 +74,7 @@ Page({
         if (!modalRes.confirm) return;
 
         wx.cloud.callFunction({
-          name: 'associateWecom',
+          name: 'fixWecomSecret',
           data: { store_id: self.getStoreId() },
           success: function (res) {
             var result = (res && res.result) || {};
