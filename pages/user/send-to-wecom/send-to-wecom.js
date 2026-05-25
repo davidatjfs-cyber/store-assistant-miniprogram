@@ -18,14 +18,20 @@ Page({
     this.checkWecomStatus();
   },
 
+  getStoreId: function () {
+    var app = getApp();
+    var fromScan = (app.globalData.scanParams || {}).store_id || '';
+    if (fromScan) return fromScan;
+    return app.globalData.staffStoreId || '';
+  },
+
   checkWecomStatus: function () {
     var self = this;
     if (!wx.cloud || !wx.cloud.callFunction) {
       self.setData({ loading: false });
       return;
     }
-    var app = getApp();
-    var storeId = (app.globalData.scanParams || {}).store_id || '';
+    var storeId = self.getStoreId();
     wx.cloud.callFunction({
       name: 'queryWecomMapping',
       data: { store_id: storeId },
@@ -73,7 +79,7 @@ Page({
 
         wx.cloud.callFunction({
           name: 'associateWecom',
-          data: { store_id: (getApp().globalData.scanParams || {}).store_id || '' },
+          data: { store_id: self.getStoreId() },
           success: function (res) {
             var result = (res && res.result) || {};
             if (result.success) {
@@ -108,7 +114,7 @@ Page({
         voucherId: voucherId,
         messageType: 'text',
         content: '',
-        store_id: (getApp().globalData.scanParams || {}).store_id || ''
+        store_id: self.getStoreId()
       },
       success: function (res) {
         wx.hideLoading();
@@ -130,8 +136,7 @@ Page({
     var self = this;
     if (!wx.cloud || !wx.cloud.callFunction) return;
 
-    var app = getApp();
-    var storeId = (app.globalData.scanParams || {}).store_id || '';
+    var storeId = self.getStoreId();
     wx.cloud.callFunction({
       name: 'getUserVouchers',
       data: { store_id: storeId },
