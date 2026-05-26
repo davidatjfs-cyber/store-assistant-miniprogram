@@ -126,18 +126,18 @@
 
         <view class="benefit-steps">
           <view class="benefit-step">
-            <view class="benefit-step-icon">1</view>
-            <text class="benefit-step-title">入会领券</text>
-            <text class="benefit-step-sub">专属优惠</text>
+            <view class="benefit-step-icon">惠</view>
+            <text class="benefit-step-title">门店活动</text>
+            <text class="benefit-step-sub">专属礼遇</text>
           </view>
           <view class="benefit-step">
-            <view class="benefit-step-icon">2</view>
-            <text class="benefit-step-title">扫码点餐</text>
-            <text class="benefit-step-sub">快捷下单</text>
+            <view class="benefit-step-icon">券</view>
+            <text class="benefit-step-title">我的优惠</text>
+            <text class="benefit-step-sub">一键领取</text>
           </view>
         </view>
 
-        <button class="hero-cta modal-cta" open-type="getPhoneNumber" bindgetphonenumber="onGetPhoneNumber">{{storeConfig.ctaText}}</button>
+        <button class="hero-cta modal-cta" open-type="getPhoneNumber" bindgetphonenumber="onGetPhoneNumber">扫码点餐</button>
 
         <view class="trust-copy modal-trust">
           <text class="trust-line"></text>
