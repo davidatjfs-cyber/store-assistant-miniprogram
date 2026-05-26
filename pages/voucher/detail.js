@@ -10,11 +10,23 @@ function formatExpire(v) {
   return y + '-' + m + '-' + day;
 }
 
+function formatBenefit(template) {
+  if (!template) return '专属礼遇';
+  if (template.type === 'cash') {
+    return '代金 ¥' + ((template.value || 0) / 100).toFixed(0);
+  }
+  if (template.type === 'discount') {
+    return ((template.value || 0) / 10) + ' 折礼遇';
+  }
+  return '专属礼遇';
+}
+
 Page({
   data: {
     item: null,
     displayName: '优惠券',
     expireText: '',
+    benefitText: '',
     statusText: {
       unused: '待使用',
       used: '已使用',
@@ -50,7 +62,8 @@ Page({
     this.setData({
       item: item,
       displayName: displayName,
-      expireText: formatExpire(item.expire_at)
+      expireText: formatExpire(item.expire_at),
+      benefitText: formatBenefit(t)
     });
   },
 

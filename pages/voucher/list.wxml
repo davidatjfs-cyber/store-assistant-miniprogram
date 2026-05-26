@@ -1,45 +1,55 @@
 <view class="page">
   <view class="ambient ambient-a"></view>
   <view class="ambient ambient-b"></view>
+
   <view class="wallet-hero">
     <view class="wallet-copy">
       <text class="wallet-kicker">MEMBER WALLET</text>
       <text class="wallet-title">今晚的券包</text>
-      <text class="top-hint">点开任一礼遇，出示二维码给店员扫码即可使用。</text>
+      <text class="wallet-desc">点开任一礼遇，出示二维码给店员扫码即可使用。</text>
     </view>
     <button class="btn-glass" size="mini" bindtap="onRefresh" loading="{{loading}}">刷新</button>
   </view>
 
-  <view wx:if="{{loading && !list.length}}" class="state">加载中…</view>
+  <view wx:if="{{loading && !list.length}}" class="state">礼遇加载中…</view>
 
-  <view wx:elif="{{!list.length}}" class="state empty">
-    <text>还没有可用礼遇</text>
-    <text class="sub">购买或领取成功后，这里会第一时间出现。</text>
+  <view wx:elif="{{!list.length}}" class="empty-shell">
+    <view class="empty-card">
+      <text class="empty-kicker">NO PRIVILEGES YET</text>
+      <text class="empty-title">还没有可用礼遇</text>
+      <text class="empty-desc">购买或领取成功后，这里会第一时间出现。</text>
+      <navigator class="empty-action" url="/pages/shop/index">去看看礼遇</navigator>
+    </view>
   </view>
 
   <view wx:else class="list">
     <view
-      class="glass-card voucher-item"
+      class="voucher-item"
       wx:for="{{list}}"
       wx:key="_id"
       data-item="{{item}}"
       bindtap="onOpenDetail"
     >
-      <view class="voucher-shine"></view>
-      <view class="voucher-seal">喜</view>
+      <view class="voucher-halo"></view>
       <view class="voucher-top">
-        <view>
-          <text class="voucher-label">今晚可用礼遇</text>
+        <view class="voucher-copy">
+          <text class="voucher-kicker">{{item.benefitText}}</text>
           <text class="voucher-name">{{item.displayName}}</text>
         </view>
         <text class="badge badge--{{item.status}}">{{statusText[item.status] || item.status}}</text>
       </view>
-      <view class="voucher-meta">
-        <text class="meta">使用截止 {{item.expireText}}</text>
+
+      <view class="voucher-middle">
+        <view class="voucher-meta">
+          <text class="meta-label">使用截止</text>
+          <text class="meta-value">{{item.expireText}}</text>
+        </view>
+        <view class="voucher-seal">喜</view>
       </view>
+
       <view class="voucher-foot">
-        <text class="link">打开核销二维码</text>
-        <text class="arrow">›</text>
+        <text class="foot-text">打开核销二维码</text>
+        <text class="foot-arrow">›</text>
       </view>
     </view>
   </view>

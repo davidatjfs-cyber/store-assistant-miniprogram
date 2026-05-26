@@ -8,6 +8,17 @@ function formatExpire(v) {
   return y + '-' + m + '-' + day;
 }
 
+function formatBenefit(template) {
+  if (!template) return '专属礼遇';
+  if (template.type === 'cash') {
+    return '代金 ¥' + ((template.value || 0) / 100).toFixed(0);
+  }
+  if (template.type === 'discount') {
+    return ((template.value || 0) / 10) + ' 折礼遇';
+  }
+  return '专属礼遇';
+}
+
 Page({
   data: {
     list: [],
@@ -53,7 +64,8 @@ Page({
           var displayName = (t && t.name) || '优惠券';
           return Object.assign({}, item, {
             expireText: formatExpire(item.expire_at),
-            displayName: displayName
+            displayName: displayName,
+            benefitText: formatBenefit(t)
           });
         });
         self.setData({ list: list, loading: false });

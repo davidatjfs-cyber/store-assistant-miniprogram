@@ -1,44 +1,57 @@
 <view class="page" wx:if="{{item}}">
   <view class="ambient ambient-a"></view>
   <view class="ambient ambient-b"></view>
-  <view class="glass-card hero-card">
-    <view class="hero-shell">
-      <view class="hero-copy">
-        <text class="hero-kicker">VOUCHER DETAIL</text>
-        <text class="title">{{displayName}}</text>
-        <text class="rule" wx:if="{{item.template.usage_rule}}">{{item.template.usage_rule}}</text>
-      </view>
-      <view class="hero-lens"></view>
+
+  <view class="hero-card">
+    <view class="hero-copy">
+      <text class="hero-kicker">{{benefitText}}</text>
+      <text class="hero-title">{{displayName}}</text>
+      <text class="hero-rule" wx:if="{{item.template.usage_rule}}">{{item.template.usage_rule}}</text>
     </view>
 
-    <view class="status-row status-row--first">
-      <text class="label">当前状态</text>
-      <text class="val">{{statusText[item.status] || item.status}}</text>
-    </view>
-    <view class="status-row">
-      <text class="label">使用截止</text>
-      <text class="val">{{expireText}}</text>
+    <view class="hero-seal">喜</view>
+
+    <view class="status-panel">
+      <view class="status-row">
+        <text class="status-label">当前状态</text>
+        <text class="status-value">{{statusText[item.status] || item.status}}</text>
+      </view>
+      <view class="status-row">
+        <text class="status-label">使用截止</text>
+        <text class="status-value">{{expireText}}</text>
+      </view>
+      <view class="status-row" wx:if="{{item.qr_code}}">
+        <text class="status-label">核销编号</text>
+        <text class="status-code">{{item.qr_code}}</text>
+      </view>
     </view>
   </view>
 
-  <view class="glass-card qr-panel" wx:if="{{item.status === 'unused'}}">
-    <view class="panel-shine"></view>
-    <text class="qr-title">到店核销码</text>
-    <text class="qr-tip">请把下方二维码出示给店员扫码完成核销。</text>
+  <view class="qr-panel" wx:if="{{item.status === 'unused'}}">
+    <view class="panel-top">
+      <text class="panel-kicker">DINING ENTRY CODE</text>
+      <text class="panel-title">到店核销码</text>
+      <text class="panel-desc">请把下方二维码出示给店员扫码完成核销。</text>
+    </view>
+
     <view class="qr-frame">
       <canvas class="qr-canvas" canvas-id="voucherQr"></canvas>
     </view>
-    <text class="qr-code-text">{{item.qr_code}}</text>
   </view>
 
-  <view class="glass-card used-tip" wx:else>
-    <text class="used-tip-title" wx:if="{{item.status === 'used'}}">该券已核销</text>
-    <text class="used-tip-title" wx:elif="{{item.status === 'expired'}}">该券已过期</text>
-    <text class="used-tip-title" wx:else>该券当前不可核销</text>
-    <text class="used-tip-desc">回到券包，还可以继续查看今晚其他可用礼遇。</text>
+  <view class="used-panel" wx:else>
+    <text class="used-title" wx:if="{{item.status === 'used'}}">该券已核销</text>
+    <text class="used-title" wx:elif="{{item.status === 'expired'}}">该券已过期</text>
+    <text class="used-title" wx:else>该券当前不可核销</text>
+    <text class="used-desc">回到券包，还可以继续查看今晚其他可用礼遇。</text>
+    <navigator class="used-action" url="/pages/voucher/list">返回券包</navigator>
   </view>
 </view>
 
 <view class="page miss" wx:else>
-  <text class="miss-text">未找到该券，请返回列表重试</text>
+  <view class="miss-card">
+    <text class="miss-title">未找到这张礼遇</text>
+    <text class="miss-desc">请返回券包重新打开，或刷新后再试一次。</text>
+    <navigator class="used-action" url="/pages/voucher/list">回到券包</navigator>
+  </view>
 </view>

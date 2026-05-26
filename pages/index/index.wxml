@@ -1,91 +1,150 @@
-<view class="page">
-  <view class="landing" wx:if="{{pageReady}}">
-    <view class="ambient ambient-a"></view>
-    <view class="ambient ambient-b"></view>
-    <view class="ambient ambient-c"></view>
-    <view class="ambient ambient-d"></view>
+<view class="page guest-page">
+  <view class="hero-bg-shell">
+    <image class="page-bg" src="../../assets/home-hero-bg-toplit.jpg" mode="aspectFill"></image>
+  </view>
+  <view class="page-mask"></view>
+  <view class="page-vignette"></view>
 
-    <!-- Hero -->
-    <view class="hero-section">
-      <view class="hero-shell">
-        <view class="hero-copy">
-          <view class="hero-kicker">PRIVATE DINING BENEFITS</view>
-          <text class="hero-title">年年有喜</text>
-          <text class="hero-subtitle">入会先看礼遇，点餐之前把今晚能用的优惠先选好。</text>
-        </view>
-        <view class="hero-orb">
-          <view class="hero-orb-core">喜</view>
-        </view>
+  <view class="page-shell" wx:if="{{pageReady}}">
+    <view class="brand-head">
+      <text class="brand-title">年年有喜</text>
+      <view class="brand-status" wx:if="{{isFromScan}}">
+        <text class="brand-status-dot"></text>
+        <text class="brand-status-text">已连接</text>
       </view>
     </view>
 
-    <!-- 欢迎卡片 -->
-    <view class="arrival-card" wx:if="{{isFromScan}}">
-      <view class="arrival-top">
-        <view>
-          <text class="arrival-label">今日到店</text>
-          <text class="card-title">到店礼遇，先收进券包</text>
-        </view>
-        <view class="hero-mark">喜</view>
+    <view class="hero-spacer"></view>
+
+    <view class="guest-highlight">
+      <view class="card-badge">
+        <text class="card-badge-icon">✦</text>
+        <text class="card-badge-text">会员礼遇</text>
       </view>
-      <text class="card-desc">完成授权后，今日可领的会员券与活动礼遇会先同步到券包，点餐前看一眼，更容易选到最划算的用法。</text>
-      <view class="card-meta" wx:if="{{scanParams}}">
-        <view class="meta-row">
-          <text class="meta-label">门店</text>
-          <text class="meta-value">{{scanParams.store_display_name || scanParams.store_id || '—'}}</text>
+
+      <view class="card-heading">
+        <text class="card-title">{{storeConfig.welcomeTitle}}</text>
+        <text class="card-script">join us</text>
+      </view>
+
+      <text class="card-desc">授权手机号入会，即可扫码点餐并享受专属优惠。</text>
+
+      <view class="scan-context" wx:if="{{isFromScan && scanParams}}">
+        <view class="scan-context-row">
+          <text class="scan-label">门店</text>
+          <text class="scan-value">{{scanParams.store_display_name || storeConfig.name}}</text>
         </view>
-        <view class="meta-row">
-          <text class="meta-label">桌台编号</text>
-          <text class="meta-value">{{scanParams.table_id || '—'}}</text>
+        <view class="scan-context-row">
+          <text class="scan-label">桌台编号</text>
+          <text class="scan-value">{{scanParams.table_id || '—'}}</text>
         </view>
+      </view>
+
+      <view class="benefit-steps">
+        <view class="benefit-step">
+          <view class="benefit-step-icon">惠</view>
+          <text class="benefit-step-title">门店活动</text>
+          <text class="benefit-step-sub">专属礼遇</text>
+        </view>
+        <view class="benefit-step">
+          <view class="benefit-step-icon">券</view>
+          <text class="benefit-step-title">我的优惠</text>
+          <text class="benefit-step-sub">一键领取</text>
+        </view>
+      </view>
+
+      <button
+        wx:if="{{!hasAuthorizedMember}}"
+        class="hero-cta"
+        open-type="getPhoneNumber"
+        bindgetphonenumber="onGetPhoneNumber"
+      >
+        {{storeConfig.ctaText}}
+      </button>
+      <button
+        wx:else
+        class="hero-cta"
+        bindtap="navigateToKeruYun"
+      >
+        去点餐
+      </button>
+
+      <view class="trust-copy">
+        <text class="trust-line"></text>
+        <text class="trust-text">{{storeConfig.trustText}}</text>
+        <text class="trust-sub">信息安全保障中，请放心授权</text>
       </view>
     </view>
 
-    <!-- 快捷入口 -->
-    <view class="quick-area" wx:if="{{roleLoaded && entrySections.length}}">
-      <block wx:for="{{entrySections}}" wx:for-item="sec" wx:key="title">
-        <view class="section-head">
-          <text class="quick-sec-title">{{sec.title}}</text>
-          <text class="section-glow"></text>
-        </view>
-        <view class="quick-grid">
-          <navigator
-            wx:for="{{sec.items}}"
-            wx:for-item="tile"
-            wx:key="key"
-            url="{{tile.url}}"
-            class="glass-tile"
-            hover-class="glass-tile--hover"
-          >
-            <view class="quick-icon">{{tile.icon}}</view>
-            <text class="quick-title">{{tile.title}}</text>
-            <text class="quick-sub">{{tile.sub}}</text>
-          </navigator>
-        </view>
-      </block>
+    <view class="member-links" wx:if="{{roleLoaded && entrySections.length}}">
+      <view class="section-head">
+        <text class="section-title">今晚礼遇</text>
+        <text class="section-script">for your table</text>
+      </view>
+      <view class="member-grid">
+        <block wx:for="{{entrySections}}" wx:for-item="sec" wx:key="title">
+          <block wx:for="{{sec.items}}" wx:for-item="tile" wx:key="key">
+            <navigator url="{{tile.url}}" class="member-card" hover-class="member-card--hover">
+              <view class="member-card-icon">{{tile.icon}}</view>
+              <view class="member-card-copy">
+                <text class="member-card-title">{{tile.title}}</text>
+                <text class="member-card-sub">{{tile.sub}}</text>
+              </view>
+              <text class="member-card-arrow">›</text>
+            </navigator>
+          </block>
+        </block>
+      </view>
     </view>
   </view>
 
-  <!-- 底部操作 -->
-  <view class="reauth-wrap" wx:if="{{!showAuthModal && !showLegacyMemberTip && pageReady}}">
-    <button wx:if="{{!hasAuthorizedMember}}" class="btn-primary" open-type="getPhoneNumber" bindgetphonenumber="onGetPhoneNumber">加入企微扫码点餐</button>
-    <button wx:else class="btn-primary" bindtap="associateAndOrder">加企微扫码点餐</button>
+  <!-- 券可用提醒 -->
+  <view class="voucher-toast" wx:if="{{showVoucherTip && availableVoucherCount > 0}}">
+    <text class="voucher-toast-text">您有 {{availableVoucherCount}} 张可用优惠券</text>
+    <text class="voucher-toast-sub">点餐前可在「我的优惠券」查看</text>
   </view>
 
-  <!-- 入会+企微+点餐 弹窗 -->
+  <!-- 授权弹窗 -->
   <view wx:if="{{showAuthModal}}" class="modal">
-    <view class="modal-backdrop"></view>
-    <view class="glass-modal">
-      <view class="modal-badge">会员礼遇</view>
-      <view class="modal-title">加入企微，扫码点餐</view>
-      <view class="modal-desc">授权手机号入会，自动关联企业微信领券，然后跳转点餐页面。</view>
-      <view class="benefit-preview">
-        <view class="benefit-mini"><text class="benefit-num">1</text><text>入会领券</text></view>
-        <view class="benefit-mini"><text class="benefit-num">企</text><text>企微关联</text></view>
-        <view class="benefit-mini"><text class="benefit-num">桌</text><text>扫码点餐</text></view>
+    <view class="modal-backdrop" bindtap="onModalBackdropTap"></view>
+    <view class="brand-modal">
+      <image class="modal-bg" src="../../assets/home-hero-bg-toplit.jpg" mode="widthFix"></image>
+      <view class="modal-mask"></view>
+
+      <view class="modal-content">
+        <view class="card-badge">
+          <text class="card-badge-icon">✦</text>
+          <text class="card-badge-text">会员礼遇</text>
+        </view>
+
+        <view class="card-heading">
+          <text class="card-title">{{storeConfig.welcomeTitle}}</text>
+          <text class="card-script">join us</text>
+        </view>
+
+        <text class="card-desc">授权手机号入会，即可扫码点餐并享受专属优惠。</text>
+
+        <view class="benefit-steps">
+          <view class="benefit-step">
+            <view class="benefit-step-icon">1</view>
+            <text class="benefit-step-title">入会领券</text>
+            <text class="benefit-step-sub">专属优惠</text>
+          </view>
+          <view class="benefit-step">
+            <view class="benefit-step-icon">2</view>
+            <text class="benefit-step-title">扫码点餐</text>
+            <text class="benefit-step-sub">快捷下单</text>
+          </view>
+        </view>
+
+        <button class="hero-cta modal-cta" open-type="getPhoneNumber" bindgetphonenumber="onGetPhoneNumber">{{storeConfig.ctaText}}</button>
+
+        <view class="trust-copy modal-trust">
+          <text class="trust-line"></text>
+          <text class="trust-text">{{storeConfig.trustText}}</text>
+          <text class="trust-sub">信息安全保障中，请放心授权</text>
+        </view>
       </view>
-      <button class="btn-primary" open-type="getPhoneNumber" bindgetphonenumber="onGetPhoneNumber">加入企微扫码点餐</button>
-      <view class="modal-foot">授权手机号仅用于会员识别与企微发券</view>
     </view>
   </view>
 

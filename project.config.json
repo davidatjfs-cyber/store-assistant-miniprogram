@@ -39,11 +39,35 @@
         "type": "folder"
       },
       {
+        "value": "cloudfunctions/seedHongchaoMarketing",
+        "type": "folder"
+      },
+      {
+        "value": "cloudfunctions/monitorSystem",
+        "type": "folder"
+      },
+      {
+        "value": "cloudfunctions/getActivityCode",
+        "type": "folder"
+      },
+      {
+        "value": "cloudfunctions/getRecentArrivals",
+        "type": "folder"
+      },
+      {
         "value": "CLOUD_FUNCTION_STUCK.md",
         "type": "file"
       },
       {
         "value": "FIXED_TEST_DATA.md",
+        "type": "file"
+      },
+      {
+        "value": "node_modules",
+        "type": "folder"
+      },
+      {
+        "value": "package-lock.json",
         "type": "file"
       }
     ],

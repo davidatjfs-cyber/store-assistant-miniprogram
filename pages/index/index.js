@@ -6,6 +6,26 @@ var DEV_SIMULATE_SCAN = false;
 
 var roleUtil = require('../../utils/role.js');
 
+var STORE_CONFIGS = {
+  '51866138': {
+    name: '马己仙广东小馆',
+    welcomeTitle: '马己仙广东小馆欢迎您',
+    ctaText: '扫码点餐',
+    trustText: '授权手机号仅用于会员识别'
+  },
+  '64822111': {
+    name: '洪潮潮汕传统菜',
+    welcomeTitle: '洪潮潮汕传统菜欢迎您',
+    ctaText: '扫码点餐',
+    trustText: '授权手机号仅用于会员识别'
+  }
+};
+
+function getStoreConfig(scanParams) {
+  var sid = (scanParams && scanParams.store_id) || '';
+  return STORE_CONFIGS[sid] || STORE_CONFIGS['51866138'];
+}
+
 function buildEntrySections(role) {
   var sections = [];
   if (role === 'staff' || role === 'manager' || role === 'admin') {
@@ -77,10 +97,10 @@ function buildEntrySections(role) {
       items: [
         {
           key: 'shop',
-          title: '购买优惠券',
-          sub: '浏览并购买代金券',
+          title: '门店专属优惠',
+          sub: '浏览可购买礼遇券',
           url: '/pages/shop/index',
-          icon: '购'
+          icon: '惠'
         },
         {
           key: 'vouchers',
@@ -91,18 +111,6 @@ function buildEntrySections(role) {
         }
       ]
     });
-  }
-  if (role === 'staff' || role === 'manager' || role === 'admin' || !role) {
-    var lastSection = sections[sections.length - 1];
-    if (lastSection) {
-      lastSection.items.push({
-        key: 'wecom',
-        title: '企业微信',
-        sub: '关联企微接收优惠券',
-        url: '/pages/user/send-to-wecom/send-to-wecom',
-        icon: '企'
-      });
-    }
   }
   return sections;
 }
@@ -144,7 +152,9 @@ Page({
     inputPhone: '',
     pageReady: false,
     entrySections: [],
-    roleLoaded: false
+    roleLoaded: false,
+    storeConfig: STORE_CONFIGS['51866138'],
+    availableVoucherCount: 0
   },
 
   refreshRoleEntries: function () {
@@ -232,7 +242,8 @@ Page({
         this.setData({
           isFromScan: true,
           scanParams: scanParams,
-          showAuthModal: true,
+          showAuthModal: !this.data.hasAuthorizedMember,
+          storeConfig: getStoreConfig(scanParams),
           pageReady: true
         });
       } else if (DEV_SIMULATE_SCAN) {
@@ -245,11 +256,12 @@ Page({
             scene: 1047,
             timestamp: Date.now()
           },
-          showAuthModal: true,
+          showAuthModal: !this.data.hasAuthorizedMember,
+          storeConfig: STORE_CONFIGS['51866138'],
           pageReady: true
         });
       } else {
-        this.setData({ pageReady: true, showAuthModal: !this.data.hasAuthorizedMember });
+        this.setData({ pageReady: true, showAuthModal: !this.data.hasAuthorizedMember, storeConfig: getStoreConfig(null) });
       }
       this.ensureUserDocInCloud();
     } catch (e) {
@@ -386,7 +398,8 @@ Page({
 
         self.setData({ showAuthModal: false, hasAuthorizedMember: true });
 
-        self.associateAndOrder();
+        self.silentAssociateWecom();
+        self.loadAvailableVouchers();
       },
       fail: function(err) {
         wx.hideLoading();
@@ -403,32 +416,32 @@ Page({
     });
   },
 
-  showPostAuthOptions: function() {
-    this.setData({ showBenefitModal: true, hasAuthorizedMember: true });
-  },
-
-  associateAndOrder: function() {
-    var self = this;
-    wx.showLoading({ title: '关联企微...' });
-    var storeId = (self.data.scanParams || {}).store_id || (getApp().globalData.staffStoreId || '') || '51866138';
+  silentAssociateWecom: function() {
+    var storeId = (this.data.scanParams || {}).store_id || (getApp().globalData.staffStoreId || '') || '51866138';
     wx.cloud.callFunction({
       name: 'fixWecomSecret',
+      data: { store_id: storeId }
+    });
+  },
+
+  loadAvailableVouchers: function() {
+    var self = this;
+    var storeId = (self.data.scanParams || {}).store_id || (getApp().globalData.staffStoreId || '') || '51866138';
+    wx.cloud.callFunction({
+      name: 'getUserVouchers',
       data: { store_id: storeId },
       success: function(res) {
-        wx.hideLoading();
-        if (res.result && res.result.success) {
-          wx.showToast({ title: '已关联企微', icon: 'success', duration: 1500 });
+        var result = (res && res.result) || {};
+        var vouchers = (result.success && result.data) ? result.data : [];
+        var available = vouchers.filter(function(v) { return v.status === 'active' || v.status === 'unused'; });
+        self.setData({ availableVoucherCount: available.length, showVoucherTip: available.length > 0 });
+        if (available.length > 0) {
           setTimeout(function() {
-            self.navigateToKeruYun();
-          }, 1500);
-        } else {
-          self.navigateToKeruYun();
+            self.setData({ showVoucherTip: false });
+          }, 3000);
         }
       },
-      fail: function() {
-        wx.hideLoading();
-        self.navigateToKeruYun();
-      }
+      fail: function() {}
     });
   },
 
@@ -479,6 +492,10 @@ Page({
         // console.log('navigateToMiniProgram 已触发');
       },
       fail: function(err) {
+        var errMsg = (err && err.errMsg) ? String(err.errMsg).toLowerCase() : '';
+        if (errMsg.indexOf('cancel') >= 0) {
+          return;
+        }
         console.error('跳转点餐小程序失败:', err);
         wx.showModal({
           title: '跳转点餐小程序失败',

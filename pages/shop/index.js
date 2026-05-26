@@ -21,8 +21,14 @@ Page({
         var list = (r.success && r.data) || [];
         // 只显示上架且有库存的，并预处理价格
         var available = list.filter(function(t) { return t.is_active && t.stock !== 0; }).map(function(t) {
+          var benefitText = t.type === 'cash'
+            ? '代金 ¥' + ((t.value || 0) / 100).toFixed(0)
+            : ((t.value || 0) / 10) + ' 折礼遇';
+          var stockText = t.stock === -1 ? '库存充足' : '剩余 ' + t.stock + ' 张';
           return Object.assign({}, t, {
-            priceYuan: t.price ? (t.price / 100).toFixed(2) : '0.00'
+            priceYuan: t.price ? (t.price / 100).toFixed(2) : '0.00',
+            benefitText: benefitText,
+            stockText: stockText
           });
         });
         self.setData({ templates: available, loading: false });

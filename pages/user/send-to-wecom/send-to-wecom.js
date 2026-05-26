@@ -6,7 +6,12 @@ Page({
     wecomLinked: false,
     wecomInfo: null,
     vouchers: [],
-    wecomAvailable: true
+    wecomAvailable: true,
+    dialogVisible: false,
+    dialogMode: '',
+    dialogTitle: '',
+    dialogDesc: '',
+    confirmLoading: false
   },
 
   onLoad: function () {
@@ -65,40 +70,72 @@ Page({
     });
   },
 
-  associateWecom: function () {
-    var self = this;
-    wx.showModal({
-      title: '关联企业微信',
-      content: '关联后可在企业微信中接收优惠券和活动通知',
-      success: function (modalRes) {
-        if (!modalRes.confirm) return;
+  showDialog: function (mode, title, desc) {
+    this.setData({
+      dialogVisible: true,
+      dialogMode: mode || '',
+      dialogTitle: title || '',
+      dialogDesc: desc || ''
+    });
+  },
 
-        wx.cloud.callFunction({
-          name: 'fixWecomSecret',
-          data: { store_id: self.getStoreId() },
-          success: function (res) {
-            var result = (res && res.result) || {};
-            if (result.success) {
-              wx.showToast({ title: '关联成功', icon: 'success' });
-              self.setData({
-                wecomLinked: true,
-                wecomInfo: {
-                  external_userid: result.external_userid
-                }
-              });
-            } else {
-              wx.showToast({ title: result.error || '关联失败', icon: 'none' });
+  hideDialog: function () {
+    this.setData({
+      dialogVisible: false,
+      dialogMode: '',
+      dialogTitle: '',
+      dialogDesc: '',
+      confirmLoading: false
+    });
+  },
+
+  associateWecom: function () {
+    this.showDialog(
+      'associate',
+      '关联企业微信',
+      '关联后可在企业微信中接收优惠券和活动通知。'
+    );
+  },
+
+  confirmDialogAction: function () {
+    var self = this;
+    if (self.data.dialogMode !== 'associate') {
+      self.hideDialog();
+      return;
+    }
+
+    self.setData({ confirmLoading: true });
+    wx.cloud.callFunction({
+      name: 'fixWecomSecret',
+      data: { store_id: self.getStoreId() },
+      success: function (res) {
+        var result = (res && res.result) || {};
+        if (result.success) {
+          wx.showToast({ title: '关联成功', icon: 'success' });
+          self.setData({
+            confirmLoading: false,
+            wecomLinked: true,
+            wecomInfo: {
+              external_userid: result.external_userid
             }
-          },
-          fail: function () {
-            wx.showToast({ title: '关联请求失败', icon: 'none' });
-          }
-        });
+          });
+          self.loadUserVouchers();
+          self.checkWecomStatus();
+          self.hideDialog();
+        } else {
+          self.setData({ confirmLoading: false });
+          wx.showToast({ title: result.error || '关联失败', icon: 'none' });
+        }
+      },
+      fail: function () {
+        self.setData({ confirmLoading: false });
+        wx.showToast({ title: '关联请求失败', icon: 'none' });
       }
     });
   },
 
   sendToWecom: function (e) {
+    var self = this;
     var voucherId = e.currentTarget.dataset.voucherId;
     if (!voucherId) return;
 
@@ -139,7 +176,15 @@ Page({
       success: function (res) {
         var result = (res && res.result) || {};
         if (result.success && result.data) {
-          self.setData({ vouchers: result.data });
+          self.setData({
+            vouchers: result.data.map(function (item) {
+              var faceValue = item.face_value || item.amount || '';
+              return Object.assign({}, item, {
+                displayName: item.name || item.template_name || '优惠券',
+                amountText: faceValue ? String(faceValue) : '会员礼遇'
+              });
+            })
+          });
         }
       },
       fail: function () {}
