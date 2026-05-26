@@ -1,3 +1,5 @@
+var paymentResult = require('../../utils/payment-result.js');
+
 Page({
   data: {
     templates: [],
@@ -48,7 +50,7 @@ Page({
     }
     if (!tpl) return;
 
-    if (tpl.price === 0) {
+    if (tpl.price === 0 || tpl.priceYuan === '0.00') {
       // 免费领取
       self.claimFreeVoucher(templateId);
     } else {
@@ -70,17 +72,21 @@ Page({
         wx.hideLoading();
         var r = res.result || {};
         if (r.success) {
-          wx.showToast({ title: '领取成功', icon: 'success' });
-          setTimeout(function() {
-            wx.navigateTo({ url: '/pages/voucher/list' });
-          }, 1500);
+          if (r.data && r.data.free_claim) {
+            wx.showToast({ title: '领取成功', icon: 'success' });
+            setTimeout(function() {
+              wx.navigateTo({ url: '/pages/voucher/list' });
+            }, 1500);
+          } else {
+            wx.showToast({ title: '领取成功', icon: 'success' });
+          }
         } else {
-          wx.showToast({ title: r.message || '领取失败', icon: 'none' });
+          wx.showModal({ title: '领取失败', content: r.errMsg || r.message || JSON.stringify(r), showCancel: false });
         }
       },
-      fail: function() {
+      fail: function(err) {
         wx.hideLoading();
-        wx.showToast({ title: '领取失败', icon: 'none' });
+        wx.showModal({ title: '请求失败', content: (err && err.errMsg) || JSON.stringify(err), showCancel: false });
       }
     });
   },
@@ -97,13 +103,14 @@ Page({
       success: function(res) {
         wx.hideLoading();
         var r = res.result || {};
-        if (r.success && r.data && r.data.payment) {
+        var resolved = paymentResult.resolveCreatePaymentResult(r);
+        if (resolved.type === 'payment') {
           wx.requestPayment({
-            timeStamp: r.data.payment.timeStamp,
-            nonceStr: r.data.payment.nonceStr,
-            package: r.data.payment.package,
-            signType: r.data.payment.signType,
-            paySign: r.data.payment.paySign,
+            timeStamp: resolved.payment.timeStamp,
+            nonceStr: resolved.payment.nonceStr,
+            package: resolved.payment.package,
+            signType: resolved.payment.signType,
+            paySign: resolved.payment.paySign,
             success: function() {
               wx.showToast({ title: '支付成功', icon: 'success' });
               setTimeout(function() {
@@ -114,13 +121,24 @@ Page({
               wx.showToast({ title: '支付取消', icon: 'none' });
             }
           });
+        } else if (resolved.type === 'free_claim') {
+          wx.showToast({ title: '领取成功', icon: 'success' });
+          setTimeout(function() {
+            wx.navigateTo({ url: '/pages/voucher/list' });
+          }, 1500);
+        } else if (resolved.type === 'missing_payment') {
+          wx.showModal({
+            title: '支付参数异常',
+            content: resolved.message,
+            showCancel: false
+          });
         } else {
-          wx.showToast({ title: r.message || '创建订单失败', icon: 'none' });
+          wx.showModal({ title: '创建订单失败', content: resolved.message, showCancel: false });
         }
       },
-      fail: function() {
+      fail: function(err) {
         wx.hideLoading();
-        wx.showToast({ title: '创建订单失败', icon: 'none' });
+        wx.showModal({ title: '请求失败', content: (err && err.errMsg) || JSON.stringify(err), showCancel: false });
       }
     });
   }

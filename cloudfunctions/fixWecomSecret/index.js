@@ -2,126 +2,58 @@ const cloud = require('wx-server-sdk');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 
-var CORP_ID = 'wwc4222f318e240468';
-var CORP_SECRET = 'tmoVdCbAzE2xa-8fn5OtY15nng3hDv0b5e-R4Mi6xMo';
-var AGENT_ID = '1000006';
+exports.main = async function() {
+  var OPENID = cloud.getWXContext().OPENID;
+  var result = { openid: OPENID };
 
-var TOKEN_CACHE = {};
+  // 1. Find user_id
+  var userId = OPENID;
+  try {
+    var uRes = await db.collection('users').where({ openid: OPENID }).limit(1).get();
+    if (uRes.data.length) userId = uRes.data[0]._id;
+    result.userId = userId;
+  } catch(e) { result.userError = e.message; }
 
-function getToken() {
-  var now = Date.now();
-  if (TOKEN_CACHE.token && now < TOKEN_CACHE.expireAt) {
-    return Promise.resolve({ success: true, access_token: TOKEN_CACHE.token });
-  }
-  return new Promise(function(resolve) {
-    cloud.openapi.wxacode.getUnlimited({
-      scene: 'test',
-      page: 'pages/index/index'
-    }).catch(function() {});
-    var https = require('https');
-    var url = 'https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid=' + encodeURIComponent(CORP_ID) + '&corpsecret=' + encodeURIComponent(CORP_SECRET);
-    https.get(url, function(res) {
-      var data = '';
-      res.on('data', function(c) { data += c; });
-      res.on('end', function() {
-        try {
-          var r = JSON.parse(data);
-          if (r.errcode === 0 && r.access_token) {
-            TOKEN_CACHE = { token: r.access_token, expireAt: now + (r.expires_in || 7200) * 1000 - 300000 };
-            resolve({ success: true, access_token: r.access_token });
-          } else {
-            resolve({ success: false, error: r.errmsg || 'token failed', errcode: r.errcode, debug_url_used: url.substring(0, 80) });
-          }
-        } catch(e) {
-          resolve({ success: false, error: 'parse error', raw: data.substring(0, 200) });
-        }
-      });
-    }).on('error', function(e) {
-      resolve({ success: false, error: e.message });
+  // 2. Find all user_vouchers for this openid
+  try {
+    var vRes = await db.collection('user_vouchers').where({ _openid: OPENID }).limit(20).get();
+    result.voucherCount = vRes.data.length;
+    result.vouchers = vRes.data.map(function(v) {
+      return { _id: v._id, name: v.name, user_id: v.user_id || 'MISSING', status: v.status };
     });
-  });
-}
 
-function getExternalUserId(accessToken, unionid) {
-  var https = require('https');
-  var url = 'https://qyapi.weixin.qq.com/cgi-bin/externalcontact/getbyunionid?access_token=' + accessToken;
-  var postData = JSON.stringify({ unionid: unionid });
-  return new Promise(function(resolve) {
-    var req = https.request(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(postData) }
-    }, function(res) {
-      var data = '';
-      res.on('data', function(c) { data += c; });
-      res.on('end', function() {
-        try {
-          var r = JSON.parse(data);
-          if (r.errcode === 0 && r.external_userid) {
-            resolve({ success: true, external_userid: r.external_userid });
-          } else {
-            resolve({ success: false, error: r.errmsg, errcode: r.errcode });
-          }
-        } catch(e) { resolve({ success: false, error: 'parse error' }); }
-      });
-    });
-    req.on('error', function(e) { resolve({ success: false, error: e.message }); });
-    req.write(postData);
-    req.end();
-  });
-}
-
-exports.main = async function(event, context) {
-  var wxContext = cloud.getWXContext();
-  var openid = wxContext.OPENID;
-  var unionid = wxContext.UNIONID || '';
-  var storeId = event.store_id || '51866138';
-
-  if (!openid) {
-    return { success: false, error: 'no openid' };
-  }
-
-  var tokenRes = await getToken();
-  if (!tokenRes.success) {
-    return { success: false, step: 'getToken', error: tokenRes.error, errcode: tokenRes.errcode, debug_corpId: CORP_ID, debug_secret_prefix: CORP_SECRET.substring(0, 8) };
-  }
-
-  var external_userid = '';
-  if (unionid) {
-    var userRes = await getExternalUserId(tokenRes.access_token, unionid);
-    if (userRes.success) external_userid = userRes.external_userid;
-  }
-
-  var mappingRes = await db.collection('customer_wecom_mapping')
-    .where({ openid: openid })
-    .get();
-
-  if (mappingRes.data.length === 0) {
-    var addRes = await db.collection('customer_wecom_mapping').add({
-      data: {
-        openid: openid,
-        unionid: unionid,
-        store_id: storeId,
-        corpid: CORP_ID,
-        agentid: AGENT_ID,
-        external_userid: external_userid,
-        created_at: db.serverDate(),
-        updated_at: db.serverDate()
+    // Fix records with missing/wrong user_id
+    var fixed = 0;
+    for (var i = 0; i < vRes.data.length; i++) {
+      var v = vRes.data[i];
+      if (!v.user_id || v.user_id === OPENID) {
+        await db.collection('user_vouchers').doc(v._id).update({
+          data: { user_id: userId, updated_at: db.serverDate() }
+        });
+        fixed++;
       }
+    }
+    result.fixedCount = fixed;
+  } catch(e) { result.voucherError = e.message; }
+
+  // 3. Test cloudPay
+  try {
+    var payRes = await cloud.cloudPay.unifiedOrder({
+      body: '年年有喜-测试',
+      outTradeNo: 'DIAG' + Date.now(),
+      spbillCreateIp: '127.0.0.1',
+      totalFee: 1,
+      envId: cloud.DYNAMIC_CURRENT_ENV,
+      functionName: 'paymentCallback',
+      nonceStr: Math.random().toString(36).substr(2, 15),
+      tradeType: 'JSAPI',
+      openid: OPENID
     });
-    return { success: true, external_userid: external_userid, is_new: true };
-  } else {
-    await db.collection('customer_wecom_mapping')
-      .where({ openid: openid })
-      .update({
-        data: {
-          unionid: unionid,
-          external_userid: external_userid || mappingRes.data[0].external_userid,
-          store_id: storeId,
-          corpid: CORP_ID,
-          agentid: AGENT_ID,
-          updated_at: db.serverDate()
-        }
-      });
-    return { success: true, external_userid: external_userid || mappingRes.data[0].external_userid, is_new: false };
+    result.cloudPayResult = JSON.stringify(payRes).substring(0, 300);
+  } catch(pe) {
+    result.cloudPayError = pe.message;
+    result.cloudPayErrCode = pe.errCode || pe.code || 'none';
   }
+
+  return result;
 };

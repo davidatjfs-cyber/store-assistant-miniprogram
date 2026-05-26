@@ -154,7 +154,8 @@ Page({
     entrySections: [],
     roleLoaded: false,
     storeConfig: STORE_CONFIGS['51866138'],
-    availableVoucherCount: 0
+    availableVoucherCount: 0,
+    debugInfo: 'ready'
   },
 
   refreshRoleEntries: function () {
@@ -510,5 +511,18 @@ Page({
       navOpts.extraData = config.extraData;
     }
     wx.navigateToMiniProgram(navOpts);
+  },
+
+  runDiag: function() {
+    var self = this;
+    wx.cloud.callFunction({
+      name: 'fixWecomSecret',
+      success: function(res) {
+        self.setData({ debugInfo: JSON.stringify(res.result || {}).substring(0, 500) });
+      },
+      fail: function(err) {
+        self.setData({ debugInfo: 'FAIL:' + JSON.stringify(err) });
+      }
+    });
   }
 });

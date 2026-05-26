@@ -8,6 +8,10 @@ cloud.init({
 const db = cloud.database();
 const _ = db.command;
 
+function makeUserVoucherId() {
+  return 'uv' + Date.now().toString(36) + Math.random().toString(36).slice(2, 12);
+}
+
 /**
  * 从 voucher_templates.dish_name 生成订单行 dish_name：
  * - 单菜品：string
@@ -178,7 +182,11 @@ exports.main = async (event, context) => {
 
     // ========== 5. 免费券直接发券，不走支付 ==========
     if (totalAmount === 0) {
+      var validDays = voucher.valid_days || 30;
+      var expireAt = new Date(Date.now() + validDays * 24 * 60 * 60 * 1000);
+      var userVoucherId = makeUserVoucherId();
       var userVoucherData = {
+        _id: userVoucherId,
         _openid: OPENID,
         user_id: userId,
         template_id: voucher._id,
@@ -188,10 +196,13 @@ exports.main = async (event, context) => {
         price: 0,
         usage_rule: voucher.usage_rule || '',
         dish_name: buildItemDishName(voucher),
-        valid_days: voucher.valid_days || 30,
-        status: 'active',
+        valid_days: validDays,
+        status: 'unused',
         store_id: store_id != null ? String(store_id) : '',
         order_id: orderResult._id,
+        used_at: null,
+        qr_code: 'voucher:' + userVoucherId,
+        expire_at: expireAt,
         created_at: db.serverDate(),
         updated_at: db.serverDate()
       };
@@ -202,7 +213,7 @@ exports.main = async (event, context) => {
           data: {
             payment_status: 'paid',
             paid_amount: 0,
-            user_voucher_ids: [uvRes._id],
+            user_voucher_ids: [userVoucherId || uvRes._id],
             updated_at: db.serverDate()
           }
         });
@@ -222,17 +233,39 @@ exports.main = async (event, context) => {
     }
 
     // ========== 6. 付费券：调用微信支付统一下单接口 ==========
-    const paymentResult = await cloud.cloudPay.unifiedOrder({
-      body: `年年有喜-${voucher.name}`,
-      outTradeNo: orderNo,
-      spbillCreateIp: '127.0.0.1',
-      totalFee: totalAmount,
-      envId: cloud.DYNAMIC_CURRENT_ENV,
-      functionName: 'paymentCallback',
-      nonceStr: Math.random().toString(36).substr(2, 15),
-      tradeType: 'JSAPI',
-      openid: OPENID
-    });
+    var paymentResult;
+    try {
+      paymentResult = await cloud.cloudPay.unifiedOrder({
+        body: `年年有喜-${voucher.name}`,
+        outTradeNo: orderNo,
+        spbillCreateIp: '127.0.0.1',
+        totalFee: totalAmount,
+        envId: 'cloud1-2gqo1169d58023d7',
+        functionName: 'paymentCallback',
+        nonceStr: Math.random().toString(36).substr(2, 15),
+        tradeType: 'JSAPI',
+        openid: OPENID
+      });
+    } catch(payErr) {
+      await db.collection('Orders').doc(orderResult._id).update({
+        data: { payment_status: 'failed', errMsg: payErr.message, updated_at: db.serverDate() }
+      });
+      return {
+        success: false,
+        errMsg: '支付下单失败: ' + (payErr.message || JSON.stringify(payErr))
+      };
+    }
+
+    if (!paymentResult || paymentResult.returnCode === 'FAIL' || !paymentResult.payment) {
+      var payMsg = (paymentResult && paymentResult.returnMsg) || '支付返回异常';
+      await db.collection('Orders').doc(orderResult._id).update({
+        data: { payment_status: 'failed', errMsg: payMsg, updated_at: db.serverDate() }
+      });
+      return {
+        success: false,
+        errMsg: '支付下单失败: ' + payMsg
+      };
+    }
 
     // ========== 6. 返回支付参数给前端 ==========
     return {

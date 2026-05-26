@@ -1,5 +1,17 @@
 var drawQrcode = require('../../utils/weapp.qrcode.js');
 
+function normalizeVoucherItem(item) {
+  if (!item) return item;
+  var normalized = Object.assign({}, item);
+  if (normalized.status === 'active') {
+    normalized.status = 'unused';
+  }
+  if (!normalized.qr_code && normalized._id) {
+    normalized.qr_code = 'voucher:' + normalized._id;
+  }
+  return normalized;
+}
+
 function formatExpire(v) {
   if (!v) return '—';
   var d = v instanceof Date ? v : new Date(v);
@@ -57,12 +69,13 @@ Page({
 
   applyItem: function (item) {
     if (!item) return;
-    var t = item.template;
+    var normalized = normalizeVoucherItem(item);
+    var t = normalized.template;
     var displayName = (t && t.name) || '优惠券';
     this.setData({
-      item: item,
+      item: normalized,
       displayName: displayName,
-      expireText: formatExpire(item.expire_at),
+      expireText: formatExpire(normalized.expire_at),
       benefitText: formatBenefit(t)
     });
   },

@@ -1,12 +1,13 @@
 // 获取当前用户的 user_vouchers：openid → users._id → user_vouchers
 const cloud = require('wx-server-sdk');
-const { resolveUserIdFromOpenid } = require('./helpers');
+const { resolveUserIdFromOpenid, normalizeVoucherRowForClient } = require('./helpers');
 
 cloud.init({
   env: cloud.DYNAMIC_CURRENT_ENV
 });
 
 const db = cloud.database();
+const _ = db.command;
 
 exports.main = async (event, context) => {
   const { OPENID } = cloud.getWXContext();
@@ -37,20 +38,35 @@ exports.main = async (event, context) => {
       }
 
       const row = singleRes.data;
+      if (row.user_id !== userId && row._openid !== OPENID) {
+        return { success: true, data: [] };
+      }
+
+      const normalizedSingle = normalizeVoucherRowForClient(row, { now: new Date() });
+      if (Object.keys(normalizedSingle.patch).length > 0) {
+        normalizedSingle.patch.updated_at = db.serverDate();
+        await db.collection('user_vouchers').doc(voucherId).update({
+          data: normalizedSingle.patch
+        }).catch(function () {});
+      }
+
       let templateData = null;
-      if (row.template_id) {
+      if (normalizedSingle.row.template_id) {
         try {
-          const tdoc = await db.collection('voucher_templates').doc(row.template_id).get();
+          const tdoc = await db.collection('voucher_templates').doc(normalizedSingle.row.template_id).get();
           templateData = tdoc.data || null;
         } catch (e) {
           templateData = null;
         }
       }
 
-      return { success: true, data: { ...row, template: templateData } };
+      return { success: true, data: { ...normalizedSingle.row, template: templateData } };
     }
 
-    const whereCondition = { user_id: userId, status: 'active' };
+    const whereCondition = {
+      user_id: userId,
+      status: _.in(['active', 'unused', 'used', 'expired'])
+    };
     if (store_id) {
       whereCondition.store_id = store_id;
     }
@@ -61,32 +77,29 @@ exports.main = async (event, context) => {
       .orderBy('created_at', 'desc')
       .get();
 
-    let rows = res.data;
-
     var now = new Date();
-    var expiredIds = [];
-    rows = rows.filter(function(row) {
-      if (row.expire_at) {
-        var exp = row.expire_at instanceof Date ? row.expire_at : new Date(row.expire_at);
-        if (!isNaN(exp.getTime()) && exp < now) {
-          expiredIds.push(row._id);
-          return false;
-        }
+    const normalizedRows = [];
+    const repairQueue = [];
+    for (let i = 0; i < res.data.length; i++) {
+      const normalized = normalizeVoucherRowForClient(res.data[i], { now: now });
+      normalizedRows.push(normalized.row);
+      if (Object.keys(normalized.patch).length > 0 && normalized.row._id) {
+        repairQueue.push({
+          id: normalized.row._id,
+          patch: Object.assign({}, normalized.patch, { updated_at: db.serverDate() })
+        });
       }
-      return true;
-    });
-
-    if (expiredIds.length > 0) {
-      try {
-        for (var ei = 0; ei < expiredIds.length; ei++) {
-          await db.collection('user_vouchers').doc(expiredIds[ei]).update({
-            data: { status: 'expired', updated_at: db.serverDate() }
-          });
-        }
-      } catch(e) {}
     }
 
-    const templateIds = [...new Set(rows.map(r => r.template_id).filter(Boolean))];
+    if (repairQueue.length > 0) {
+      for (let ri = 0; ri < repairQueue.length; ri++) {
+        await db.collection('user_vouchers').doc(repairQueue[ri].id).update({
+          data: repairQueue[ri].patch
+        }).catch(function () {});
+      }
+    }
+
+    const templateIds = [...new Set(normalizedRows.map(r => r.template_id).filter(Boolean))];
     const templateCache = {};
     if (templateIds.length > 0) {
       const templateRes = await db
@@ -98,7 +111,7 @@ exports.main = async (event, context) => {
       }
     }
 
-    const list = rows.map(row => ({
+    const list = normalizedRows.map(row => ({
       ...row,
       template: templateCache[row.template_id] || null
     }));

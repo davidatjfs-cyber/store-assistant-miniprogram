@@ -19,11 +19,24 @@ function formatBenefit(template) {
   return '专属礼遇';
 }
 
+function normalizeVoucherItem(item) {
+  if (!item) return item;
+  var normalized = Object.assign({}, item);
+  if (normalized.status === 'active') {
+    normalized.status = 'unused';
+  }
+  if (!normalized.qr_code && normalized._id) {
+    normalized.qr_code = 'voucher:' + normalized._id;
+  }
+  return normalized;
+}
+
 Page({
   data: {
     list: [],
     loading: true,
     statusText: {
+      active: '待使用',
       unused: '待使用',
       used: '已使用',
       expired: '已过期'
@@ -60,10 +73,11 @@ Page({
         var r = res.result || {};
         var raw = (r.success && r.data) || [];
         var list = raw.map(function (item) {
-          var t = item.template;
+          var normalized = normalizeVoucherItem(item);
+          var t = normalized.template;
           var displayName = (t && t.name) || '优惠券';
-          return Object.assign({}, item, {
-            expireText: formatExpire(item.expire_at),
+          return Object.assign({}, normalized, {
+            expireText: formatExpire(normalized.expire_at),
             displayName: displayName,
             benefitText: formatBenefit(t)
           });
