@@ -11,7 +11,7 @@ Page({
   loadTemplates: function() {
     var self = this;
     var app = getApp();
-    var storeId = (app.globalData.scanParams || {}).store_id || '';
+    var storeId = (app.globalData.scanParams || {}).store_id || app.globalData.staffStoreId || '51866138';
     self.setData({ loading: true });
     wx.cloud.callFunction({
       name: 'getVoucherTemplates',
@@ -61,7 +61,7 @@ Page({
     var self = this;
     var app = getApp();
     var campaignId = app.globalData.campaignId || '';
-    var storeId = (app.globalData.scanParams || {}).store_id || '';
+    var storeId = (app.globalData.scanParams || {}).store_id || app.globalData.staffStoreId || '51866138';
     wx.showLoading({ title: '领取中' });
     wx.cloud.callFunction({
       name: 'createPayment',
@@ -89,7 +89,7 @@ Page({
     var self = this;
     var app = getApp();
     var campaignId = app.globalData.campaignId || '';
-    var storeId = (app.globalData.scanParams || {}).store_id || '';
+    var storeId = (app.globalData.scanParams || {}).store_id || app.globalData.staffStoreId || '51866138';
     wx.showLoading({ title: '创建订单' });
     wx.cloud.callFunction({
       name: 'createPayment',

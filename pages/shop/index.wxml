@@ -51,7 +51,7 @@
               disabled="{{item.stock === 0}}"
               data-id="{{item._id}}"
               bindtap="onBuy">
-        {{item.stock === 0 ? '暂时售罄' : item.price === 0 ? '直接领取' : '立即锁定'}}
+        {{item.stock === 0 ? '暂时售罄' : item.price === 0 ? '直接领取' : '限量抢购'}}
       </button>
     </view>
   </view>

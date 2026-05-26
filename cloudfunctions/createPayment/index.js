@@ -159,7 +159,51 @@ exports.main = async (event, context) => {
 
     const orderId = orderResult._id;
 
-    // ========== 5. 调用微信支付统一下单接口 ==========
+    // ========== 5. 免费券直接发券，不走支付 ==========
+    if (totalAmount === 0) {
+      var userVoucherData = {
+        _openid: OPENID,
+        template_id: voucher._id,
+        name: voucher.name,
+        type: voucher.type || 'cash',
+        value: voucher.value || 0,
+        price: 0,
+        usage_rule: voucher.usage_rule || '',
+        dish_name: buildItemDishName(voucher),
+        valid_days: voucher.valid_days || 30,
+        status: 'active',
+        store_id: store_id != null ? String(store_id) : '',
+        order_id: orderResult._id,
+        created_at: db.serverDate(),
+        updated_at: db.serverDate()
+      };
+
+      try {
+        var uvRes = await db.collection('user_vouchers').add({ data: userVoucherData });
+        await db.collection('Orders').doc(orderResult._id).update({
+          data: {
+            payment_status: 'paid',
+            paid_amount: 0,
+            user_voucher_ids: [uvRes._id],
+            updated_at: db.serverDate()
+          }
+        });
+      } catch(e) {
+        console.warn('免费券写入失败:', e.message);
+      }
+
+      return {
+        success: true,
+        data: {
+          order_id: orderResult._id,
+          order_no: orderNo,
+          total_amount: 0,
+          free_claim: true
+        }
+      };
+    }
+
+    // ========== 6. 付费券：调用微信支付统一下单接口 ==========
     const paymentResult = await cloud.cloudPay.unifiedOrder({
       body: `年年有喜-${voucher.name}`,
       outTradeNo: orderNo,
