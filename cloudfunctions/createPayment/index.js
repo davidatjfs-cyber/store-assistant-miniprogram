@@ -122,6 +122,23 @@ exports.main = async (event, context) => {
     const unitPrice = voucher.price; // 单价 (分)
     const totalAmount = unitPrice * quantity; // 总金额 (分)
 
+    var userId = OPENID;
+    try {
+      var uRes2 = await db.collection('users').where({ openid: OPENID }).limit(1).get();
+      if (uRes2.data.length) userId = uRes2.data[0]._id;
+    } catch(e) {}
+
+    // 检查是否已领取过该免费券
+    if (voucher.price === 0) {
+      var existRes = await db.collection('user_vouchers')
+        .where({ _openid: OPENID, template_id: voucher._id })
+        .limit(1)
+        .get();
+      if (existRes.data.length > 0) {
+        return { success: false, errMsg: '您已领取过该券' };
+      }
+    }
+
     // ========== 4. 创建订单记录 (预支付状态) ==========
     const orderNo = generateOrderNo();
     const now = new Date();
@@ -163,6 +180,7 @@ exports.main = async (event, context) => {
     if (totalAmount === 0) {
       var userVoucherData = {
         _openid: OPENID,
+        user_id: userId,
         template_id: voucher._id,
         name: voucher.name,
         type: voucher.type || 'cash',

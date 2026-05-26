@@ -50,10 +50,7 @@ exports.main = async (event, context) => {
       return { success: true, data: { ...row, template: templateData } };
     }
 
-    const whereCondition = { user_id: userId };
-    if (status && typeof status === 'string') {
-      whereCondition.status = status;
-    }
+    const whereCondition = { user_id: userId, status: 'active' };
     if (store_id) {
       whereCondition.store_id = store_id;
     }
@@ -65,6 +62,29 @@ exports.main = async (event, context) => {
       .get();
 
     let rows = res.data;
+
+    var now = new Date();
+    var expiredIds = [];
+    rows = rows.filter(function(row) {
+      if (row.expire_at) {
+        var exp = row.expire_at instanceof Date ? row.expire_at : new Date(row.expire_at);
+        if (!isNaN(exp.getTime()) && exp < now) {
+          expiredIds.push(row._id);
+          return false;
+        }
+      }
+      return true;
+    });
+
+    if (expiredIds.length > 0) {
+      try {
+        for (var ei = 0; ei < expiredIds.length; ei++) {
+          await db.collection('user_vouchers').doc(expiredIds[ei]).update({
+            data: { status: 'expired', updated_at: db.serverDate() }
+          });
+        }
+      } catch(e) {}
+    }
 
     const templateIds = [...new Set(rows.map(r => r.template_id).filter(Boolean))];
     const templateCache = {};
