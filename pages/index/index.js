@@ -419,7 +419,7 @@ Page({
   silentAssociateWecom: function() {
     var storeId = (this.data.scanParams || {}).store_id || (getApp().globalData.staffStoreId || '') || '51866138';
     wx.cloud.callFunction({
-      name: 'fixWecomSecret',
+      name: 'associateWecom',
       data: { store_id: storeId }
     });
   },
@@ -447,13 +447,16 @@ Page({
 
   navigateToKeruYun: function() {
     var app = getApp();
-    var config = app.globalData.keruYunConfig || {};
     var params = this.data.scanParams || {};
+    var storeId = params.store_id || app.globalData.staffStoreId || '51866138';
+    var config = (typeof app.getOrderMiniProgramConfig === 'function')
+      ? app.getOrderMiniProgramConfig(storeId)
+      : ((app.globalData.orderMiniProgramConfigs || {})[storeId] || {});
 
     if (!config.appId) {
       wx.showModal({
         title: '未配置点餐小程序',
-        content: '请在 app.js 的 globalData.keruYunConfig 中填写正确的点餐端小程序 AppID（如马己仙/二代码点餐提供方）。',
+        content: '请在 app.js 的门店点餐配置中填写正确的点餐端小程序 AppID（如马己仙/二代码点餐提供方）。',
         showCancel: false
       });
       return;

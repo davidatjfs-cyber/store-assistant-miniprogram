@@ -1,61 +1,59 @@
 const cloud = require('wx-server-sdk');
-const CLOUD_PAY_ENV_ID = 'cloud1-2gqo1169d58023d7';
-const CLOUD_PAY_SUB_MCH_ID = '1745516131';
-cloud.init({ env: CLOUD_PAY_ENV_ID });
+cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 
 exports.main = async function() {
-  var OPENID = cloud.getWXContext().OPENID;
-  var result = { openid: OPENID };
+  var result = {};
 
-  // 1. Find user_id
-  var userId = OPENID;
+  // 1. Insert Hongchao config
   try {
-    var uRes = await db.collection('users').where({ openid: OPENID }).limit(1).get();
-    if (uRes.data.length) userId = uRes.data[0]._id;
-    result.userId = userId;
-  } catch(e) { result.userError = e.message; }
-
-  // 2. Find all user_vouchers for this openid
-  try {
-    var vRes = await db.collection('user_vouchers').where({ _openid: OPENID }).limit(20).get();
-    result.voucherCount = vRes.data.length;
-    result.vouchers = vRes.data.map(function(v) {
-      return { _id: v._id, name: v.name, user_id: v.user_id || 'MISSING', status: v.status };
-    });
-
-    // Fix records with missing/wrong user_id
-    var fixed = 0;
-    for (var i = 0; i < vRes.data.length; i++) {
-      var v = vRes.data[i];
-      if (!v.user_id || v.user_id === OPENID) {
-        await db.collection('user_vouchers').doc(v._id).update({
-          data: { user_id: userId, updated_at: db.serverDate() }
-        });
-        fixed++;
+    await db.collection('store_wecom_configs').doc('hongchao_wecom').set({
+      data: {
+        store_id: '64822111',
+        corp_id: 'ww2d6a3b6a774643e7',
+        corp_secret: 'RL4Bt2Q7XQkpyxhJVB9691q3SzTB7U3TXAEZMNB6pMA',
+        agent_id: '1000004',
+        store_name: '洪潮潮汕传统菜',
+        updated_at: db.serverDate()
       }
-    }
-    result.fixedCount = fixed;
-  } catch(e) { result.voucherError = e.message; }
-
-  // 3. Test cloudPay
-  try {
-    var payRes = await cloud.cloudPay.unifiedOrder({
-      body: '年年有喜-测试',
-      outTradeNo: 'DIAG' + Date.now(),
-      spbillCreateIp: '127.0.0.1',
-      subMchId: CLOUD_PAY_SUB_MCH_ID,
-      totalFee: 1,
-      envId: CLOUD_PAY_ENV_ID,
-      functionName: 'paymentCallback',
-      nonceStr: Math.random().toString(36).substr(2, 15),
-      tradeType: 'JSAPI',
-      openid: OPENID
     });
-    result.cloudPayResult = JSON.stringify(payRes).substring(0, 300);
-  } catch(pe) {
-    result.cloudPayError = pe.message;
-    result.cloudPayErrCode = pe.errCode || pe.code || 'none';
+    result.hongchaoSet = 'ok';
+  } catch(e) {
+    result.hongchaoError = e.message;
+  }
+
+  // 2. Verify both configs
+  try {
+    var mjx = await db.collection('store_wecom_configs').doc('maijixian_wecom').get();
+    result.maijixian = mjx.data;
+  } catch(e) { result.maijixianError = e.message; }
+
+  try {
+    var hc = await db.collection('store_wecom_configs').doc('hongchao_wecom').get();
+    result.hongchao = hc.data;
+  } catch(e) { result.hongchaoReadError = e.message; }
+
+  // 3. Test both tokens
+  var https = require('https');
+  var configs = [
+    { label: 'maijixian', corpId: 'wwc4222f318e240468', secret: 'tmoVdCbAzE2xa-8fn5OtY15nng3hDv0b5e-R4Mi6xMo' },
+    { label: 'hongchao', corpId: 'ww2d6a3b6a774643e7', secret: 'RL4Bt2Q7XQkpyxhJVB9691q3SzTB7U3TXAEZMNB6pMA' }
+  ];
+
+  result.tokenTests = [];
+  for (var i = 0; i < configs.length; i++) {
+    var c = configs[i];
+    var tokenRes = await new Promise(function(resolve) {
+      https.get('https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid=' + encodeURIComponent(c.corpId) + '&corpsecret=' + encodeURIComponent(c.secret), function(res) {
+        var data = '';
+        res.on('data', function(chunk) { data += chunk; });
+        res.on('end', function() {
+          try { resolve(JSON.parse(data)); }
+          catch(e) { resolve({ errcode: -2, errmsg: 'parse error' }); }
+        });
+      }).on('error', function(e) { resolve({ errcode: -1, errmsg: e.message }); });
+    });
+    result.tokenTests.push({ label: c.label, errcode: tokenRes.errcode, errmsg: tokenRes.errmsg });
   }
 
   return result;

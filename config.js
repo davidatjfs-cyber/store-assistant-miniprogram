@@ -12,13 +12,22 @@ module.exports = {
   // 获取方式：mp.weixin.qq.com → 开发 → 云开发 → 设置 → 环境 ID
   cloudEnvId: 'cloud1-2gqo1169d58023d7',
 
-  // 点餐小程序配置（马己仙/客如云等）
-  keruYunConfig: {
-    appId: 'wxdaa8741d326cf971',  // 点餐小程序 AppID
-    path: 'pages/home/index?origin=minpath&path=pages%2Forderfood%2Findex',
-    envVersion: 'release',  // release | trial | develop
-    extraStaticQuery: {},
-    extraData: undefined
+  // 点餐小程序配置（按门店分流）
+  orderMiniProgramConfigs: {
+    '51866138': {
+      appId: 'wxdaa8741d326cf971',
+      path: 'pages/home/index?origin=minpath&path=pages%2Forderfood%2Findex',
+      envVersion: 'release',
+      extraStaticQuery: {},
+      extraData: undefined
+    },
+    '64822111': {
+      appId: 'wx2f13889e1bd7b040',
+      path: 'pages/home/index?origin=minpath&path=pages%2Forderfood%2Findex',
+      envVersion: 'release',
+      extraStaticQuery: {},
+      extraData: undefined
+    }
   },
 
   // 订阅消息模板 ID（支付成功后通知）

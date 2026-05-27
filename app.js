@@ -5,6 +5,23 @@
 //
 // 获取方式：登录 mp.weixin.qq.com → 开发 → 云开发 → 右上角「设置」或环境列表里复制「环境 ID」
 var CLOUD_ENV_ID = 'cloud1-2gqo1169d58023d7'; // 例如 'cloud1-AbcDef'；留空则使用本小程序默认云环境（仅当已在云开发里创建过环境）
+var DEFAULT_STORE_ID = '51866138';
+var ORDER_MINI_PROGRAM_CONFIGS = {
+  '51866138': {
+    appId: 'wxdaa8741d326cf971',
+    path: 'pages/home/index?origin=minpath&path=pages%2Forderfood%2Findex',
+    envVersion: 'release',
+    extraStaticQuery: {},
+    extraData: undefined
+  },
+  '64822111': {
+    appId: 'wx2f13889e1bd7b040',
+    path: 'pages/home/index?origin=minpath&path=pages%2Forderfood%2Findex',
+    envVersion: 'release',
+    extraStaticQuery: {},
+    extraData: undefined
+  }
+};
 
 App({
   onLaunch: function (options) {
@@ -88,6 +105,11 @@ App({
     }
   },
 
+  getOrderMiniProgramConfig: function(storeId) {
+    var sid = storeId != null ? String(storeId).trim() : '';
+    return ORDER_MINI_PROGRAM_CONFIGS[sid] || ORDER_MINI_PROGRAM_CONFIGS[DEFAULT_STORE_ID];
+  },
+
   globalData: {
     userInfo: null,
     isStaff: false,
@@ -100,20 +122,8 @@ App({
     scanParams: null,
     // 非扫码入口的活动ID（分享链接、公众号菜单等）
     campaignId: '',
-    // 点餐小程序（马己仙/二代码点餐等；名称以对方后台为准）
-    keruYunConfig: {
-      appId: 'wxdaa8741d326cf971', // 须与马己仙小程序 AppID 一致，并在公众平台配置跳转白名单
-      // 马己仙：壳页 + 内嵌真实路由（path 为 encode 后的子路径）
-      // 首页示例：pages/home/index?origin=minpath&path=pages%2Flightshop%2Findex
-      // 会员中心：pages/home/index?origin=minpath&path=pages%2Fmember%2Fmember-index%2Findex
-      path: 'pages/home/index?origin=minpath&path=pages%2Forderfood%2Findex',
-      // release | trial | develop — 对方仅有体验版时请改为 trial
-      envVersion: 'release',
-      // 若对方要求固定 query（如 tenantId），在此补充，会覆盖同名扫码参数
-      extraStaticQuery: {},
-      // 少数方案用 extraData 接参，对方 onLaunch 里从 referrerInfo.extraData 读取
-      extraData: undefined
-    }
+    // 点餐小程序（按门店分流，默认沿用马己仙配置）
+    orderMiniProgramConfigs: ORDER_MINI_PROGRAM_CONFIGS
   },
 
   /**

@@ -106,7 +106,7 @@ Page({
 
     self.setData({ confirmLoading: true });
     wx.cloud.callFunction({
-      name: 'fixWecomSecret',
+      name: 'associateWecom',
       data: { store_id: self.getStoreId() },
       success: function (res) {
         var result = (res && res.result) || {};
