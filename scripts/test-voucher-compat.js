@@ -1,4 +1,6 @@
 const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
 
 const voucherHelpers = require('../cloudfunctions/getUserVouchers/helpers.js');
 const paymentResult = require('../utils/payment-result.js');
@@ -61,10 +63,26 @@ function testMissingPaymentParams() {
   assert.ok(resolved.message.indexOf('支付参数缺失') >= 0);
 }
 
+function testCreatePaymentContainsSubMchId() {
+  const source = fs.readFileSync(
+    path.join(__dirname, '../cloudfunctions/createPayment/index.js'),
+    'utf8'
+  );
+  assert.ok(
+    source.indexOf('subMchId') >= 0,
+    'createPayment cloudPay request should include subMchId'
+  );
+  assert.ok(
+    source.indexOf("envId: CLOUD_PAY_ENV_ID") >= 0,
+    'createPayment cloudPay request should include explicit envId'
+  );
+}
+
 function run() {
   testNormalizeLegacyVoucher();
   testPreserveExpiredVoucher();
   testMissingPaymentParams();
+  testCreatePaymentContainsSubMchId();
   console.log('test-voucher-compat: ok');
 }
 

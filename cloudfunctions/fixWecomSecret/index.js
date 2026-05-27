@@ -1,5 +1,7 @@
 const cloud = require('wx-server-sdk');
-cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
+const CLOUD_PAY_ENV_ID = 'cloud1-2gqo1169d58023d7';
+const CLOUD_PAY_SUB_MCH_ID = '1745516131';
+cloud.init({ env: CLOUD_PAY_ENV_ID });
 const db = cloud.database();
 
 exports.main = async function() {
@@ -42,8 +44,9 @@ exports.main = async function() {
       body: '年年有喜-测试',
       outTradeNo: 'DIAG' + Date.now(),
       spbillCreateIp: '127.0.0.1',
+      subMchId: CLOUD_PAY_SUB_MCH_ID,
       totalFee: 1,
-      envId: cloud.DYNAMIC_CURRENT_ENV,
+      envId: CLOUD_PAY_ENV_ID,
       functionName: 'paymentCallback',
       nonceStr: Math.random().toString(36).substr(2, 15),
       tradeType: 'JSAPI',

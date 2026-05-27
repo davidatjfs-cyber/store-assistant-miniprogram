@@ -158,9 +158,4 @@
   </view>
 
   <view class="icp-footer">沪ICP备2025128139号-2X</view>
-
-  <view style="position:fixed;bottom:80rpx;left:0;right:0;z-index:9999;text-align:center;" wx:if="{{debugInfo}}">
-    <button size="mini" bindtap="runDiag" style="background:#ff0;color:#000;font-size:22rpx;">诊断</button>
-    <text style="display:block;color:#ff0;font-size:20rpx;word-break:break-all;padding:8px;">{{debugInfo}}</text>
-  </view>
 </view>

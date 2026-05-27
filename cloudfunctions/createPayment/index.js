@@ -1,8 +1,10 @@
 // 云函数入口文件
 const cloud = require('wx-server-sdk');
+const CLOUD_PAY_ENV_ID = 'cloud1-2gqo1169d58023d7';
+const CLOUD_PAY_SUB_MCH_ID = '1745516131';
 
 cloud.init({
-  env: cloud.DYNAMIC_CURRENT_ENV
+  env: CLOUD_PAY_ENV_ID
 });
 
 const db = cloud.database();
@@ -239,8 +241,9 @@ exports.main = async (event, context) => {
         body: `年年有喜-${voucher.name}`,
         outTradeNo: orderNo,
         spbillCreateIp: '127.0.0.1',
+        subMchId: CLOUD_PAY_SUB_MCH_ID,
         totalFee: totalAmount,
-        envId: 'cloud1-2gqo1169d58023d7',
+        envId: CLOUD_PAY_ENV_ID,
         functionName: 'paymentCallback',
         nonceStr: Math.random().toString(36).substr(2, 15),
         tradeType: 'JSAPI',
