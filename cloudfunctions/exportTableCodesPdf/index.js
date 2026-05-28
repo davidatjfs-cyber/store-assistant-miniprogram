@@ -32,10 +32,35 @@ PDF.prototype.addFont = function (name, base) {
   return this.fonts[name];
 };
 
-PDF.prototype.addImage = function (pngBuf) {
+PDF.prototype.addImage = function (imgBuf) {
+  // 检测图片格式
+  if (imgBuf.length < 12) throw new Error('图片数据太短');
+  
+  // PNG 签名: 89 50 4E 47 0D 0A 1A 0A
+  const isPNG = imgBuf[0] === 0x89 && imgBuf[1] === 0x50 && imgBuf[2] === 0x4E && imgBuf[3] === 0x47;
+  
+  // JPEG 签名: FF D8 FF
+  const isJPEG = imgBuf[0] === 0xFF && imgBuf[1] === 0xD8 && imgBuf[2] === 0xFF;
+  
+  if (isPNG) {
+    return this.addPNGImage(imgBuf);
+  } else if (isJPEG) {
+    return this.addJPEGImage(imgBuf);
+  } else {
+    throw new Error('不支持的图片格式，前8字节: ' + Array.from(imgBuf.slice(0, 8)).map(b => b.toString(16).padStart(2, '0')).join(' '));
+  }
+};
+
+PDF.prototype.addPNGImage = function (pngBuf) {
   var w = 0, h = 0, ct = 0, bd = 0;
   var idats = [];
   var pos = 8;
+  
+  // 验证 PNG 签名
+  if (pngBuf[0] !== 0x89 || pngBuf[1] !== 0x50 || pngBuf[2] !== 0x4E || pngBuf[3] !== 0x47) {
+    throw new Error('无效的 PNG 签名');
+  }
+  
   while (pos + 8 <= pngBuf.length) {
     var len = pngBuf.readUInt32BE(pos);
     var type = pngBuf.toString('ascii', pos + 4, pos + 8);
@@ -102,7 +127,49 @@ PDF.prototype.addImage = function (pngBuf) {
 
   var compressedPixels = zlib.deflateSync(pixels);
   this.imgN++;
-  var img = { id: this.objs.length + 1, name: 'Im' + this.imgN, width: w, height: h, data: compressedPixels };
+  var img = { id: this.objs.length + 1, name: 'Im' + this.imgN, width: w, height: h, data: compressedPixels, format: 'png' };
+  this.images.push(img);
+  this.objs.push(null);
+  return img;
+};
+
+PDF.prototype.addJPEGImage = function (jpegBuf) {
+  // 解析 JPEG 获取尺寸
+  var w = 0, h = 0;
+  var pos = 2; // 跳过 FF D8
+  
+  while (pos < jpegBuf.length - 1) {
+    if (jpegBuf[pos] !== 0xFF) { pos++; continue; }
+    
+    var marker = jpegBuf[pos + 1];
+    
+    // SOF markers (Start of Frame)
+    if ((marker >= 0xC0 && marker <= 0xC3) || (marker >= 0xC5 && marker <= 0xC7) ||
+        (marker >= 0xC9 && marker <= 0xCB) || (marker >= 0xCD && marker <= 0xCF)) {
+      if (pos + 9 < jpegBuf.length) {
+        h = jpegBuf.readUInt16BE(pos + 5);
+        w = jpegBuf.readUInt16BE(pos + 7);
+        break;
+      }
+    }
+    
+    // 跳过 marker 段
+    if (marker === 0xD8 || marker === 0xD9 || (marker >= 0xD0 && marker <= 0xD7)) {
+      pos += 2;
+    } else {
+      if (pos + 3 < jpegBuf.length) {
+        var segLen = jpegBuf.readUInt16BE(pos + 2);
+        pos += 2 + segLen;
+      } else {
+        break;
+      }
+    }
+  }
+  
+  if (!w || !h) throw new Error('JPEG 解析失败: 无法获取尺寸 w=' + w + ' h=' + h);
+  
+  this.imgN++;
+  var img = { id: this.objs.length + 1, name: 'Im' + this.imgN, width: w, height: h, data: jpegBuf, format: 'jpeg' };
   this.images.push(img);
   this.objs.push(null);
   return img;
@@ -182,7 +249,9 @@ PDF.prototype.save = function () {
       parts.push(obj.data);
       parts.push('\nendstream\nendobj\n');
     } else if (obj.name && obj.name.indexOf('Im') === 0) {
-      parts.push(oi + ' 0 obj\n<< /Type /XObject /Subtype /Image /Width ' + obj.width + ' /Height ' + obj.height + ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Length ' + obj.data.length + ' /Filter /FlateDecode >>\nstream\n');
+      // 根据图片格式选择 Filter
+      var filter = obj.format === 'jpeg' ? '/DCTDecode' : '/FlateDecode';
+      parts.push(oi + ' 0 obj\n<< /Type /XObject /Subtype /Image /Width ' + obj.width + ' /Height ' + obj.height + ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Length ' + obj.data.length + ' ' + filter + ' >>\nstream\n');
       offsets[oi] = off;
       parts.push(obj.data);
       parts.push('\nendstream\nendobj\n');

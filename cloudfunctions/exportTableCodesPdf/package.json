@@ -3,5 +3,7 @@
   "version": "1.0.0",
   "description": "导出桌位码 PDF（零外部依赖）",
   "main": "index.js",
-  "dependencies": {}
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
 }
