@@ -33,35 +33,73 @@ PDF.prototype.addFont = function (name, base) {
 };
 
 PDF.prototype.addImage = function (pngBuf) {
-  var w = 0, h = 0, ct = 0;
+  var w = 0, h = 0, ct = 0, bd = 0;
   var idats = [];
   var pos = 8;
-  while (pos < pngBuf.length) {
-    var len = (pngBuf[pos] << 24) | (pngBuf[pos + 1] << 16) | (pngBuf[pos + 2] << 8) | pngBuf[pos + 3];
-    var type = String.fromCharCode(pngBuf[pos + 4], pngBuf[pos + 5], pngBuf[pos + 6], pngBuf[pos + 7]);
+  while (pos + 8 <= pngBuf.length) {
+    var len = pngBuf.readUInt32BE(pos);
+    var type = pngBuf.toString('ascii', pos + 4, pos + 8);
+    if (pos + 12 + len > pngBuf.length) break;
     var data = pngBuf.slice(pos + 8, pos + 8 + len);
     if (type === 'IHDR') {
-      w = (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | data[3];
-      h = (data[4] << 24) | (data[5] << 16) | (data[6] << 8) | data[7];
+      w = data.readUInt32BE(0);
+      h = data.readUInt32BE(4);
+      bd = data[8];
       ct = data[9];
     } else if (type === 'IDAT') { idats.push(data); }
     else if (type === 'IEND') break;
     pos += 12 + len;
   }
+  if (!w || !h || !idats.length) throw new Error('PNG 解析失败: w=' + w + ' h=' + h + ' idats=' + idats.length);
+
   var compressed = Buffer.concat(idats);
-  var raw = zlib.inflateSync(compressed);
-  var spp = ct === 6 ? 4 : ct === 2 ? 3 : 1;
+  var raw;
+  try { raw = zlib.inflateSync(compressed); }
+  catch (e) { throw new Error('PNG 解压失败: ' + e.message); }
+
+  var spp = ct === 6 ? 4 : ct === 2 ? 3 : ct === 4 ? 2 : 1;
   var bpr = 1 + w * spp;
-  var pixels = Buffer.alloc(w * h * 3);
+  if (raw.length < h * bpr) throw new Error('PNG 像素数据不足: 需要 ' + (h * bpr) + ' 字节, 实际 ' + raw.length);
+
+  // PNG filter 反滤波
+  var unfiltered = Buffer.alloc(w * h * spp);
   for (var y = 0; y < h; y++) {
-    var rs = y * bpr;
-    var rd = raw.slice(rs + 1, rs + bpr);
-    for (var x = 0; x < w; x++) {
-      var si = x * spp, di = (y * w + x) * 3;
-      if (ct === 6 || ct === 2) { pixels[di] = rd[si]; pixels[di + 1] = rd[si + 1]; pixels[di + 2] = rd[si + 2]; }
-      else { pixels[di] = rd[si]; pixels[di + 1] = rd[si]; pixels[di + 2] = rd[si]; }
+    var filterType = raw[y * bpr];
+    var rowStart = y * bpr + 1;
+    var outStart = y * w * spp;
+    var prevRowStart = (y - 1) * w * spp;
+    for (var x = 0; x < w * spp; x++) {
+      var cur = raw[rowStart + x];
+      var left = x >= spp ? unfiltered[outStart + x - spp] : 0;
+      var up = y > 0 ? unfiltered[prevRowStart + x] : 0;
+      var upLeft = (y > 0 && x >= spp) ? unfiltered[prevRowStart + x - spp] : 0;
+      var val;
+      switch (filterType) {
+        case 0: val = cur; break;
+        case 1: val = (cur + left) & 0xFF; break;
+        case 2: val = (cur + up) & 0xFF; break;
+        case 3: val = (cur + Math.floor((left + up) / 2)) & 0xFF; break;
+        case 4:
+          var p = left + up - upLeft;
+          var pa = Math.abs(p - left), pb = Math.abs(p - up), pc = Math.abs(p - upLeft);
+          val = (cur + (pa <= pb && pa <= pc ? left : pb <= pc ? up : upLeft)) & 0xFF;
+          break;
+        default: val = cur;
+      }
+      unfiltered[outStart + x] = val;
     }
   }
+
+  // 转 RGB
+  var pixels = Buffer.alloc(w * h * 3);
+  for (var i = 0; i < w * h; i++) {
+    var si = i * spp, di = i * 3;
+    if (ct === 6) { pixels[di] = unfiltered[si]; pixels[di + 1] = unfiltered[si + 1]; pixels[di + 2] = unfiltered[si + 2]; }
+    else if (ct === 2) { pixels[di] = unfiltered[si]; pixels[di + 1] = unfiltered[si + 1]; pixels[di + 2] = unfiltered[si + 2]; }
+    else if (ct === 4) { pixels[di] = unfiltered[si]; pixels[di + 1] = unfiltered[si]; pixels[di + 2] = unfiltered[si]; }
+    else { pixels[di] = unfiltered[si]; pixels[di + 1] = unfiltered[si]; pixels[di + 2] = unfiltered[si]; }
+  }
+
   var compressedPixels = zlib.deflateSync(pixels);
   this.imgN++;
   var img = { id: this.objs.length + 1, name: 'Im' + this.imgN, width: w, height: h, data: compressedPixels };
