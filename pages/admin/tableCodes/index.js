@@ -169,7 +169,7 @@ Page({
         var sid = STORE_IDS[this.data.storeIndex];
         var res = await wx.cloud.callFunction({
           name: 'batchTableCodes',
-          data: { tables: batchTables, store_id: sid }
+          data: { tables: batchTables, store_id: sid, force: true }
         });
         var r = (res && res.result) || {};
         if (!r.success) {

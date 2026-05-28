@@ -57,24 +57,31 @@ App({
     const scene = options.scene;
     let query = options.query || {};
 
-    // 微信小程序码场景：参数编码在 options.scene 字符串中，不在 query 里
-    if (!query.store_id && !query.table_id && options.scene && typeof options.scene === 'string' && options.scene.indexOf('=') >= 0) {
+    // 解析 scene 字符串（支持 options.scene 和 query.scene 两种来源）
+    // wxacode.getUnlimited: scene 字符串在 query.scene 中
+    // wxacode.get: scene 字符串在 query.scene 中（URL 编码）
+    // 旧版兼容: scene 字符串直接在 options.scene 中
+    var sceneStr = '';
+    if (query.scene && typeof query.scene === 'string' && query.scene.indexOf('=') >= 0) {
+      sceneStr = query.scene;
+    } else if (options.scene && typeof options.scene === 'string' && options.scene.indexOf('=') >= 0) {
+      sceneStr = options.scene;
+    }
+
+    if (!query.store_id && !query.table_id && sceneStr) {
       try {
-        var decoded = decodeURIComponent(options.scene);
+        var decoded = decodeURIComponent(sceneStr);
         decoded.split('&').forEach(function(pair) {
           var kv = pair.split('=');
           if (kv.length === 2 && kv[0]) {
             var key = kv[0];
             var val = kv[1];
-            // 支持短键名（t=table_id, s=store_id）用于 wxacode.getUnlimited 的 32 字符限制
             if (key === 't') key = 'table_id';
             if (key === 's') key = 'store_id';
             query[key] = val;
           }
         });
-      } catch(e) {
-        // decode failed, keep original query
-      }
+      } catch(e) {}
     }
 
     const campaignId = query.campaign_id || query.campaignId || query.scene_param || '';
