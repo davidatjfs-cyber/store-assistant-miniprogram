@@ -316,10 +316,14 @@ function label(t) { return String(t || '').replace(/外摆/g, 'WB').replace(/外
 /* ===================== 入口 ===================== */
 
 exports.main = async function (event, context) {
+  console.log('[PDF] 函数开始执行');
+  console.log('[PDF] 事件参数:', JSON.stringify(event));
+  
   try {
     var storeId = String(event.store_id || '51866138');
     var slabel = LABELS[storeId] || 'TABLE QR';
     var tables = event.tables || [], items = event.items || [];
+    console.log('[PDF] 参数解析完成: storeId=' + storeId + ', tables数量=' + tables.length + ', items数量=' + items.length);
 
     var exportItems = [];
     if (items.length) {
@@ -330,14 +334,19 @@ exports.main = async function (event, context) {
         if (tid && b64) exportItems.push({ tableId: tid, label: label(tid), base64: b64 });
       }
     } else if (tables.length) {
+      console.log('[PDF] 开始查询数据库');
       var seen = {};
       var tids = [];
       for (var ti = 0; ti < tables.length; ti++) { var t = String(tables[ti] || '').trim(); if (t && !seen[t]) { seen[t] = true; tids.push(t); } }
       var recs = [];
       for (var s = 0; s < tids.length; s += 20) {
         var batch = tids.slice(s, s + 20);
+        console.log('[PDF] 查询批次:', batch);
         var r = await db.collection('table_qrcodes').where({ store_id: storeId, table_id: _.in(batch) }).get();
-        if (r && r.data) { for (var ri = 0; ri < r.data.length; ri++) recs.push(r.data[ri]); }
+        if (r && r.data) { 
+          console.log('[PDF] 查询结果数量:', r.data.length);
+          for (var ri = 0; ri < r.data.length; ri++) recs.push(r.data[ri]); 
+        }
       }
       var rmap = {};
       for (var ri2 = 0; ri2 < recs.length; ri2++) rmap[recs[ri2].table_id] = recs[ri2];
@@ -349,12 +358,21 @@ exports.main = async function (event, context) {
         if (!b64 && !fid) { missing.push(tids[ti2]); continue; }
         exportItems.push({ tableId: tids[ti2], label: label(tids[ti2]), base64: b64, fileId: fid });
       }
-      if (missing.length) return { success: false, message: '以下桌码未缓存，请先生成：' + missing.join('\u3001') };
+      if (missing.length) {
+        console.error('[PDF] 缺少桌码:', missing);
+        return { success: false, message: '以下桌码未缓存，请先生成：' + missing.join('\u3001') };
+      }
     } else {
+      console.error('[PDF] 缺少参数');
       return { success: false, message: '缺少参数' };
     }
-    if (!exportItems.length) return { success: false, message: '没有可导出的桌码' };
+    if (!exportItems.length) {
+      console.error('[PDF] 没有可导出的桌码');
+      return { success: false, message: '没有可导出的桌码' };
+    }
+    console.log('[PDF] 准备导出', exportItems.length, '个桌码');
 
+    console.log('[PDF] 开始生成 PDF');
     var pdf = new PDF();
     var h = pdf.addFont('Helvetica', 'Helvetica');
     var hb = pdf.addFont('Helvetica-Bold', 'Helvetica-Bold');
@@ -366,10 +384,18 @@ exports.main = async function (event, context) {
       var page = pdf.pages[pdf.pages.length - 1];
       var item = exportItems[ei];
       var pos = cardPos(ip);
+      
+      console.log('[PDF] 处理桌码', ei + 1, '/', exportItems.length, ':', item.tableId);
 
       var buf = item.base64 ? Buffer.from(item.base64, 'base64') : ((item.fileId ? (await cloud.downloadFile({ fileID: item.fileId })).fileContent : null));
-      if (!buf) continue;
+      if (!buf) {
+        console.warn('[PDF] 跳过无数据的桌码:', item.tableId);
+        continue;
+      }
+      console.log('[PDF] 图片数据大小:', buf.length, 'bytes');
+      
       var img = pdf.addImage(buf);
+      console.log('[PDF] 图片解析成功:', img.width, 'x', img.height);
 
       pdf.drawRect(page, pos.x, pos.y, CARD_W, CARD_H, [0.988, 0.969, 0.929], [0.78, 0.66, 0.44], 1.2);
       pdf.drawText(page, slabel, pos.x + 18, pos.y + CARD_H - 32, 16, 'Helvetica-Bold', [0.16, 0.12, 0.08]);
@@ -379,11 +405,21 @@ exports.main = async function (event, context) {
       pdf.drawText(page, 'Scan to order', pos.x + 18, pos.y + 20, 10, 'Helvetica', [0.48, 0.42, 0.36]);
     }
 
+    console.log('[PDF] 开始保存 PDF');
     var pdfBuffer = pdf.save();
+    console.log('[PDF] PDF 生成完成，大小:', pdfBuffer.length, 'bytes');
+    
     var fname = 'table-codes-' + Date.now() + '.pdf';
-    var upRes = await cloud.uploadFile({ cloudPath: 'exports/table-codes/' + storeId + '/' + fname, fileContent: pdfBuffer });
+    var cloudPath = 'exports/table-codes/' + storeId + '/' + fname;
+    console.log('[PDF] 开始上传到云存储:', cloudPath);
+    
+    var upRes = await cloud.uploadFile({ cloudPath: cloudPath, fileContent: pdfBuffer });
+    console.log('[PDF] 上传成功，fileID:', upRes.fileID);
+    
     return { success: true, fileID: upRes.fileID, filename: fname, total: exportItems.length };
   } catch (e) {
+    console.error('[PDF] 异常:', e.message || e);
+    console.error('[PDF] 堆栈:', e.stack);
     return { success: false, message: 'PDF生成异常: ' + (e.message || e) };
   }
 };

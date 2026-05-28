@@ -41,26 +41,40 @@ async function uploadQrImageBuffer(storeId, tableId, buffer) {
 }
 
 exports.main = async (event) => {
+  console.log('[BatchQR] 函数开始执行');
+  console.log('[BatchQR] 事件参数:', JSON.stringify(event));
+  
   const { OPENID } = cloud.getWXContext();
 
   const staff = await db.collection('staff').where({ openid: OPENID, active: true }).limit(1).get();
-  if (!staff.data.length) return { success: false, message: '无权限' };
+  if (!staff.data.length) {
+    console.error('[BatchQR] 无权限: 未找到员工记录');
+    return { success: false, message: '无权限' };
+  }
   const role = String(staff.data[0].role || '').toLowerCase();
-  if (role !== 'admin') return { success: false, message: '仅管理员可操作' };
+  if (role !== 'admin') {
+    console.error('[BatchQR] 无权限: 角色不是管理员, role=' + role);
+    return { success: false, message: '仅管理员可操作' };
+  }
 
   var tables = event.tables;
   if (!Array.isArray(tables) || !tables.length) {
+    console.error('[BatchQR] 参数错误: tables 无效');
     return { success: false, message: '请传入 tables 数组' };
   }
 
   var storeId = event.store_id || '51866138';
   var force = event.force === true;
+  console.log('[BatchQR] 参数: storeId=' + storeId + ', force=' + force + ', tables数量=' + tables.length);
 
   // 读取已生成的缓存
   var existing = [];
   try {
     existing = await loadExistingByTables(storeId, tables);
-  } catch (e) {}
+    console.log('[BatchQR] 查询到现有记录数量:', existing.length);
+  } catch (e) {
+    console.error('[BatchQR] 查询现有记录失败:', e.message);
+  }
   var cacheMap = {};
   var docIdMap = {};
   if (!force) {
@@ -68,10 +82,12 @@ exports.main = async (event) => {
       cacheMap[existing[c].table_id] = existing[c];
       docIdMap[existing[c].table_id] = existing[c]._id;
     }
+    console.log('[BatchQR] 使用缓存, cacheMap大小:', Object.keys(cacheMap).length);
   } else {
     for (var d = 0; d < existing.length; d++) {
       docIdMap[existing[d].table_id] = existing[d]._id;
     }
+    console.log('[BatchQR] 强制重新生成, 忽略缓存');
   }
 
   var results = [];
@@ -80,16 +96,19 @@ exports.main = async (event) => {
     if (!tableId) continue;
 
     if (cacheMap[tableId] && cacheMap[tableId].base64) {
+      console.log('[BatchQR] 使用缓存:', tableId);
       results.push({ table_id: tableId, base64: cacheMap[tableId].base64, cached: true });
       continue;
     }
 
     var scene = 't=' + tableId + '&s=' + storeId;
+    console.log('[BatchQR] 生成新二维码:', tableId, ', scene=' + scene);
     var base64 = '';
     var qrBuffer = null;
     try {
       // 优先 getUnlimited（发布后正式），降级 get（开发/体验版）
       try {
+        console.log('[BatchQR] 尝试 getUnlimited');
         var qrRes = await cloud.openapi.wxacode.getUnlimited({
           scene: scene,
           page: 'pages/index/index',
@@ -98,7 +117,9 @@ exports.main = async (event) => {
         });
         qrBuffer = qrRes.buffer;
         base64 = qrBuffer.toString('base64');
+        console.log('[BatchQR] getUnlimited 成功, 大小:', qrBuffer.length, 'bytes');
       } catch (e1) {
+        console.warn('[BatchQR] getUnlimited 失败, 降级使用 get:', e1.message);
         var fallbackRes = await cloud.openapi.wxacode.get({
           path: 'pages/index/index?scene=' + encodeURIComponent(scene),
           width: 430,
@@ -106,8 +127,10 @@ exports.main = async (event) => {
         });
         qrBuffer = fallbackRes.buffer;
         base64 = qrBuffer.toString('base64');
+        console.log('[BatchQR] get 成功, 大小:', qrBuffer.length, 'bytes');
       }
     } catch (e) {
+      console.error('[BatchQR] 生成失败:', tableId, e.message);
       results.push({ table_id: tableId, error: e.message || '生成失败' });
       continue;
     }
@@ -135,6 +158,11 @@ exports.main = async (event) => {
 
     results.push({ table_id: tableId, base64: base64, cached: false });
   }
+
+  var successCount = results.filter(r => !r.error).length;
+  var errorCount = results.filter(r => r.error).length;
+  var cachedCount = results.filter(r => r.cached).length;
+  console.log('[BatchQR] 完成: 成功=' + successCount + ', 失败=' + errorCount + ', 缓存=' + cachedCount);
 
   return { success: true, store_id: storeId, total: results.length, results: results };
 };
