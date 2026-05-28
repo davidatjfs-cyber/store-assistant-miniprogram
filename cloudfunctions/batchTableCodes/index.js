@@ -102,32 +102,32 @@ exports.main = async (event) => {
     }
 
     var scene = 't=' + tableId + '&s=' + storeId;
-    console.log('[BatchQR] 生成新二维码:', tableId, ', scene=' + scene);
     var base64 = '';
     var qrBuffer = null;
     try {
-      // 优先 getUnlimited（发布后正式），降级 get（开发/体验版）
+      var pathWithParams = 'pages/index/index?table_id=' + encodeURIComponent(tableId) + '&store_id=' + encodeURIComponent(storeId);
+      // 优先 get：直接把 table_id / store_id 写入 query，避免 scene 解析差异导致门店串线
       try {
-        console.log('[BatchQR] 尝试 getUnlimited');
-        var qrRes = await cloud.openapi.wxacode.getUnlimited({
+        console.log('[BatchQR] 尝试 wxacode.get, path=' + pathWithParams);
+        var qrRes = await cloud.openapi.wxacode.get({
+          path: pathWithParams,
+          width: 430,
+          autoColor: true
+        });
+        qrBuffer = qrRes.buffer;
+        base64 = qrBuffer.toString('base64');
+        console.log('[BatchQR] get 成功, 大小:', qrBuffer.length, 'bytes');
+      } catch (e1) {
+        console.warn('[BatchQR] get 失败, 降级使用 getUnlimited:', e1.message);
+        var fallbackRes = await cloud.openapi.wxacode.getUnlimited({
           scene: scene,
           page: 'pages/index/index',
           width: 430,
           checkPath: false
         });
-        qrBuffer = qrRes.buffer;
-        base64 = qrBuffer.toString('base64');
-        console.log('[BatchQR] getUnlimited 成功, 大小:', qrBuffer.length, 'bytes');
-      } catch (e1) {
-        console.warn('[BatchQR] getUnlimited 失败, 降级使用 get:', e1.message);
-        var fallbackRes = await cloud.openapi.wxacode.get({
-          path: 'pages/index/index?scene=' + encodeURIComponent(scene),
-          width: 430,
-          autoColor: true
-        });
         qrBuffer = fallbackRes.buffer;
         base64 = qrBuffer.toString('base64');
-        console.log('[BatchQR] get 成功, 大小:', qrBuffer.length, 'bytes');
+        console.log('[BatchQR] getUnlimited 成功, 大小:', qrBuffer.length, 'bytes');
       }
     } catch (e) {
       console.error('[BatchQR] 生成失败:', tableId, e.message);

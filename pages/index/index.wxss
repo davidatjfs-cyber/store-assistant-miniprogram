@@ -54,15 +54,16 @@ page {
 
 .page-shell {
   min-height: 100vh;
-  padding: 46rpx 34rpx 48rpx;
+  padding: 28rpx 34rpx 48rpx;
   box-sizing: border-box;
 }
 
 .brand-head {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   gap: 18rpx;
+  min-height: 52rpx;
 }
 
 .brand-title {
@@ -99,7 +100,7 @@ page {
 }
 
 .hero-spacer {
-  height: 500rpx;
+  height: 340rpx;
 }
 
 .guest-highlight,
@@ -128,7 +129,7 @@ page {
 
 .guest-highlight {
   padding: 32rpx 28rpx 34rpx;
-  margin-top: 24rpx;
+  margin-top: 8rpx;
 }
 
 .card-badge {
@@ -418,7 +419,7 @@ page {
   position: absolute;
   left: 34rpx;
   right: 34rpx;
-  top: 60%;
+  top: 48%;
   transform: translateY(-50%);
   min-height: 720rpx;
 }

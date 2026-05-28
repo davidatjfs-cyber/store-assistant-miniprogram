@@ -54,6 +54,8 @@ PDF.prototype.addImage = function (imgBuf) {
 PDF.prototype.addPNGImage = function (pngBuf) {
   var w = 0, h = 0, ct = 0, bd = 0;
   var idats = [];
+  var palette = null;
+  var transparency = null;
   var pos = 8;
   
   // 验证 PNG 签名
@@ -71,8 +73,13 @@ PDF.prototype.addPNGImage = function (pngBuf) {
       h = data.readUInt32BE(4);
       bd = data[8];
       ct = data[9];
-    } else if (type === 'IDAT') { idats.push(data); }
-    else if (type === 'IEND') break;
+    } else if (type === 'PLTE') {
+      palette = data;
+    } else if (type === 'tRNS') {
+      transparency = data;
+    } else if (type === 'IDAT') {
+      idats.push(data);
+    } else if (type === 'IEND') break;
     pos += 12 + len;
   }
   if (!w || !h || !idats.length) throw new Error('PNG 解析失败: w=' + w + ' h=' + h + ' idats=' + idats.length);
@@ -119,10 +126,37 @@ PDF.prototype.addPNGImage = function (pngBuf) {
   var pixels = Buffer.alloc(w * h * 3);
   for (var i = 0; i < w * h; i++) {
     var si = i * spp, di = i * 3;
-    if (ct === 6) { pixels[di] = unfiltered[si]; pixels[di + 1] = unfiltered[si + 1]; pixels[di + 2] = unfiltered[si + 2]; }
-    else if (ct === 2) { pixels[di] = unfiltered[si]; pixels[di + 1] = unfiltered[si + 1]; pixels[di + 2] = unfiltered[si + 2]; }
-    else if (ct === 4) { pixels[di] = unfiltered[si]; pixels[di + 1] = unfiltered[si]; pixels[di + 2] = unfiltered[si]; }
-    else { pixels[di] = unfiltered[si]; pixels[di + 1] = unfiltered[si]; pixels[di + 2] = unfiltered[si]; }
+    if (ct === 6) {
+      var alpha = unfiltered[si + 3] / 255;
+      pixels[di] = Math.round(unfiltered[si] * alpha + 255 * (1 - alpha));
+      pixels[di + 1] = Math.round(unfiltered[si + 1] * alpha + 255 * (1 - alpha));
+      pixels[di + 2] = Math.round(unfiltered[si + 2] * alpha + 255 * (1 - alpha));
+    } else if (ct === 2) {
+      pixels[di] = unfiltered[si];
+      pixels[di + 1] = unfiltered[si + 1];
+      pixels[di + 2] = unfiltered[si + 2];
+    } else if (ct === 4) {
+      var g = unfiltered[si];
+      var ga = unfiltered[si + 1] / 255;
+      var blended = Math.round(g * ga + 255 * (1 - ga));
+      pixels[di] = blended;
+      pixels[di + 1] = blended;
+      pixels[di + 2] = blended;
+    } else if (ct === 3 && palette) {
+      var colorIndex = unfiltered[si];
+      var paletteOffset = colorIndex * 3;
+      var pr = paletteOffset + 2 < palette.length ? palette[paletteOffset] : 255;
+      var pg = paletteOffset + 2 < palette.length ? palette[paletteOffset + 1] : 255;
+      var pb = paletteOffset + 2 < palette.length ? palette[paletteOffset + 2] : 255;
+      var pa = transparency && colorIndex < transparency.length ? transparency[colorIndex] / 255 : 1;
+      pixels[di] = Math.round(pr * pa + 255 * (1 - pa));
+      pixels[di + 1] = Math.round(pg * pa + 255 * (1 - pa));
+      pixels[di + 2] = Math.round(pb * pa + 255 * (1 - pa));
+    } else {
+      pixels[di] = unfiltered[si];
+      pixels[di + 1] = unfiltered[si];
+      pixels[di + 2] = unfiltered[si];
+    }
   }
 
   var compressedPixels = zlib.deflateSync(pixels);
@@ -193,47 +227,76 @@ PDF.prototype.drawImage = function (page, img, x, y, w, h) {
 };
 
 PDF.prototype.save = function () {
-  var self = this;
   var fontList = [];
-  for (var k in this.fonts) {
-    var f = this.fonts[k];
-    f.objNum = this.objs.indexOf(null);
-    this.objs[f.objNum] = f;
-    fontList.push(f);
+  var imageList = [];
+  var pageDefs = [];
+  var objectDefs = [];
+  var nextObjNum = 1;
+
+  function allocObjNum(target) {
+    target.objNum = nextObjNum++;
+    return target.objNum;
   }
+
+  for (var k in this.fonts) {
+    if (!Object.prototype.hasOwnProperty.call(this.fonts, k)) continue;
+    var font = this.fonts[k];
+    allocObjNum(font);
+    fontList.push(font);
+    objectDefs.push(font);
+  }
+
   for (var i = 0; i < this.images.length; i++) {
     var img = this.images[i];
-    img.objNum = this.objs.indexOf(null);
-    this.objs[img.objNum] = img;
+    allocObjNum(img);
+    imageList.push(img);
+    objectDefs.push(img);
   }
-  var pageObjs = [];
+
+  var fontDict = '';
+  for (var fi = 0; fi < fontList.length; fi++) {
+    fontDict += '/F' + (fi + 1) + ' ' + fontList[fi].objNum + ' 0 R ';
+  }
+  var imgDict = '';
+  for (var ii = 0; ii < imageList.length; ii++) {
+    imgDict += '/Im' + (ii + 1) + ' ' + imageList[ii].objNum + ' 0 R ';
+  }
+
   for (var j = 0; j < this.pages.length; j++) {
-    var p = this.pages[j];
-    var contentId = this.objs.length + 1;
-    this.objs.push(null);
-    var cc = zlib.deflateSync(Buffer.from(p.content, 'ascii'));
-    var cObj = { type: 'content', id: contentId, data: cc };
-    cObj.objNum = this.objs.indexOf(null);
-    this.objs[cObj.objNum] = cObj;
+    var page = this.pages[j];
+    var contentObj = {
+      type: 'content',
+      data: zlib.deflateSync(Buffer.from(page.content, 'ascii'))
+    };
+    allocObjNum(contentObj);
+    objectDefs.push(contentObj);
 
-    var fd = '', xd = '';
-    for (var fi = 0; fi < fontList.length; fi++) fd += '/F' + (fi + 1) + ' ' + fontList[fi].objNum + ' 0 R ';
-    for (var ii = 0; ii < this.images.length; ii++) xd += '/Im' + (ii + 1) + ' ' + this.images[ii].objNum + ' 0 R ';
-
-    var po = { type: 'page', id: this.objs.length + 1, data: { width: p.width, height: p.height, contentId: cObj.objNum, fontDict: fd, imgDict: xd } };
-    this.objs.push(null);
-    po.objNum = this.objs.indexOf(null);
-    this.objs[po.objNum] = po;
-    pageObjs.push(po);
-    p.objNum = po.objNum;
+    var pageObj = {
+      type: 'page',
+      data: {
+        width: page.width,
+        height: page.height,
+        contentId: contentObj.objNum,
+        fontDict: fontDict,
+        imgDict: imgDict
+      }
+    };
+    allocObjNum(pageObj);
+    objectDefs.push(pageObj);
+    pageDefs.push(pageObj);
+    page.objNum = pageObj.objNum;
   }
 
-  var pagesObj = { type: 'pages', id: this.objs.length + 1, kids: pageObjs.map(function (po) { return po.objNum + ' 0 R'; }) };
-  pagesObj.objNum = this.objs.indexOf(null);
-  this.objs[pagesObj.objNum] = pagesObj;
+  var pagesObj = {
+    type: 'pages',
+    kids: pageDefs.map(function (po) { return po.objNum + ' 0 R'; })
+  };
+  allocObjNum(pagesObj);
+  objectDefs.push(pagesObj);
 
-  var catId = this.objs.length + 1;
-  this.objs.push({ type: 'catalog', id: catId, pagesId: pagesObj.objNum });
+  var catalogObj = { type: 'catalog', pagesId: pagesObj.objNum };
+  allocObjNum(catalogObj);
+  objectDefs.push(catalogObj);
 
   // 使用 Buffer 数组避免二进制数据被字符串 join 破坏
   var buffers = [];
@@ -257,46 +320,44 @@ PDF.prototype.save = function () {
 
   addText('%PDF-1.4\n%\xFF\xFF\xFF\xFF\n');
 
-  for (var oi = 0; oi < this.objs.length; oi++) {
-    var obj = this.objs[oi];
-    if (!obj) continue;
+  for (var oi = 0; oi < objectDefs.length; oi++) {
+    var obj = objectDefs[oi];
     var off = currentOffset();
+    var objNum = obj.objNum;
     if (obj.type === 'content') {
-      addText(oi + ' 0 obj\n<< /Length ' + obj.data.length + ' /Filter /FlateDecode >>\nstream\n');
-      offsets[oi] = off;
+      addText(objNum + ' 0 obj\n<< /Length ' + obj.data.length + ' /Filter /FlateDecode >>\nstream\n');
+      offsets[objNum] = off;
       addBinary(obj.data);
       addText('\nendstream\nendobj\n');
     } else if (obj.name && obj.name.indexOf('Im') === 0) {
       var filter = obj.format === 'jpeg' ? '/DCTDecode' : '/FlateDecode';
-      addText(oi + ' 0 obj\n<< /Type /XObject /Subtype /Image /Width ' + obj.width + ' /Height ' + obj.height + ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Length ' + obj.data.length + ' ' + filter + ' >>\nstream\n');
-      offsets[oi] = off;
+      addText(objNum + ' 0 obj\n<< /Type /XObject /Subtype /Image /Width ' + obj.width + ' /Height ' + obj.height + ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Length ' + obj.data.length + ' ' + filter + ' >>\nstream\n');
+      offsets[objNum] = off;
       addBinary(obj.data);
       addText('\nendstream\nendobj\n');
     } else if (obj.name && (obj.name === 'Helvetica' || obj.name === 'Helvetica-Bold')) {
-      addText(oi + ' 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /' + obj.base + ' >>\nendobj\n');
-      offsets[oi] = off;
+      addText(objNum + ' 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /' + obj.base + ' >>\nendobj\n');
+      offsets[objNum] = off;
     } else if (obj.type === 'page') {
       var d = obj.data;
-      addText(oi + ' 0 obj\n<< /Type /Page /Parent ' + pagesObj.objNum + ' 0 R /MediaBox [0 0 ' + d.width + ' ' + d.height + '] /Contents ' + d.contentId + ' 0 R /Resources << /Font << ' + d.fontDict + '>> /XObject << ' + d.imgDict + '>> >> >>\nendobj\n');
-      offsets[oi] = off;
+      addText(objNum + ' 0 obj\n<< /Type /Page /Parent ' + pagesObj.objNum + ' 0 R /MediaBox [0 0 ' + d.width + ' ' + d.height + '] /Contents ' + d.contentId + ' 0 R /Resources << /Font << ' + d.fontDict + '>> /XObject << ' + d.imgDict + '>> >> >>\nendobj\n');
+      offsets[objNum] = off;
     } else if (obj.type === 'pages') {
-      addText(oi + ' 0 obj\n<< /Type /Pages /Kids [' + obj.kids.join(' ') + '] /Count ' + obj.kids.length + ' >>\nendobj\n');
-      offsets[oi] = off;
+      addText(objNum + ' 0 obj\n<< /Type /Pages /Kids [' + obj.kids.join(' ') + '] /Count ' + obj.kids.length + ' >>\nendobj\n');
+      offsets[objNum] = off;
     } else if (obj.type === 'catalog') {
-      addText(oi + ' 0 obj\n<< /Type /Catalog /Pages ' + obj.pagesId + ' 0 R >>\nendobj\n');
-      offsets[oi] = off;
-    } else {
-      offsets[oi] = off;
+      addText(objNum + ' 0 obj\n<< /Type /Catalog /Pages ' + obj.pagesId + ' 0 R >>\nendobj\n');
+      offsets[objNum] = off;
     }
   }
 
   var xrefOff = currentOffset();
-  var xref = 'xref\n0 ' + (this.objs.length + 1) + '\n0000000000 65535 f \n';
-  for (var oi2 = 0; oi2 < this.objs.length; oi2++) {
+  var xref = 'xref\n0 ' + nextObjNum + '\n0000000000 65535 f \n';
+  for (var oi2 = 1; oi2 < nextObjNum; oi2++) {
     var o = offsets[oi2] || 0;
     xref += ('0000000000' + o).slice(-10) + ' 00000 n \n';
   }
-  addText(xref + 'trailer\n<< /Size ' + (this.objs.length + 1) + ' /Root ' + catId + ' 0 R >>\nstartxref\n' + xrefOff + '\n%%EOF\n');
+  addText(xref + 'trailer\n<< /Size ' + nextObjNum + ' /Root ' + catalogObj.objNum + ' 0 R >>\nstartxref\n' + xrefOff + '\n%%EOF\n');
 
   return Buffer.concat(buffers, totalLen);
 };

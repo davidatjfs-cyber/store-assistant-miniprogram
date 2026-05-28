@@ -1,7 +1,14 @@
 var roleUtil = require('../../../utils/role.js');
+var exportUtil = require('../../../utils/table-code-export.js');
 var BATCH_SIZE = 1;
 var MAX_RETRY = 2;
-var PDF_EXPORT_CHUNK_SIZE = 2;
+var EXPORT_IMAGE_CHUNK_SIZE = exportUtil.EXPORT_IMAGE_CHUNK_SIZE;
+var EXPORT_CANVAS_WIDTH = exportUtil.EXPORT_CANVAS_WIDTH;
+var EXPORT_CANVAS_HEIGHT = exportUtil.EXPORT_CANVAS_HEIGHT;
+var EXPORT_PAGE_PADDING = exportUtil.EXPORT_PAGE_PADDING;
+var EXPORT_CARD_GAP = exportUtil.EXPORT_CARD_GAP;
+var EXPORT_CARD_COLUMNS = exportUtil.EXPORT_CARD_COLUMNS;
+var EXPORT_CARD_ROWS = exportUtil.EXPORT_CARD_ROWS;
 
 var STORE_CONFIGS = {
   '51866138': {
@@ -49,10 +56,13 @@ Page({
     storeIndex: 0,
     zones: [],
     generating: false,
+    exporting: false,
     storeName: '',
     totalTables: 0,
     generatedCount: 0,
-    selectedCount: 0
+    selectedCount: 0,
+    exportCanvasWidth: EXPORT_CANVAS_WIDTH,
+    exportCanvasHeight: EXPORT_CANVAS_HEIGHT
   },
 
   onLoad: function (options) {
@@ -343,7 +353,7 @@ Page({
     this.setData({ zones: zones, generatedCount: count, selectedCount: selectedCount });
   },
 
-  onExportSelectedPdf: function () {
+  onExportSelectedImage: function () {
     var selectedIds = this.collectSelectedTableIds();
     if (!selectedIds.length) {
       wx.showToast({ title: '请先勾选桌位', icon: 'none' });
@@ -354,117 +364,215 @@ Page({
       wx.showToast({ title: '选中桌位尚未生成', icon: 'none' });
       return;
     }
-    this.exportTableCodesPdf(downloadableIds, '导出选中 PDF');
+    this.exportTableCodesImages(downloadableIds, '导出选中图片');
   },
 
-  onExportAllPdf: function () {
+  onExportAllImage: function () {
     var generatedIds = this.collectGeneratedTableIds();
     if (!generatedIds.length) {
       wx.showToast({ title: '请先生成桌码', icon: 'none' });
       return;
     }
-    this.exportTableCodesPdf(generatedIds, '导出全部 PDF');
+    this.exportTableCodesImages(generatedIds, '导出全部图片');
   },
 
-  exportTableCodesPdf: async function (tableIds, title) {
+  exportTableCodesImages: async function (tableIds, title) {
+    if (this.data.exporting) return;
     try {
       wx.showLoading({ title: '整理桌码中', mask: true });
-      var sid = STORE_IDS[this.data.storeIndex];
       var exportTableIds = this.filterGeneratedTableIds(tableIds);
       if (!exportTableIds.length) {
         wx.hideLoading();
         wx.showToast({ title: '没有可导出的已生成桌码', icon: 'none' });
         return;
       }
-      var chunkedTableIds = this.chunkTableIds(exportTableIds, PDF_EXPORT_CHUNK_SIZE);
+      var exportItems = this.buildExportItems(exportTableIds);
+      var chunks = exportUtil.chunkExportItems(exportItems, EXPORT_IMAGE_CHUNK_SIZE);
       var filePaths = [];
-      for (var chunkIndex = 0; chunkIndex < chunkedTableIds.length; chunkIndex++) {
-        wx.showLoading({ title: '导出PDF ' + (chunkIndex + 1) + '/' + chunkedTableIds.length, mask: true });
-        var res = await wx.cloud.callFunction({
-          name: 'exportTableCodesPdf',
-          data: {
-            tables: chunkedTableIds[chunkIndex],
-            store_id: sid
-          }
-        });
-        var result = (res && res.result) || {};
-        if (!result.success || !result.fileID) {
-          throw new Error(result.message || 'PDF 导出失败');
-        }
-        var downloadRes = await wx.cloud.downloadFile({ fileID: result.fileID });
-        if (!downloadRes || !downloadRes.tempFilePath) {
-          throw new Error('PDF 云文件下载失败');
-        }
-        filePaths.push(downloadRes.tempFilePath);
+      this.setData({ exporting: true });
+      await this.ensureAlbumPermission();
+      for (var chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
+        wx.showLoading({ title: '导出图片 ' + (chunkIndex + 1) + '/' + chunks.length, mask: true });
+        var tempPath = await this.renderExportImage(chunks[chunkIndex], chunkIndex, chunks.length);
+        await this.saveImageToAlbum(tempPath);
+        filePaths.push(tempPath);
       }
       wx.hideLoading();
-      if (filePaths.length === 1) {
-        wx.openDocument({
-          filePath: filePaths[0],
-          fileType: 'pdf',
-          showMenu: true
-        });
-        wx.showToast({ title: title || 'PDF 已导出', icon: 'success' });
-        return;
-      }
-      var firstPath = filePaths[0];
       wx.showModal({
-        title: '已导出分卷 PDF',
-        content: '本次共导出 ' + filePaths.length + ' 份 PDF，避免单次导出过大失败。点击“确定”先打开第 1 份。',
+        title: title || '图片已导出',
+        content: '已保存 ' + filePaths.length + ' 张桌码拼版图片到系统相册，每张图片都包含桌号。点击“确定”可预览第 1 张。',
         showCancel: false,
-        success: function () {
-          wx.openDocument({
-            filePath: firstPath,
-            fileType: 'pdf',
-            showMenu: true
-          });
+        success: function() {
+          if (filePaths.length) {
+            wx.previewImage({
+              current: filePaths[0],
+              urls: filePaths
+            });
+          }
         }
       });
     } catch (err) {
       wx.hideLoading();
+      this.setData({ exporting: false });
       var msg = (err && (err.message || err.errMsg)) || '';
-      if (msg.indexOf('FunctionName parameter could not be found') >= 0 ||
-          msg.indexOf('FUNCTION_NOT_FOUND') >= 0 ||
-          msg.indexOf('-501000') >= 0) {
+      if (msg.indexOf('auth deny') >= 0 || msg.indexOf('authorize:fail') >= 0) {
         wx.showModal({
-          title: 'PDF导出云函数未部署',
-          content: '请在微信开发者工具中右键 cloudfunctions/exportTableCodesPdf ，选择“上传并部署：云端安装依赖”，完成后再重试导出 PDF。',
+          title: '需要相册权限',
+          content: '批量导出图片需要保存到系统相册，请在弹窗里允许“保存到相册”权限后重试。',
           showCancel: false
         });
         return;
       }
-      if (msg.indexOf('-504002') >= 0 ||
-          msg.indexOf('functions execute fail') >= 0 ||
-          msg.indexOf('code exit unexpected') >= 0) {
+      if (msg.indexOf('saveImageToPhotosAlbum:fail') >= 0) {
         wx.showModal({
-          title: 'PDF导出依赖未安装',
-          content: 'exportTableCodesPdf 云函数执行异常，通常是部署时没有安装依赖。请在微信开发者工具中右键 cloudfunctions/exportTableCodesPdf ，选择“上传并部署：云端安装依赖”；如果用“上传并部署：所有文件”，请先在该目录执行 npm install 后再上传。',
-          showCancel: false
-        });
-        return;
-      }
-      if (msg.indexOf('downloadFile:fail') >= 0 || msg.indexOf('下载') >= 0) {
-        wx.showModal({
-          title: 'PDF下载失败',
-          content: '云端 PDF 已生成，但小程序下载文件失败。请确认当前网络正常后重试。',
-          showCancel: false
-        });
-        return;
-      }
-      if (msg.indexOf('openDocument:fail') >= 0) {
-        wx.showModal({
-          title: 'PDF打开失败',
-          content: 'PDF 已下载，但系统打开文档失败。可稍后重试，或让我改成导出后直接复制链接。',
+          title: '保存图片失败',
+          content: '图片已经生成，但保存到相册失败。请确认微信已获得“保存到相册”权限后重试。',
           showCancel: false
         });
         return;
       }
       wx.showModal({
         title: '导出失败',
-        content: msg || 'PDF 导出失败，请稍后重试。',
+        content: msg || '图片导出失败，请稍后重试。',
         showCancel: false
       });
+    } finally {
+      this.setData({ exporting: false });
     }
+  },
+
+  buildExportItems: function (tableIds) {
+    var items = [];
+    for (var i = 0; i < tableIds.length; i++) {
+      var table = this.findTableById(tableIds[i]);
+      if (table && table.qrBase64) {
+        items.push({
+          tableId: table.id,
+          qrBase64: table.qrBase64
+        });
+      }
+    }
+    return items;
+  },
+
+  ensureAlbumPermission: function () {
+    return new Promise(function (resolve, reject) {
+      wx.getSetting({
+        success: function (settingRes) {
+          var authSetting = (settingRes && settingRes.authSetting) || {};
+          if (authSetting['scope.writePhotosAlbum']) {
+            resolve();
+            return;
+          }
+          wx.authorize({
+            scope: 'scope.writePhotosAlbum',
+            success: resolve,
+            fail: reject
+          });
+        },
+        fail: reject
+      });
+    });
+  },
+
+  renderExportImage: async function (items, pageIndex, totalPages) {
+    var localFiles = await this.prepareExportImageFiles(items, pageIndex);
+    var canvasWidth = EXPORT_CANVAS_WIDTH;
+    var canvasHeight = EXPORT_CANVAS_HEIGHT;
+    var headerHeight = 180;
+    var cardWidth = (canvasWidth - EXPORT_PAGE_PADDING * 2 - EXPORT_CARD_GAP * (EXPORT_CARD_COLUMNS - 1)) / EXPORT_CARD_COLUMNS;
+    var cardHeight = (canvasHeight - EXPORT_PAGE_PADDING - headerHeight - EXPORT_CARD_GAP * (EXPORT_CARD_ROWS - 1) - 48) / EXPORT_CARD_ROWS;
+    var qrSize = Math.min(cardWidth - 72, 320);
+    var ctx = wx.createCanvasContext('tableExportCanvas', this);
+    var storeName = this.data.storeName;
+
+    ctx.setFillStyle('#f5f0e6');
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+    ctx.setFillStyle('#2a2118');
+    ctx.setFontSize(44);
+    ctx.fillText(storeName, EXPORT_PAGE_PADDING, 74);
+    ctx.setFillStyle('#6f6255');
+    ctx.setFontSize(24);
+    ctx.fillText('桌码拼版 · 第 ' + (pageIndex + 1) + ' / ' + totalPages + ' 张', EXPORT_PAGE_PADDING, 118);
+    ctx.fillText('每张图片都包含桌号，可直接转发或打印', EXPORT_PAGE_PADDING, 154);
+
+    for (var i = 0; i < items.length; i++) {
+      var col = i % EXPORT_CARD_COLUMNS;
+      var row = Math.floor(i / EXPORT_CARD_COLUMNS);
+      var x = EXPORT_PAGE_PADDING + col * (cardWidth + EXPORT_CARD_GAP);
+      var y = headerHeight + row * (cardHeight + EXPORT_CARD_GAP);
+      var qrX = x + (cardWidth - qrSize) / 2;
+      var qrY = y + 54;
+
+      ctx.setFillStyle('#ffffff');
+      ctx.fillRect(x, y, cardWidth, cardHeight);
+      ctx.setStrokeStyle('#d8c9b5');
+      ctx.setLineWidth(3);
+      ctx.strokeRect(x, y, cardWidth, cardHeight);
+      ctx.drawImage(localFiles[i], qrX, qrY, qrSize, qrSize);
+      ctx.setFillStyle('#2a2118');
+      ctx.setFontSize(42);
+      ctx.setTextAlign('center');
+      ctx.fillText(items[i].tableId, x + cardWidth / 2, qrY + qrSize + 70);
+      ctx.setFillStyle('#8a7b69');
+      ctx.setFontSize(22);
+      ctx.fillText(storeName, x + cardWidth / 2, qrY + qrSize + 106);
+    }
+    ctx.setTextAlign('left');
+
+    return this.drawCanvasToTempFile(ctx, canvasWidth, canvasHeight, pageIndex, totalPages);
+  },
+
+  prepareExportImageFiles: function (items, pageIndex) {
+    var self = this;
+    return Promise.all(items.map(function (item) {
+      return self.writeQrBase64ToTempFile(item.tableId, item.qrBase64, pageIndex);
+    }));
+  },
+
+  writeQrBase64ToTempFile: function (tableId, base64, pageIndex) {
+    var safeId = encodeURIComponent(String(tableId || 'table'));
+    var filePath = wx.env.USER_DATA_PATH + '/table-code-' + safeId + '-' + pageIndex + '.png';
+    return new Promise(function (resolve, reject) {
+      wx.getFileSystemManager().writeFile({
+        filePath: filePath,
+        data: base64,
+        encoding: 'base64',
+        success: function () { resolve(filePath); },
+        fail: reject
+      });
+    });
+  },
+
+  drawCanvasToTempFile: function (ctx, width, height, pageIndex, totalPages) {
+    var self = this;
+    return new Promise(function (resolve, reject) {
+      ctx.draw(false, function () {
+        wx.canvasToTempFilePath({
+          canvasId: 'tableExportCanvas',
+          width: width,
+          height: height,
+          destWidth: width,
+          destHeight: height,
+          fileType: 'png',
+          quality: 1,
+          success: function (res) {
+            resolve(res.tempFilePath);
+          },
+          fail: reject
+        }, self);
+      });
+    });
+  },
+
+  saveImageToAlbum: function (filePath) {
+    return new Promise(function (resolve, reject) {
+      wx.saveImageToPhotosAlbum({
+        filePath: filePath,
+        success: resolve,
+        fail: reject
+      });
+    });
   },
 
   chunkTableIds: function (tableIds, size) {

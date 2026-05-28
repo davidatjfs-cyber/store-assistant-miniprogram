@@ -34,11 +34,11 @@
       </button>
     </view>
     <view class="btn-row" wx:if="{{generatedCount > 0}}">
-      <button class="btn-secondary" bindtap="onExportSelectedPdf" disabled="{{generating || selectedCount === 0}}">
-        导出选中PDF
+      <button class="btn-secondary" bindtap="onExportSelectedImage" disabled="{{generating || exporting || selectedCount === 0}}">
+        导出选中图片
       </button>
-      <button class="btn-ghost" bindtap="onExportAllPdf" disabled="{{generating || generatedCount === 0}}">
-        导出全部PDF
+      <button class="btn-ghost" bindtap="onExportAllImage" disabled="{{generating || exporting || generatedCount === 0}}">
+        导出全部图片
       </button>
     </view>
   </view>
@@ -69,6 +69,13 @@
   </scroll-view>
 
   <view class="tip-bar" wx:if="{{generatedCount > 0}}">
-    <text class="tip-text">支持勾选后批量生成、单独生成，以及导出 PDF 直接预览打印</text>
+    <text class="tip-text">支持勾选后批量生成、单独生成，以及导出带桌号的拼版图片到系统相册</text>
   </view>
+
+  <canvas
+    canvas-id="tableExportCanvas"
+    id="tableExportCanvas"
+    class="export-canvas"
+    style="width: {{exportCanvasWidth}}px; height: {{exportCanvasHeight}}px;"
+  />
 </view>

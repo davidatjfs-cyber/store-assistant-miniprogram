@@ -123,3 +123,11 @@ page { background: #0d0d0d; }
 
 .tip-bar { margin-top: 24rpx; text-align: center; padding: 16rpx; background: rgba(255,255,255,0.04); border-radius: 16rpx; }
 .tip-text { font-size: 22rpx; color: #8a7e72; }
+
+.export-canvas {
+  position: fixed;
+  left: -9999px;
+  top: -9999px;
+  opacity: 0;
+  pointer-events: none;
+}

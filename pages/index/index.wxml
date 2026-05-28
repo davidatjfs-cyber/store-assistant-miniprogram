@@ -7,7 +7,6 @@
 
   <view class="page-shell" wx:if="{{pageReady}}">
     <view class="brand-head">
-      <text class="brand-title">年年有喜</text>
       <view class="brand-status" wx:if="{{isFromScan}}">
         <text class="brand-status-dot"></text>
         <text class="brand-status-text">已连接</text>
