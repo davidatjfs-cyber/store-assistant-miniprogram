@@ -235,52 +235,70 @@ PDF.prototype.save = function () {
   var catId = this.objs.length + 1;
   this.objs.push({ type: 'catalog', id: catId, pagesId: pagesObj.objNum });
 
-  var parts = [];
+  // 使用 Buffer 数组避免二进制数据被字符串 join 破坏
+  var buffers = [];
   var offsets = {};
-  parts.push('%PDF-1.4\n%\xFF\xFF\xFF\xFF\n');
+  var totalLen = 0;
+
+  function addText(str) {
+    var buf = Buffer.from(str, 'binary');
+    buffers.push(buf);
+    totalLen += buf.length;
+  }
+
+  function addBinary(buf) {
+    buffers.push(buf);
+    totalLen += buf.length;
+  }
+
+  function currentOffset() {
+    return totalLen;
+  }
+
+  addText('%PDF-1.4\n%\xFF\xFF\xFF\xFF\n');
 
   for (var oi = 0; oi < this.objs.length; oi++) {
     var obj = this.objs[oi];
     if (!obj) continue;
-    var off = Buffer.byteLength(parts.join(''));
+    var off = currentOffset();
     if (obj.type === 'content') {
-      parts.push(oi + ' 0 obj\n<< /Length ' + obj.data.length + ' /Filter /FlateDecode >>\nstream\n');
+      addText(oi + ' 0 obj\n<< /Length ' + obj.data.length + ' /Filter /FlateDecode >>\nstream\n');
       offsets[oi] = off;
-      parts.push(obj.data);
-      parts.push('\nendstream\nendobj\n');
+      addBinary(obj.data);
+      addText('\nendstream\nendobj\n');
     } else if (obj.name && obj.name.indexOf('Im') === 0) {
-      // 根据图片格式选择 Filter
       var filter = obj.format === 'jpeg' ? '/DCTDecode' : '/FlateDecode';
-      parts.push(oi + ' 0 obj\n<< /Type /XObject /Subtype /Image /Width ' + obj.width + ' /Height ' + obj.height + ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Length ' + obj.data.length + ' ' + filter + ' >>\nstream\n');
+      addText(oi + ' 0 obj\n<< /Type /XObject /Subtype /Image /Width ' + obj.width + ' /Height ' + obj.height + ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Length ' + obj.data.length + ' ' + filter + ' >>\nstream\n');
       offsets[oi] = off;
-      parts.push(obj.data);
-      parts.push('\nendstream\nendobj\n');
+      addBinary(obj.data);
+      addText('\nendstream\nendobj\n');
     } else if (obj.name && (obj.name === 'Helvetica' || obj.name === 'Helvetica-Bold')) {
-      parts.push(oi + ' 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /' + obj.base + ' >>\nendobj\n');
+      addText(oi + ' 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /' + obj.base + ' >>\nendobj\n');
       offsets[oi] = off;
     } else if (obj.type === 'page') {
       var d = obj.data;
-      parts.push(oi + ' 0 obj\n<< /Type /Page /Parent ' + pagesObj.objNum + ' 0 R /MediaBox [0 0 ' + d.width + ' ' + d.height + '] /Contents ' + d.contentId + ' 0 R /Resources << /Font << ' + d.fontDict + '>> /XObject << ' + d.imgDict + '>> >> >>\nendobj\n');
+      addText(oi + ' 0 obj\n<< /Type /Page /Parent ' + pagesObj.objNum + ' 0 R /MediaBox [0 0 ' + d.width + ' ' + d.height + '] /Contents ' + d.contentId + ' 0 R /Resources << /Font << ' + d.fontDict + '>> /XObject << ' + d.imgDict + '>> >> >>\nendobj\n');
       offsets[oi] = off;
     } else if (obj.type === 'pages') {
-      parts.push(oi + ' 0 obj\n<< /Type /Pages /Kids [' + obj.kids.join(' ') + '] /Count ' + obj.kids.length + ' >>\nendobj\n');
+      addText(oi + ' 0 obj\n<< /Type /Pages /Kids [' + obj.kids.join(' ') + '] /Count ' + obj.kids.length + ' >>\nendobj\n');
       offsets[oi] = off;
     } else if (obj.type === 'catalog') {
-      parts.push(oi + ' 0 obj\n<< /Type /Catalog /Pages ' + obj.pagesId + ' 0 R >>\nendobj\n');
+      addText(oi + ' 0 obj\n<< /Type /Catalog /Pages ' + obj.pagesId + ' 0 R >>\nendobj\n');
       offsets[oi] = off;
     } else {
       offsets[oi] = off;
     }
   }
 
-  var body = parts.join('');
-  var xrefOff = Buffer.byteLength(body);
+  var xrefOff = currentOffset();
   var xref = 'xref\n0 ' + (this.objs.length + 1) + '\n0000000000 65535 f \n';
   for (var oi2 = 0; oi2 < this.objs.length; oi2++) {
     var o = offsets[oi2] || 0;
     xref += ('0000000000' + o).slice(-10) + ' 00000 n \n';
   }
-  return Buffer.from(body + xref + 'trailer\n<< /Size ' + (this.objs.length + 1) + ' /Root ' + catId + ' 0 R >>\nstartxref\n' + xrefOff + '\n%%EOF\n', 'binary');
+  addText(xref + 'trailer\n<< /Size ' + (this.objs.length + 1) + ' /Root ' + catId + ' 0 R >>\nstartxref\n' + xrefOff + '\n%%EOF\n');
+
+  return Buffer.concat(buffers, totalLen);
 };
 
 /* ===================== 常量 ===================== */

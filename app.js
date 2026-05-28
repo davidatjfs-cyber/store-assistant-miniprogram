@@ -64,7 +64,12 @@ App({
         decoded.split('&').forEach(function(pair) {
           var kv = pair.split('=');
           if (kv.length === 2 && kv[0]) {
-            query[kv[0]] = kv[1];
+            var key = kv[0];
+            var val = kv[1];
+            // 支持短键名（t=table_id, s=store_id）用于 wxacode.getUnlimited 的 32 字符限制
+            if (key === 't') key = 'table_id';
+            if (key === 's') key = 'store_id';
+            query[key] = val;
           }
         });
       } catch(e) {

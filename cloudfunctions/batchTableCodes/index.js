@@ -84,7 +84,7 @@ exports.main = async (event) => {
       continue;
     }
 
-    var scene = 'table_id=' + tableId + '&store_id=' + storeId;
+    var scene = 't=' + tableId + '&s=' + storeId;
     var base64 = '';
     var qrBuffer = null;
     try {
