@@ -14,14 +14,33 @@
 
   <view class="store-bar">
     <picker mode="selector" range="{{stores}}" range-key="name" value="{{storeIndex}}" bindchange="onStoreChange">
-      <view class="store-picker"><text class="store-picker-text">{{stores[storeIndex].name}} ▼</text></view>
+      <view class="store-picker">
+        <text class="store-picker-text">{{stores[storeIndex].name}} ▼</text>
+      </view>
     </picker>
   </view>
 
   <view class="btn-bar">
-    <button class="btn-add" bindtap="onGenerateAll" loading="{{generating}}">{{generating ? '生成中…' : (generatedCount ? '重新生成全部' : '生成全部桌码')}}</button>
+    <button class="btn-add" bindtap="onGenerateAll" loading="{{generating}}">
+      {{generating ? '生成中…' : (generatedCount ? '重新生成全部' : '生成全部桌码')}}
+    </button>
     <text class="btn-hint" wx:if="{{generatedCount > 0}}">已生成 {{generatedCount}} / {{totalTables}} 桌</text>
-    <button wx:if="{{generatedCount > 0}}" class="btn-save" bindtap="onSaveAllImages" loading="{{saving}}">{{saving ? '保存中 ' + saveProgress : '保存全部图片到相册（含桌号）'}}</button>
+    <view class="btn-row">
+      <button class="btn-secondary" bindtap="onGenerateSelected" disabled="{{generating || selectedCount === 0}}">
+        生成选中<text wx:if="{{selectedCount > 0}}">（{{selectedCount}}）</text>
+      </button>
+      <button class="btn-ghost" bindtap="onClearSelection" disabled="{{generating || selectedCount === 0}}">
+        清空勾选
+      </button>
+    </view>
+    <view class="btn-row" wx:if="{{generatedCount > 0}}">
+      <button class="btn-secondary" bindtap="onExportSelectedPdf" disabled="{{generating || selectedCount === 0}}">
+        导出选中PDF
+      </button>
+      <button class="btn-ghost" bindtap="onExportAllPdf" disabled="{{generating || generatedCount === 0}}">
+        导出全部PDF
+      </button>
+    </view>
   </view>
 
   <scroll-view scroll-y class="list">
@@ -32,18 +51,24 @@
       </view>
       <view class="qr-grid">
         <view class="qr-cell" wx:for="{{zone.tables}}" wx:for-item="tbl" wx:key="id">
-          <image wx:if="{{tbl.qrBase64}}" class="qr-img" src="data:image/png;base64,{{tbl.qrBase64}}" mode="aspectFit" bindtap="previewQr" data-base64="{{tbl.qrBase64}}" />
-          <view wx:else class="qr-placeholder"><text class="qr-placeholder-text">{{tbl.id}}</text></view>
+          <view class="select-chip {{tbl.selected ? 'is-selected' : ''}}" catchtap="onToggleTableSelection" data-id="{{tbl.id}}">
+            {{tbl.selected ? '已选' : '勾选'}}
+          </view>
+          <image wx:if="{{tbl.qrBase64}}" class="qr-img {{tbl.selected ? 'qr-img-selected' : ''}}" src="data:image/png;base64,{{tbl.qrBase64}}" mode="aspectFit" bindtap="previewQr" data-base64="{{tbl.qrBase64}}" />
+          <view wx:else class="qr-placeholder {{tbl.selected ? 'qr-placeholder-selected' : ''}}">
+            <text class="qr-placeholder-text">{{tbl.id}}</text>
+          </view>
           <text class="qr-label">{{tbl.id}}</text>
+          <text class="qr-error" wx:if="{{tbl.error}}">生成失败</text>
+          <button class="qr-action" size="mini" bindtap="onGenerateSingle" data-id="{{tbl.id}}" loading="{{tbl.generating}}" disabled="{{generating && !tbl.generating}}">
+            {{tbl.generating ? '生成中' : '生成'}}
+          </button>
         </view>
       </view>
     </view>
   </scroll-view>
 
   <view class="tip-bar" wx:if="{{generatedCount > 0}}">
-    <text class="tip-text">点击二维码可放大预览 · 点击下方「保存全部图片」逐张保存到相册，每张图片自带桌号</text>
+    <text class="tip-text">支持勾选后批量生成、单独生成，以及导出 PDF 直接预览打印</text>
   </view>
-
-  <!-- 隐藏 Canvas：用于合成二维码+桌号 -->
-  <canvas type="2d" id="saveCanvas" style="width:500px;height:620px;position:fixed;left:-9999px;top:0;pointer-events:none;"></canvas>
 </view>
