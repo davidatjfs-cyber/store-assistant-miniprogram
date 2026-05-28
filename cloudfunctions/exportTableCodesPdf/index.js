@@ -1,245 +1,145 @@
 const cloud = require('wx-server-sdk');
-const { PDFDocument, StandardFonts, rgb } = require('pdf-lib');
+const { PDF } = require('./pdf-builder');
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 const _ = db.command;
 
-const PAGE_WIDTH = 595.28;
-const PAGE_HEIGHT = 841.89;
-const PAGE_MARGIN = 28;
-const CARD_GAP = 18;
-const CARD_COLS = 2;
-const CARD_ROWS = 2;
+const PAGE_W = 595.28;
+const PAGE_H = 841.89;
+const MARGIN = 28;
+const GAP = 18;
+const COLS = 2;
+const ROWS = 2;
+const CARD_W = (PAGE_W - MARGIN * 2 - GAP) / COLS;
+const CARD_H = (PAGE_H - MARGIN * 2 - GAP) / ROWS;
 
-const STORE_LABELS = {
+var STORE_LABELS = {
   '51866138': 'MAJIXIAN GUANGDONG',
   '64822111': 'HONGCHAO CHAOSHAN'
 };
 
-function computeCardPosition(indexOnPage, cardWidth, cardHeight) {
-  const col = indexOnPage % CARD_COLS;
-  const row = Math.floor(indexOnPage / CARD_COLS);
-  const x = PAGE_MARGIN + col * (cardWidth + CARD_GAP);
-  const y = PAGE_HEIGHT - PAGE_MARGIN - (row + 1) * cardHeight - row * CARD_GAP;
-  return { x, y };
+function cardPos(idx) {
+  var col = idx % COLS;
+  var row = Math.floor(idx / COLS);
+  return { x: MARGIN + col * (CARD_W + GAP), y: PAGE_H - MARGIN - (row + 1) * CARD_H - row * GAP };
 }
 
-function detectImageFormat(buffer) {
-  if (buffer && buffer.length >= 8 &&
-      buffer[0] === 0x89 &&
-      buffer[1] === 0x50 &&
-      buffer[2] === 0x4e &&
-      buffer[3] === 0x47) {
-    return 'png';
+function normLabel(tid) {
+  var s = String(tid || '').trim();
+  if (!s) return 'TABLE';
+  return s.replace(/外摆/g, 'WB').replace(/外带/g, 'TAKE').replace(/[^\x20-\x7E]/g, '').trim() || 'TABLE';
+}
+
+function loadExisting(storeId, tables) {
+  var tids = [];
+  var seen = {};
+  for (var i = 0; i < tables.length; i++) {
+    var ti = String(tables[i] || '').trim();
+    if (!ti || seen[ti]) continue;
+    seen[ti] = true;
+    tids.push(ti);
   }
-  if (buffer && buffer.length >= 3 &&
-      buffer[0] === 0xff &&
-      buffer[1] === 0xd8 &&
-      buffer[2] === 0xff) {
-    return 'jpg';
-  }
-  return 'unknown';
-}
-
-function normalizeLabel(tableId) {
-  const raw = String(tableId || '').trim();
-  if (!raw) return 'TABLE';
-  return raw
-    .replace(/外摆/g, 'WB')
-    .replace(/外带/g, 'TAKE')
-    .replace(/[^\x20-\x7E]/g, '')
-    .trim() || 'TABLE';
-}
-
-async function embedQrImage(pdfDoc, base64) {
-  const imageBuffer = Buffer.from(base64, 'base64');
-  return embedQrImageBuffer(pdfDoc, imageBuffer);
-}
-
-async function embedQrImageBuffer(pdfDoc, imageBuffer) {
-  const format = detectImageFormat(imageBuffer);
-  if (format === 'png') return pdfDoc.embedPng(imageBuffer);
-  if (format === 'jpg') return pdfDoc.embedJpg(imageBuffer);
-  throw new Error('不支持的桌码图片格式');
-}
-
-async function loadExistingByTables(storeId, tables) {
-  const tableIds = [];
-  const seen = {};
-  for (let i = 0; i < tables.length; i++) {
-    const tableId = String(tables[i] || '').trim();
-    if (!tableId || seen[tableId]) continue;
-    seen[tableId] = true;
-    tableIds.push(tableId);
-  }
-
-  const records = [];
-  for (let start = 0; start < tableIds.length; start += 20) {
-    const batch = tableIds.slice(start, start + 20);
-    try {
-      const res = await db.collection('table_qrcodes').where({
-        store_id: storeId,
-        table_id: _.in(batch)
-      }).get();
-      if (res && res.data && res.data.length) {
-        records.push.apply(records, res.data);
+  return new Promise(function (resolve) {
+    (async function () {
+      var all = [];
+      for (var s = 0; s < tids.length; s += 20) {
+        var batch = tids.slice(s, s + 20);
+        try {
+          var r = await db.collection('table_qrcodes').where({ store_id: storeId, table_id: _.in(batch) }).get();
+          if (r && r.data) { all.push.apply(all, r.data); }
+        } catch (e) { resolve([]); return; }
       }
-    } catch (err) {
-      return [];
-    }
-  }
-  return records;
+      resolve(all);
+    })();
+  });
 }
 
-exports.main = async (event) => {
-  const storeId = String(event.store_id || '51866138');
-  const storeLabel = STORE_LABELS[storeId] || 'TABLE QR CODES';
-  const tables = Array.isArray(event.tables) ? event.tables : [];
-  const items = Array.isArray(event.items) ? event.items : [];
+exports.main = async function (event) {
+  var storeId = String(event.store_id || '51866138');
+  var label = STORE_LABELS[storeId] || 'TABLE QR';
+  var tables = Array.isArray(event.tables) ? event.tables : [];
+  var items = Array.isArray(event.items) ? event.items : [];
 
-  const exportItems = [];
+  var exportItems = [];
   if (items.length) {
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i] || {};
-      const tableId = String(item.tableId || item.table_id || '').trim();
-      const base64 = String(item.base64 || '').trim();
-      if (!tableId || !base64) continue;
-      exportItems.push({
-        tableId,
-        label: normalizeLabel(tableId),
-        base64
-      });
+    for (var i = 0; i < items.length; i++) {
+      var it = items[i] || {};
+      var tid = String(it.tableId || it.table_id || '').trim();
+      var b64 = String(it.base64 || '').trim();
+      if (!tid || !b64) continue;
+      exportItems.push({ tableId: tid, label: normLabel(tid), base64: b64 });
     }
   } else if (tables.length) {
-    const records = await loadExistingByTables(storeId, tables);
-    const recordMap = {};
-    for (let i = 0; i < records.length; i++) {
-      recordMap[records[i].table_id] = records[i];
+    var records = await loadExisting(storeId, tables);
+    var rmap = {};
+    for (var ri = 0; ri < records.length; ri++) { rmap[records[ri].table_id] = records[ri]; }
+    var missing = [];
+    for (var ti = 0; ti < tables.length; ti++) {
+      var tid2 = String(tables[ti] || '').trim();
+      if (!tid2) continue;
+      var rec = rmap[tid2];
+      var b64 = rec && rec.base64 ? rec.base64 : '';
+      var fid = rec && rec.file_id ? rec.file_id : '';
+      if (!b64 && !fid) { missing.push(tid2); continue; }
+      exportItems.push({ tableId: tid2, label: normLabel(tid2), base64: b64, fileId: fid });
     }
-    const missingTables = [];
-
-    for (let i = 0; i < tables.length; i++) {
-      const tableId = String(tables[i] || '').trim();
-      if (!tableId) continue;
-      const record = recordMap[tableId];
-      const base64 = record && record.base64 ? record.base64 : '';
-      const fileId = record && record.file_id ? record.file_id : '';
-      if (!base64 && !fileId) {
-        missingTables.push(tableId);
-        continue;
-      }
-      exportItems.push({
-        tableId,
-        label: normalizeLabel(tableId),
-        base64,
-        fileId
-      });
-    }
-
-    if (missingTables.length) {
-      return {
-        success: false,
-        message: '以下桌码未找到已生成缓存，请先重新生成后再导出：' + missingTables.join('、')
-      };
+    if (missing.length) {
+      return { success: false, message: '以下桌码未找到缓存，请先生成：' + missing.join('、') };
     }
   } else {
-    return { success: false, message: '请传入要导出的桌码数据' };
+    return { success: false, message: '缺少 tables 或 items 参数' };
   }
-
   if (!exportItems.length) {
-    return { success: false, message: '没有可导出的已生成桌码' };
+    return { success: false, message: '没有可导出的桌码' };
   }
 
-  const pdfDoc = await PDFDocument.create();
-  const titleFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-  const bodyFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  var pdf = new PDF();
+  var fonts = { h: pdf.addFontHelvetica(), hb: pdf.addFontHelveticaBold() };
 
-  const cardWidth = (PAGE_WIDTH - PAGE_MARGIN * 2 - CARD_GAP) / CARD_COLS;
-  const cardHeight = (PAGE_HEIGHT - PAGE_MARGIN * 2 - CARD_GAP) / CARD_ROWS;
-  const qrSize = Math.min(cardWidth - 52, 180);
+  var qrSize = Math.min(CARD_W - 52, 180);
 
-  for (let i = 0; i < exportItems.length; i++) {
-    const indexOnPage = i % (CARD_COLS * CARD_ROWS);
-    if (indexOnPage === 0) {
-      pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-    }
-    const page = pdfDoc.getPages()[pdfDoc.getPageCount() - 1];
-    const item = exportItems[i];
-    const pos = computeCardPosition(indexOnPage, cardWidth, cardHeight);
-    let qrImage;
+  for (var ei = 0; ei < exportItems.length; ei++) {
+    var ip = ei % (COLS * ROWS);
+    if (ip === 0) { pdf.addPage(PAGE_W, PAGE_H); }
+    var page = pdf.pages[pdf.pages.length - 1];
+    var item = exportItems[ei];
+    var pos = cardPos(ip);
+
+    // Embed image from base64
+    var img;
     if (item.base64) {
-      qrImage = await embedQrImage(pdfDoc, item.base64);
+      var buf = Buffer.from(item.base64, 'base64');
+      img = pdf.addImage(buf);
     } else if (item.fileId) {
-      const downloadRes = await cloud.downloadFile({ fileID: item.fileId });
-      qrImage = await embedQrImageBuffer(pdfDoc, downloadRes.fileContent);
-    } else {
-      throw new Error('桌码图片缓存缺失');
-    }
+      var dl = await cloud.downloadFile({ fileID: item.fileId });
+      img = pdf.addImage(dl.fileContent);
+    } else { continue; }
 
-    page.drawRectangle({
-      x: pos.x,
-      y: pos.y,
-      width: cardWidth,
-      height: cardHeight,
-      color: rgb(0.988, 0.969, 0.929),
-      borderColor: rgb(0.78, 0.66, 0.44),
+    // Card background
+    pdf.drawRect(page, pos.x, pos.y, CARD_W, CARD_H, {
+      fillColor: [0.988, 0.969, 0.929],
+      borderColor: [0.78, 0.66, 0.44],
       borderWidth: 1.2
     });
 
-    page.drawText(storeLabel, {
-      x: pos.x + 18,
-      y: pos.y + cardHeight - 30,
-      size: 16,
-      font: titleFont,
-      color: rgb(0.16, 0.12, 0.08)
-    });
+    // Store label
+    pdf.drawText(page, label, pos.x + 18, pos.y + CARD_H - 32, 16, fonts.hb, [0.16, 0.12, 0.08]);
+    pdf.drawText(page, 'TABLE QR CODE', pos.x + 18, pos.y + CARD_H - 56, 11, fonts.h, [0.52, 0.42, 0.28]);
 
-    page.drawText('TABLE QR CODE', {
-      x: pos.x + 18,
-      y: pos.y + cardHeight - 54,
-      size: 11,
-      font: bodyFont,
-      color: rgb(0.52, 0.42, 0.28)
-    });
+    // QR code
+    pdf.drawImage(page, img, pos.x + (CARD_W - qrSize) / 2, pos.y + 72, qrSize, qrSize);
 
-    page.drawImage(qrImage, {
-      x: pos.x + (cardWidth - qrSize) / 2,
-      y: pos.y + 72,
-      width: qrSize,
-      height: qrSize
-    });
-
-    page.drawText(item.label, {
-      x: pos.x + 18,
-      y: pos.y + 44,
-      size: 24,
-      font: titleFont,
-      color: rgb(0.16, 0.12, 0.08)
-    });
-
-    page.drawText('Scan to order', {
-      x: pos.x + 18,
-      y: pos.y + 20,
-      size: 10,
-      font: bodyFont,
-      color: rgb(0.48, 0.42, 0.36)
-    });
+    // Table label
+    pdf.drawText(page, item.label, pos.x + 18, pos.y + 44, 24, fonts.hb, [0.16, 0.12, 0.08]);
+    pdf.drawText(page, 'Scan to order', pos.x + 18, pos.y + 20, 10, fonts.h, [0.48, 0.42, 0.36]);
   }
 
-  const pdfBytes = await pdfDoc.save();
-  const timestamp = Date.now();
-  const filename = 'table-codes-' + timestamp + '.pdf';
-  const cloudPath = 'exports/table-codes/' + storeId + '/' + filename;
-  const uploadRes = await cloud.uploadFile({
-    cloudPath,
-    fileContent: Buffer.from(pdfBytes)
-  });
+  var pdfBuffer = pdf.save();
+  var ts = Date.now();
+  var fname = 'table-codes-' + ts + '.pdf';
+  var cloudPath = 'exports/table-codes/' + storeId + '/' + fname;
+  var upRes = await cloud.uploadFile({ cloudPath: cloudPath, fileContent: pdfBuffer });
 
-  return {
-    success: true,
-    fileID: uploadRes.fileID,
-    filename,
-    total: exportItems.length
-  };
+  return { success: true, fileID: upRes.fileID, filename: fname, total: exportItems.length };
 };
