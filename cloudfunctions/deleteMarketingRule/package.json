@@ -1,0 +1,9 @@
+{
+  "name": "deleteMarketingRule",
+  "version": "1.0.0",
+  "description": "管理员删除营销规则",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

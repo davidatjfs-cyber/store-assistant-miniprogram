@@ -1,7 +1,13 @@
 /**
  * 种子云函数：批量写入 staff 集合（幂等 upsert）
  *
- * 用法：
+ * 默认用法（使用预先配置的种子列表）：
+ *   wx.cloud.callFunction({
+ *     name: 'seedStaff',
+ *     data: { confirm: 'CONFIRM_SEED_STAFF' }
+ *   })
+ *
+ * 自定义用法：
  *   wx.cloud.callFunction({
  *     name: 'seedStaff',
  *     data: {
@@ -26,15 +32,21 @@ cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 const _ = db.command;
 
+var DEFAULT_STAFF = [
+  { phone: '13800000001', name: '张三', role: 'admin',  store_id: '' },
+  { phone: '13800000002', name: '李四', role: 'manager', store_id: '51866138' },
+  { phone: '13800000003', name: '王五', role: 'staff',   store_id: '51866138' },
+  { phone: '13800000004', name: '赵六', role: 'staff',   store_id: '64822111' },
+  { phone: '13817824514', name: '系统管理员A', role: 'admin', store_id: '' },
+  { phone: '18321341205', name: '系统管理员B', role: 'admin', store_id: '' }
+];
+
 exports.main = async (event) => {
   if (event.confirm !== 'CONFIRM_SEED_STAFF') {
     return { success: false, message: '请传入 confirm: "CONFIRM_SEED_STAFF" 以确认执行' };
   }
 
-  const staffList = event.staff;
-  if (!Array.isArray(staffList) || staffList.length === 0) {
-    return { success: false, message: 'staff 数组不能为空' };
-  }
+  const staffList = Array.isArray(event.staff) && event.staff.length > 0 ? event.staff : DEFAULT_STAFF;
 
   const results = [];
   const validRoles = ['admin', 'manager', 'staff'];

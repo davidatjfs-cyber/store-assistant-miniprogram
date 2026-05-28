@@ -55,6 +55,10 @@
           <text class="detail-label">已售</text>
           <text class="detail-value">{{item.sold_count || 0}}</text>
         </view>
+        <view class="detail-row" wx:if="{{item.storeNames}}">
+          <text class="detail-label">适用门店</text>
+          <text class="detail-value">{{item.storeNames}}</text>
+        </view>
       </view>
       <view class="template-actions">
         <button class="action-btn" size="mini" data-id="{{item._id}}" bindtap="onEdit">编辑</button>
@@ -106,6 +110,23 @@
       <view class="form-group">
         <text class="form-label">库存（-1 表示无限）</text>
         <input class="form-input" type="number" placeholder="-1" value="{{formData.stock}}" bindinput="onInputStock" />
+      </view>
+
+      <view class="form-group">
+        <text class="form-label">成本（分，用于ROI计算，未填=面值）</text>
+        <input class="form-input" type="digit" placeholder="{{formData.valueYuan * 100 || ''}}" value="{{formData.cost_fen}}" bindinput="onInputCost" />
+      </view>
+
+      <view class="form-group">
+        <text class="form-label">适用门店（至少选一个）</text>
+        <view class="store-checks">
+          <view class="store-check" wx:for="{{storeChecks}}" wx:key="id" bindtap="onToggleStore" data-id="{{item.id}}">
+            <view class="store-check-box {{item.checked ? 'checked' : ''}}">
+              <text wx:if="{{item.checked}}">✓</text>
+            </view>
+            <text class="store-check-name">{{item.name}}</text>
+          </view>
+        </view>
       </view>
 
       <view class="form-group">

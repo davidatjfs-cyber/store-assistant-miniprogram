@@ -45,7 +45,7 @@ exports.main = async function (event, context) {
       return { success: false, message: '无权限' };
     }
 
-    const allowedKeys = { active: 1, priority: 1 };
+    const allowedKeys = { active: 1, priority: 1, trigger_value: 1, daily_user_limit: 1, global_daily_limit: 1 };
     const data = {};
     if (Object.prototype.hasOwnProperty.call(updateFields, 'active')) {
       data.active = !!updateFields.active;
@@ -57,9 +57,20 @@ exports.main = async function (event, context) {
       }
       data.priority = p;
     }
+    if (Object.prototype.hasOwnProperty.call(updateFields, 'trigger_value')) {
+      data.trigger_value = String(updateFields.trigger_value).trim();
+    }
+    if (Object.prototype.hasOwnProperty.call(updateFields, 'daily_user_limit')) {
+      const d = parseInt(updateFields.daily_user_limit, 10);
+      data.daily_user_limit = isNaN(d) || d < 0 ? null : d;
+    }
+    if (Object.prototype.hasOwnProperty.call(updateFields, 'global_daily_limit')) {
+      const g = parseInt(updateFields.global_daily_limit, 10);
+      data.global_daily_limit = isNaN(g) || g < 0 ? null : g;
+    }
 
     if (Object.keys(data).length === 0) {
-      return { success: false, message: '无合法更新字段（仅支持 active、priority）' };
+      return { success: false, message: '无合法更新字段' };
     }
 
     data.updated_at = db.serverDate();

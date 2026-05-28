@@ -12,9 +12,14 @@
     </view>
   </view>
 
+  <button class="btn-add" bindtap="onCreateTap">+ 新增规则</button>
+
   <view wx:if="{{loading}}" class="state">加载中…</view>
 
-  <view wx:elif="{{!rules.length}}" class="state">暂无营销规则</view>
+  <view wx:elif="{{!rules.length}}" class="empty-state">
+    <text class="empty-title">暂无营销规则</text>
+    <text class="empty-desc">点击上方「+ 新增规则」创建第一条</text>
+  </view>
 
   <scroll-view wx:else scroll-y class="list">
     <view class="glass-card rule-card" wx:for="{{rules}}" wx:key="rule_id">
@@ -24,30 +29,122 @@
         <switch checked="{{item.active}}" data-id="{{item.rule_id}}" bindchange="onToggleActive" color="#d4b87a" />
       </view>
       <view class="row row-meta">
+        <text class="meta">{{item.storeName}}</text>
+        <text class="meta">{{item.triggerLabel}}</text>
+      </view>
+      <view class="row row-meta">
         <text class="meta">优先级 {{item.priority}}</text>
         <text class="meta roi">ROI {{item.roiText}}</text>
+      </view>
+      <view class="detail-block" wx:if="{{item.tagLabel}}">
+        <text class="detail-block-label">目标人群：</text>
+        <text class="detail-block-value">{{item.tagLabel}}</text>
+      </view>
+      <view class="detail-block" wx:if="{{item.triggerValDisplay}}">
+        <text class="detail-block-label">触发条件：</text>
+        <text class="detail-block-value">{{item.triggerValDisplay}}</text>
+      </view>
+      <view class="detail-block" wx:if="{{item.template_id}}">
+        <text class="detail-block-label">关联券模板：</text>
+        <text class="detail-block-value">{{item.templateName || item.template_id}}</text>
+      </view>
+      <view class="detail-block" wx:if="{{item.daily_user_limit != null || item.global_daily_limit != null}}">
+        <text class="detail-block-label">限额：</text>
+        <text class="detail-block-value">{{item.daily_user_limit != null ? '每人' + item.daily_user_limit + '次/天' : ''}}{{item.global_daily_limit != null ? ' 全局' + item.global_daily_limit + '张/天' : ''}}</text>
       </view>
       <view class="row row-actions">
         <button class="pri-btn" size="mini" data-id="{{item.rule_id}}" bindtap="onPriMinus">−</button>
         <text class="pri-label">调整优先级</text>
         <button class="pri-btn" size="mini" data-id="{{item.rule_id}}" bindtap="onPriPlus">+</button>
+        <button class="del-btn" size="mini" data-id="{{item.rule_id}}" data-name="{{item.name}}" bindtap="onDeleteRule">删除</button>
       </view>
     </view>
   </scroll-view>
 
-  <!-- 企微活动码生成器 -->
-  <view class="glass-card generator-section">
-    <view class="card-shine"></view>
-    <text class="section-title">企微活动码生成器</text>
-    <view class="form-row">
-      <text class="form-label">活动标识 (Scene)</text>
-      <input class="form-input" placeholder="例如: spring_sale" value="{{sceneInput}}" bindinput="onSceneInput" />
-    </view>
-    <button class="gen-btn" bindtap="onGenerateCode" loading="{{generating}}">生成活动码</button>
-    
-    <view class="qr-result" wx:if="{{qrCodeBase64}}">
-      <image class="qr-img" src="data:image/png;base64,{{qrCodeBase64}}" mode="aspectFit" bindtap="previewQr" />
-      <text class="qr-tip">长按保存，发送到企微群/客户</text>
+  <!-- 新增规则弹窗 -->
+  <view wx:if="{{showCreateModal}}" class="modal">
+    <view class="modal-backdrop" catchtap="onCreateClose"></view>
+    <view class="modal-content">
+      <text class="modal-kicker">NEW RULE</text>
+      <text class="modal-title">新增营销规则</text>
+
+      <view class="form-group">
+        <text class="form-label">规则名称</text>
+        <input class="form-input" placeholder="例如：老板红包5元" value="{{createForm.name}}" bindinput="onInputRuleName" />
+      </view>
+
+      <view class="form-group">
+        <text class="form-label">触发类型</text>
+        <view class="type-selector">
+          <view class="type-option {{createForm.trigger_type === 'payment' ? 'active' : ''}}" bindtap="onSelectTriggerType" data-value="payment">支付后触发</view>
+          <view class="type-option {{createForm.trigger_type === 'inactivity' ? 'active' : ''}}" bindtap="onSelectTriggerType" data-value="inactivity">N天未到店</view>
+          <view class="type-option {{createForm.trigger_type === 'manual' ? 'active' : ''}}" bindtap="onSelectTriggerType" data-value="manual">手动发放</view>
+        </view>
+      </view>
+
+      <view class="form-group" wx:if="{{createForm.trigger_type === 'payment'}}">
+        <text class="form-label">最低消费金额（元，0=无门槛）</text>
+        <input class="form-input" type="digit" placeholder="0" value="{{createForm.trigger_value}}" bindinput="onInputTriggerValue" />
+      </view>
+
+      <view class="form-group" wx:if="{{createForm.trigger_type === 'inactivity'}}">
+        <text class="form-label">多少天未到店触发</text>
+        <input class="form-input" type="number" placeholder="7" value="{{createForm.trigger_value}}" bindinput="onInputTriggerValue" />
+      </view>
+
+      <view class="form-group">
+        <text class="form-label">关联券模板（发券动作）</text>
+        <picker mode="selector" range="{{templateOptions}}" range-key="name" value="{{createForm.templateIndex >= 0 ? createForm.templateIndex : -1}}" bindchange="onSelectTemplate">
+          <view class="form-input form-picker">
+            <text wx:if="{{createForm.templateIndex >= 0 && templateOptions[createForm.templateIndex]}}">{{templateOptions[createForm.templateIndex].name}}</text>
+            <text wx:else style="color:rgba(232,224,212,0.3)">请选择券模板</text>
+          </view>
+        </picker>
+      </view>
+
+      <view class="form-group">
+        <text class="form-label">目标人群（至少选一个）</text>
+        <view class="store-checks">
+          <view class="store-check" wx:for="{{tagChecks}}" wx:key="value" bindtap="onToggleCreateTag" data-value="{{item.value}}">
+            <view class="store-check-box {{item.checked ? 'checked' : ''}}">
+              <text wx:if="{{item.checked}}">✓</text>
+            </view>
+            <text class="store-check-name">{{item.label}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="form-group">
+        <text class="form-label">适用门店（至少选一个）</text>
+        <view class="store-checks">
+          <view class="store-check" wx:for="{{storeChecks}}" wx:key="id" bindtap="onToggleCreateStore" data-id="{{item.id}}">
+            <view class="store-check-box {{item.checked ? 'checked' : ''}}">
+              <text wx:if="{{item.checked}}">✓</text>
+            </view>
+            <text class="store-check-name">{{item.name}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="form-group">
+        <text class="form-label">优先级（数字越大越优先）</text>
+        <input class="form-input" type="number" placeholder="10" value="{{createForm.priority}}" bindinput="onInputPriority" />
+      </view>
+
+      <view class="form-group">
+        <text class="form-label">每人每天最多触发次数</text>
+        <input class="form-input" type="number" placeholder="1" value="{{createForm.daily_user_limit}}" bindinput="onInputDailyLimit" />
+      </view>
+
+      <view class="form-group">
+        <text class="form-label">全局每日发放上限</text>
+        <input class="form-input" type="number" placeholder="100" value="{{createForm.global_daily_limit}}" bindinput="onInputGlobalLimit" />
+      </view>
+
+      <view class="form-actions">
+        <button class="btn-cancel" bindtap="onCreateClose">取消</button>
+        <button class="btn-submit" bindtap="onSubmitCreate" loading="{{creating}}">创建</button>
+      </view>
     </view>
   </view>
 </view>

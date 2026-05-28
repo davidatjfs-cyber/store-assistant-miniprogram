@@ -54,7 +54,14 @@
       </view>
 
       <button
-        wx:if="{{!hasAuthorizedMember}}"
+        wx:if="{{checkingMember}}"
+        class="hero-cta"
+        disabled
+      >
+        检查会员状态...
+      </button>
+      <button
+        wx:elif="{{!hasAuthorizedMember}}"
         class="hero-cta"
         open-type="getPhoneNumber"
         bindgetphonenumber="onGetPhoneNumber"
@@ -105,7 +112,7 @@
   </view>
 
   <!-- 授权弹窗 -->
-  <view wx:if="{{showAuthModal}}" class="modal">
+  <view wx:if="{{showAuthModal && !checkingMember}}" class="modal">
     <view class="modal-backdrop" bindtap="onModalBackdropTap"></view>
     <view class="brand-modal">
       <image class="modal-bg" src="../../assets/home-hero-bg-toplit.jpg" mode="widthFix"></image>

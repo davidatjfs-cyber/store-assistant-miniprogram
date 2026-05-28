@@ -125,6 +125,8 @@ exports.main = async function (event, context) {
       if (!storeScope) {
         return { success: false, message: '店长账号未绑定门店' };
       }
+    } else if (viewerRole === 'admin' && event.store_id) {
+      storeScope = String(event.store_id).trim();
     }
 
     let statsToday;

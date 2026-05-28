@@ -13,6 +13,17 @@
     </view>
   </view>
 
+  <view class="dashboard-controls" wx:if="{{isAdmin || !isAllStores}}">
+    <view class="control-row">
+      <button class="toggle-btn {{isAllStores ? '' : 'toggle-btn--secondary'}}" bindtap="onToggleView">{{isAllStores ? '按门店查看' : '查看全部'}}</button>
+      <picker wx:if="{{!isAllStores}}" mode="selector" range="{{stores}}" range-key="name" value="{{storeIndex}}" bindchange="onStoreChange">
+        <view class="store-picker">
+          <text class="store-picker-text">{{stores[storeIndex].name}} ▼</text>
+        </view>
+      </picker>
+    </view>
+  </view>
+
   <view wx:if="{{loading}}" class="state">加载中…</view>
 
   <block wx:else>

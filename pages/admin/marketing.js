@@ -1,8 +1,41 @@
 var roleUtil = require('../../utils/role.js');
 
+var STORES = [
+  { id: '51866138', name: '马己仙广东小馆' },
+  { id: '64822111', name: '洪潮潮汕传统菜' }
+];
+
+var TRIGGER_TYPES = [
+  { value: 'payment', label: '支付后触发' },
+  { value: 'inactivity', label: 'N天未到店召回' },
+  { value: 'manual', label: '手动发放' }
+];
+
+var TARGET_TAGS = [
+  { value: 'new', label: '新客' },
+  { value: 'vip', label: 'VIP' },
+  { value: 'frequent', label: '高频客' },
+  { value: 'inactive', label: '沉睡客' },
+  { value: 'high_value', label: '高价值' },
+  { value: 'low_value', label: '低价值' },
+  { value: 'general', label: '普通' }
+];
+
 function formatRoi(v) {
-  if (v == null || Number.isNaN(v)) return '—';
+  if (v == null || Number.isNaN(v)) return '\u2014';
   return Number(v).toFixed(2);
+}
+
+function buildStoreChecks(selectedIds) {
+  return STORES.map(function (s) {
+    return { id: s.id, name: s.name, checked: selectedIds.indexOf(s.id) >= 0 };
+  });
+}
+
+function buildTagChecks(selectedTags) {
+  return TARGET_TAGS.map(function (t) {
+    return { value: t.value, label: t.label, checked: selectedTags.indexOf(t.value) >= 0 };
+  });
 }
 
 Page({
@@ -10,9 +43,28 @@ Page({
     loading: true,
     rules: [],
     statsDate: '',
-    sceneInput: '',
-    qrCodeBase64: '',
-    generating: false
+    stores: STORES,
+    triggerTypes: TRIGGER_TYPES,
+    targetTagOptions: TARGET_TAGS,
+    storeChecks: [],
+    tagChecks: [],
+    templateOptions: [],
+    showCreateModal: false,
+    creating: false,
+    createForm: {
+      name: '',
+      priority: '10',
+      store_ids: ['51866138', '64822111'],
+      active: true,
+      trigger_type: 'payment',
+      action_type: 'send_voucher',
+      template_id: '',
+      templateIndex: -1,
+      target_tags: ['new'],
+      trigger_value: '0',
+      daily_user_limit: '1',
+      global_daily_limit: '100'
+    }
   },
 
   onLoad: function () {
@@ -23,20 +75,39 @@ Page({
         wx.showToast({ title: '无访问权限', icon: 'none' });
         return;
       }
-      self.loadRules();
+      self.loadTemplates().then(function () {
+        self.loadRules();
+      });
     });
   },
 
   onPullDownRefresh: function () {
-    var self = this;
     this.loadRules().then(
-      function () {
-        wx.stopPullDownRefresh();
-      },
-      function () {
-        wx.stopPullDownRefresh();
-      }
+      function () { wx.stopPullDownRefresh(); },
+      function () { wx.stopPullDownRefresh(); }
     );
+  },
+
+  loadTemplates: function () {
+    var self = this;
+    if (!wx.cloud || !wx.cloud.callFunction) return Promise.resolve();
+    return new Promise(function (resolve) {
+      wx.cloud.callFunction({
+        name: 'getVoucherTemplates',
+        data: { store_id: '' },
+        success: function (res) {
+          var r = res.result || {};
+          var raw = (r.success && r.data) || [];
+          var list = raw.filter(function (t) { return t.is_active !== false; }).map(function (t) {
+            var label = t.name + ' (\u00a5' + ((t.price || 0) / 100).toFixed(2) + ')';
+            return { id: t._id, name: label };
+          });
+          self.setData({ templateOptions: list });
+          resolve();
+        },
+        fail: function () { resolve(); }
+      });
+    });
   },
 
   loadRules: function () {
@@ -45,11 +116,9 @@ Page({
       self.setData({ loading: false });
       return Promise.resolve();
     }
-    var app = getApp();
-    var storeId = (app.globalData.staffStoreId || (app.globalData.scanParams || {}).store_id) || '';
     self.setData({ loading: true });
     return wx.cloud
-      .callFunction({ name: 'getMarketingRules', data: { store_id: storeId } })
+      .callFunction({ name: 'getMarketingRules', data: {} })
       .then(function (res) {
         var r = (res && res.result) || {};
         if (!r.success) {
@@ -57,14 +126,45 @@ Page({
           wx.showToast({ title: r.message || '加载失败', icon: 'none' });
           return;
         }
+        var templateOptions = self.data.templateOptions;
         var list = (r.rules || []).map(function (x) {
-          return Object.assign({}, x, { roiText: formatRoi(x.roi) });
+          var storeName = '';
+          for (var i = 0; i < STORES.length; i++) {
+            if (STORES[i].id === x.store_id) { storeName = STORES[i].name; break; }
+          }
+          var triggerLabel = '';
+          for (var j = 0; j < TRIGGER_TYPES.length; j++) {
+            if (TRIGGER_TYPES[j].value === x.trigger_type) { triggerLabel = TRIGGER_TYPES[j].label; break; }
+          }
+          var tagLabel = '';
+          if (x.target_tags && x.target_tags.length) {
+            tagLabel = x.target_tags.map(function (tv) {
+              for (var k = 0; k < TARGET_TAGS.length; k++) {
+                if (TARGET_TAGS[k].value === tv) return TARGET_TAGS[k].label;
+              }
+              return tv;
+            }).join('\u3001');
+          }
+          var triggerValDisplay = '';
+          if (x.trigger_type === 'payment') {
+            triggerValDisplay = x.trigger_value ? '\u00a5' + (parseInt(x.trigger_value, 10) / 100).toFixed(2) : '\u65e0\u95e8\u69db';
+          } else if (x.trigger_type === 'inactivity') {
+            triggerValDisplay = x.trigger_value ? x.trigger_value + '\u5929' : '7\u5929';
+          }
+          var templateName = x.template_id;
+          for (var m = 0; m < templateOptions.length; m++) {
+            if (templateOptions[m].id === x.template_id) { templateName = templateOptions[m].name; break; }
+          }
+          return Object.assign({}, x, {
+            roiText: formatRoi(x.roi),
+            storeName: storeName || x.store_id,
+            triggerLabel: triggerLabel,
+            tagLabel: tagLabel,
+            triggerValDisplay: triggerValDisplay,
+            templateName: templateName
+          });
         });
-        self.setData({
-          loading: false,
-          rules: list,
-          statsDate: r.date || ''
-        });
+        self.setData({ loading: false, rules: list, statsDate: r.date || '' });
       })
       .catch(function (e) {
         self.setData({ loading: false });
@@ -74,18 +174,14 @@ Page({
 
   onToggleActive: function (e) {
     var id = e.currentTarget.dataset.id;
-    var on = !!(e.detail && e.detail.value);
-    this.patchRule(id, { active: on });
+    this.patchRule(id, { active: e.detail.value });
   },
 
   onPriMinus: function (e) {
     var id = e.currentTarget.dataset.id;
     var rule = null;
     for (var i = 0; i < this.data.rules.length; i++) {
-      if (this.data.rules[i].rule_id === id) {
-        rule = this.data.rules[i];
-        break;
-      }
+      if (this.data.rules[i].rule_id === id) { rule = this.data.rules[i]; break; }
     }
     if (!rule) return;
     var p = Math.max(0, (parseInt(rule.priority, 10) || 0) - 1);
@@ -96,10 +192,7 @@ Page({
     var id = e.currentTarget.dataset.id;
     var rule = null;
     for (var i = 0; i < this.data.rules.length; i++) {
-      if (this.data.rules[i].rule_id === id) {
-        rule = this.data.rules[i];
-        break;
-      }
+      if (this.data.rules[i].rule_id === id) { rule = this.data.rules[i]; break; }
     }
     if (!rule) return;
     var p = (parseInt(rule.priority, 10) || 0) + 1;
@@ -130,40 +223,148 @@ Page({
       });
   },
 
-  onSceneInput: function(e) {
-    this.setData({ sceneInput: e.detail.value });
+  onCreateTap: function () {
+    var defaults = ['51866138', '64822111'];
+    var defaultTags = ['new'];
+    this.setData({
+      showCreateModal: true,
+      createForm: {
+        name: '', priority: '10',
+        store_ids: defaults, active: true,
+        trigger_type: 'payment', action_type: 'send_voucher',
+        template_id: '', templateIndex: -1,
+        target_tags: defaultTags,
+        trigger_value: '0', daily_user_limit: '1', global_daily_limit: '100'
+      },
+      storeChecks: buildStoreChecks(defaults),
+      tagChecks: buildTagChecks(defaultTags)
+    });
   },
 
-  onGenerateCode: function() {
+  onDeleteRule: function (e) {
     var self = this;
-    if (!self.data.sceneInput) return wx.showToast({ title: '请输入活动标识', icon: 'none' });
-
-    self.setData({ generating: true });
-    wx.cloud.callFunction({
-      name: 'getActivityCode',
-      data: { scene: self.data.sceneInput },
-      success: function(res) {
-        self.setData({ generating: false });
-        var result = (res && res.result) || {};
-        if (result.success) {
-          self.setData({ qrCodeBase64: result.base64 });
-          wx.showToast({ title: '生成成功', icon: 'success' });
-        } else {
-          wx.showToast({ title: result.msg || '生成失败', icon: 'none' });
-        }
-      },
-      fail: function() {
-        self.setData({ generating: false });
-        wx.showToast({ title: '生成失败', icon: 'none' });
+    var id = e.currentTarget.dataset.id;
+    var name = e.currentTarget.dataset.name || '\u6b64\u89c4\u5219';
+    wx.showModal({
+      title: '\u786e\u8ba4\u5220\u9664',
+      content: '\u5220\u9664\u300c' + name + '\u300d\u540e\u4e0d\u53ef\u6062\u590d\uff0c\u786e\u5b9a\u5417\uff1f',
+      success: function (res) {
+        if (!res.confirm) return;
+        wx.showLoading({ title: '\u5220\u9664\u4e2d', mask: true });
+        wx.cloud.callFunction({
+          name: 'deleteMarketingRule',
+          data: { rule_id: id },
+          success: function (r) {
+            wx.hideLoading();
+            var result = (r && r.result) || {};
+            if (result.success) {
+              wx.showToast({ title: '\u5df2\u5220\u9664', icon: 'success' });
+              self.loadRules();
+            } else {
+              wx.showToast({ title: result.message || '\u5220\u9664\u5931\u8d25', icon: 'none' });
+            }
+          },
+          fail: function () {
+            wx.hideLoading();
+            wx.showToast({ title: '\u5220\u9664\u5931\u8d25', icon: 'none' });
+          }
+        });
       }
     });
   },
 
-  previewQr: function() {
-    if (this.data.qrCodeBase64) {
-      wx.previewImage({
-        urls: ['data:image/png;base64,' + this.data.qrCodeBase64]
-      });
+  onCreateClose: function () {
+    this.setData({ showCreateModal: false });
+  },
+
+  onInputRuleName: function (e) {
+    this.setData({ 'createForm.name': e.detail.value });
+  },
+
+  onInputPriority: function (e) {
+    this.setData({ 'createForm.priority': e.detail.value });
+  },
+
+  onSelectTriggerType: function (e) {
+    var val = e.currentTarget.dataset.value;
+    this.setData({ 'createForm.trigger_type': val });
+  },
+
+  onSelectTemplate: function (e) {
+    var idx = parseInt(e.detail.value, 10);
+    var tpls = this.data.templateOptions;
+    if (idx >= 0 && idx < tpls.length) {
+      this.setData({ 'createForm.template_id': tpls[idx].id, 'createForm.templateIndex': idx });
     }
+  },
+
+  onInputTriggerValue: function (e) {
+    this.setData({ 'createForm.trigger_value': e.detail.value });
+  },
+
+  onInputDailyLimit: function (e) {
+    this.setData({ 'createForm.daily_user_limit': e.detail.value });
+  },
+
+  onInputGlobalLimit: function (e) {
+    this.setData({ 'createForm.global_daily_limit': e.detail.value });
+  },
+
+  onToggleCreateStore: function (e) {
+    var sid = e.currentTarget.dataset.id;
+    var ids = this.data.createForm.store_ids.slice();
+    var idx = ids.indexOf(sid);
+    if (idx >= 0) { ids.splice(idx, 1); } else { ids.push(sid); }
+    this.setData({ 'createForm.store_ids': ids, storeChecks: buildStoreChecks(ids) });
+  },
+
+  onToggleCreateTag: function (e) {
+    var val = e.currentTarget.dataset.value;
+    var tags = this.data.createForm.target_tags.slice();
+    var idx = tags.indexOf(val);
+    if (idx >= 0) { tags.splice(idx, 1); } else { tags.push(val); }
+    this.setData({ 'createForm.target_tags': tags, tagChecks: buildTagChecks(tags) });
+  },
+
+  onSubmitCreate: function () {
+    var self = this;
+    var f = self.data.createForm;
+    if (!f.name.trim()) { wx.showToast({ title: '\u8bf7\u8f93\u5165\u89c4\u5219\u540d\u79f0', icon: 'none' }); return; }
+    if (!f.store_ids || f.store_ids.length === 0) { wx.showToast({ title: '\u8bf7\u9009\u62e9\u9002\u7528\u95e8\u5e97', icon: 'none' }); return; }
+    if (!f.template_id) { wx.showToast({ title: '\u8bf7\u9009\u62e9\u5173\u8054\u52b8\u6a21\u677f', icon: 'none' }); return; }
+
+    self.setData({ creating: true });
+    wx.cloud.callFunction({
+      name: 'createMarketingRule',
+      data: {
+        name: f.name.trim(),
+        priority: parseInt(f.priority, 10) || 10,
+        store_ids: f.store_ids,
+        active: f.active,
+        trigger_type: f.trigger_type,
+        action_type: 'send_voucher',
+        template_id: f.template_id,
+        target_tags: f.target_tags,
+        trigger_value: f.trigger_type === 'payment'
+          ? String(Math.round(parseFloat(f.trigger_value || '0') * 100))
+          : f.trigger_value,
+        daily_user_limit: parseInt(f.daily_user_limit, 10),
+        global_daily_limit: parseInt(f.global_daily_limit, 10)
+      },
+      success: function (res) {
+        self.setData({ creating: false, showCreateModal: false });
+        var r = (res && res.result) || {};
+        if (r.success) {
+          wx.showToast({ title: '\u521b\u5efa\u6210\u529f', icon: 'success' });
+          self.loadRules();
+        } else {
+          wx.showToast({ title: r.message || '\u521b\u5efa\u5931\u8d25', icon: 'none' });
+        }
+      },
+      fail: function () {
+        self.setData({ creating: false });
+        wx.showToast({ title: '\u521b\u5efa\u5931\u8d25', icon: 'none' });
+      }
+    });
   }
 });

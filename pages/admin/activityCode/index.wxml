@@ -1,0 +1,39 @@
+<view class="page">
+  <view class="ambient ambient-a"></view>
+  <view class="ambient ambient-b"></view>
+  <view class="hero">
+    <view class="hero-shell">
+      <view class="hero-copy">
+        <text class="hero-kicker">ACTIVITY CODE</text>
+        <text class="hero-title">活动码生成</text>
+        <text class="hint">选择门店 → 输入活动标识 → 生成二维码</text>
+      </view>
+      <view class="hero-lens"></view>
+    </view>
+  </view>
+
+  <view class="glass-card">
+    <view class="card-shine"></view>
+    <text class="section-title">企微活动码生成器</text>
+
+    <view class="form-row">
+      <text class="form-label">适用门店</text>
+      <view class="store-radios">
+        <view class="store-radio {{item.checked ? 'store-radio--active' : ''}}" wx:for="{{storeChecks}}" wx:key="id" bindtap="onSelectStore" data-id="{{item.id}}">
+          <text>{{item.name}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="form-row">
+      <text class="form-label">活动标识 (Scene)</text>
+      <input class="form-input" placeholder="例如: spring_sale" value="{{sceneInput}}" bindinput="onSceneInput" />
+    </view>
+    <button class="gen-btn" bindtap="onGenerateCode" loading="{{generating}}">生成活动码</button>
+
+    <view class="qr-result" wx:if="{{qrCodeBase64}}">
+      <image class="qr-img" src="data:image/png;base64,{{qrCodeBase64}}" mode="aspectFit" bindtap="previewQr" />
+      <text class="qr-tip">点击预览 / 长按保存，发送到企微群/客户</text>
+    </view>
+  </view>
+</view>

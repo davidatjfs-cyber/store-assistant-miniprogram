@@ -96,7 +96,15 @@ exports.main = async function (event, context) {
         name: doc.name || '',
         active: !!doc.active,
         priority: doc.priority != null ? doc.priority : 0,
-        roi: roi
+        roi: roi,
+        store_id: doc.store_id || '',
+        trigger_type: doc.trigger_type || '',
+        action_type: doc.action_type || '',
+        template_id: (doc.action_config && doc.action_config.template_id) || '',
+        target_tags: doc.target_tags || [],
+        trigger_value: doc.trigger_value != null ? String(doc.trigger_value) : '',
+        daily_user_limit: doc.daily_user_limit != null ? doc.daily_user_limit : null,
+        global_daily_limit: doc.global_daily_limit != null ? doc.global_daily_limit : null
       });
     }
 

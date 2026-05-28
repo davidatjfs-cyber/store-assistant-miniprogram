@@ -82,11 +82,25 @@ function buildEntrySections(role) {
           icon: '客'
         },
         {
+          key: 'storedash',
+          title: '门店数据看板',
+          sub: '今日发券与收入',
+          url: '/pages/admin/dashboard?scope=store',
+          icon: '店'
+        },
+        {
           key: 'dash',
           title: '数据看板',
           sub: '全盘经营指标',
           url: '/pages/admin/dashboard',
           icon: '数'
+        },
+        {
+          key: 'activitycode',
+          title: '活动码生成',
+          sub: '生成企微活动二维码',
+          url: '/pages/admin/activityCode/index',
+          icon: '活'
         }
       ]
     });
@@ -154,7 +168,8 @@ Page({
     entrySections: [],
     roleLoaded: false,
     storeConfig: STORE_CONFIGS['51866138'],
-    availableVoucherCount: 0
+    availableVoucherCount: 0,
+    checkingMember: true
   },
 
   refreshRoleEntries: function () {
@@ -170,6 +185,33 @@ Page({
         entrySections: buildEntrySections(role),
         roleLoaded: true
       });
+    });
+  },
+
+  checkExistingMember: function () {
+    var self = this;
+    if (!wx.cloud || !wx.cloud.callFunction) {
+      self.setData({ checkingMember: false, showAuthModal: true });
+      return;
+    }
+    wx.cloud.callFunction({
+      name: 'ensureUserDoc',
+      data: { scanParams: self.data.scanParams || {} },
+      success: function (res) {
+        var r = (res && res.result) || {};
+        if (r.success && r.phone) {
+          self.setData({ hasAuthorizedMember: true, checkingMember: false });
+          self.loadAvailableVouchers();
+          if (!self.data.roleLoaded) {
+            self.refreshRoleEntries();
+          }
+        } else {
+          self.setData({ checkingMember: false, showAuthModal: true });
+        }
+      },
+      fail: function () {
+        self.setData({ checkingMember: false, showAuthModal: true });
+      }
     });
   },
 
@@ -242,7 +284,6 @@ Page({
         this.setData({
           isFromScan: true,
           scanParams: scanParams,
-          showAuthModal: !this.data.hasAuthorizedMember,
           storeConfig: getStoreConfig(scanParams),
           pageReady: true
         });
@@ -256,14 +297,15 @@ Page({
             scene: 1047,
             timestamp: Date.now()
           },
-          showAuthModal: !this.data.hasAuthorizedMember,
           storeConfig: STORE_CONFIGS['51866138'],
           pageReady: true
         });
       } else {
-        this.setData({ pageReady: true, showAuthModal: !this.data.hasAuthorizedMember, storeConfig: getStoreConfig(null) });
+        this.setData({ pageReady: true, storeConfig: getStoreConfig(null) });
       }
-      this.ensureUserDocInCloud();
+      if (!this.data.hasAuthorizedMember && !this.data.showLegacyMemberTip) {
+        this.checkExistingMember();
+      }
     } catch (e) {
       console.error('syncScanFromApp error:', e);
       this.setData({ pageReady: true });
@@ -273,9 +315,7 @@ Page({
 
   onLoad: function(options) {
     try {
-      var app = getApp();
       this.setData({ pageReady: true });
-
       this.syncScanFromApp();
       this.refreshRoleEntries();
       this.invokeDetectUserArrival();
@@ -290,10 +330,6 @@ Page({
 
   onShow: function() {
     this.refreshRoleEntries();
-    // 真机偶现首屏时序问题，onShow 再同步一次 globalData
-    if (!this.data.showAuthModal && !this.data.showLegacyMemberTip) {
-      this.syncScanFromApp();
-    }
   },
 
   /** 点击遮罩关闭弹窗，便于阅读落地说明后通过下方「授权入会」再次发起 */

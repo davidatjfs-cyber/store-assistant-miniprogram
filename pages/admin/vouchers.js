@@ -1,5 +1,16 @@
 var roleUtil = require('../../utils/role.js');
 
+var STORES = [
+  { id: '51866138', name: '马己仙广东小馆' },
+  { id: '64822111', name: '洪潮潮汕传统菜' }
+];
+
+function buildStoreChecks(selectedIds) {
+  return STORES.map(function (s) {
+    return { id: s.id, name: s.name, checked: selectedIds.indexOf(s.id) >= 0 };
+  });
+}
+
 Page({
   data: {
     templates: [],
@@ -8,6 +19,8 @@ Page({
     editingId: '',
     saving: false,
     templateData: null,
+    stores: STORES,
+    storeChecks: [],
     formData: {
       name: '',
       type: 'cash',
@@ -16,7 +29,9 @@ Page({
       priceYuan: '',
       valid_days: '30',
       stock: '-1',
-      usage_rule: ''
+      cost_fen: '',
+      usage_rule: '',
+      store_ids: []
     }
   },
 
@@ -40,42 +55,48 @@ Page({
 
   loadTemplates: function() {
     var self = this;
-    var app = getApp();
-    var storeId = (app.globalData.staffStoreId || (app.globalData.scanParams || {}).store_id) || '';
     self.setData({ loading: true });
     wx.cloud.callFunction({
       name: 'getVoucherTemplates',
-      data: { store_id: storeId },
+      data: { store_id: '' },
       success: function(res) {
         var r = res.result || {};
         var raw = (r.success && r.data) || [];
         var list = raw.map(function(t) {
+          var storeNames = (t.store_ids || []).map(function(sid) {
+            for (var i = 0; i < STORES.length; i++) {
+              if (STORES[i].id === sid) return STORES[i].name;
+            }
+            return sid;
+          });
           return Object.assign({}, t, {
-            valueYuan: t.value ? '¥' + (t.value / 100).toFixed(2) : '—',
-            discountText: t.value ? (t.value / 10).toFixed(1) + '折' : '—',
-            priceYuan: t.price ? '¥' + (t.price / 100).toFixed(2) : '免费'
+            valueYuan: t.value ? '\u00a5' + (t.value / 100).toFixed(2) : '\u2014',
+            discountText: t.value ? (t.value / 10).toFixed(1) + '\u6298' : '\u2014',
+            priceYuan: t.price ? '\u00a5' + (t.price / 100).toFixed(2) : '\u514d\u8d39',
+            storeNames: storeNames.join('\u3001')
           });
         });
-        self.setData({
-          templates: list,
-          loading: false
-        });
+        self.setData({ templates: list, loading: false });
       },
       fail: function() {
         self.setData({ templates: [], loading: false });
-        wx.showToast({ title: '加载失败', icon: 'none' });
+        wx.showToast({ title: '\u52a0\u8f7d\u5931\u8d25', icon: 'none' });
       }
     });
   },
 
   onAdd: function() {
+    var defaults = ['51866138', '64822111'];
     this.setData({
       showEditModal: true,
       editingId: '',
       formData: {
         name: '', type: 'cash', valueYuan: '', discount: '',
-        priceYuan: '', valid_days: '30', stock: '-1', usage_rule: ''
-      }
+        priceYuan: '', valid_days: '30', stock: '-1', cost_fen: '',
+        usage_rule: '',
+        store_ids: defaults
+      },
+      storeChecks: buildStoreChecks(defaults)
     });
   },
 
@@ -86,6 +107,7 @@ Page({
       if (this.data.templates[i]._id === id) { tpl = this.data.templates[i]; break; }
     }
     if (!tpl) return;
+    var sids = tpl.store_ids ? tpl.store_ids.slice() : [];
     this.setData({
       showEditModal: true,
       editingId: id,
@@ -98,8 +120,11 @@ Page({
         priceYuan: tpl.price ? String(tpl.price / 100) : '',
         valid_days: String(tpl.valid_days || 30),
         stock: String(tpl.stock != null ? tpl.stock : -1),
-        usage_rule: tpl.usage_rule || ''
-      }
+        cost_fen: tpl.cost_fen != null ? String(tpl.cost_fen) : '',
+        usage_rule: tpl.usage_rule || '',
+        store_ids: sids
+      },
+      storeChecks: buildStoreChecks(sids)
     });
   },
 
@@ -154,31 +179,33 @@ Page({
   onInputPrice: function(e) { this.setData({ 'formData.priceYuan': e.detail.value }); },
   onInputDays: function(e) { this.setData({ 'formData.valid_days': e.detail.value }); },
   onInputStock: function(e) { this.setData({ 'formData.stock': e.detail.value }); },
+  onInputCost: function(e) { this.setData({ 'formData.cost_fen': e.detail.value }); },
   onInputRule: function(e) { this.setData({ 'formData.usage_rule': e.detail.value }); },
+
+onToggleStore: function(e) {
+    var sid = e.currentTarget.dataset.id;
+    var ids = this.data.formData.store_ids.slice();
+    var idx = ids.indexOf(sid);
+    if (idx >= 0) { ids.splice(idx, 1); } else { ids.push(sid); }
+    this.setData({ 'formData.store_ids': ids, storeChecks: buildStoreChecks(ids) });
+  },
 
   onSave: function() {
     var self = this;
     var f = self.data.formData;
     if (!f.name) { wx.showToast({ title: '请输入券名称', icon: 'none' }); return; }
+    if (!f.store_ids || f.store_ids.length === 0) { wx.showToast({ title: '请选择适用门店', icon: 'none' }); return; }
 
-    var app = getApp();
-    var currentStoreId = (app.globalData.staffStoreId || (app.globalData.scanParams || {}).store_id) || '';
-    var existingStoreIds = [];
-    if (self.data.editingId && self.data.templateData && self.data.templateData.store_ids) {
-      existingStoreIds = self.data.templateData.store_ids;
-    }
-    if (!self.data.editingId && currentStoreId) {
-      existingStoreIds = [currentStoreId];
-    }
     var data = {
       name: f.name,
       type: f.type,
       price: Math.round(parseFloat(f.priceYuan || '0') * 100),
       valid_days: parseInt(f.valid_days) || 30,
       stock: isNaN(parseInt(f.stock)) ? -1 : parseInt(f.stock),
+      cost_fen: parseInt(f.cost_fen) || 0,
       usage_rule: f.usage_rule,
       is_active: self.data.editingId ? !!(self.data.templateData && self.data.templateData.is_active) : true,
-      store_ids: existingStoreIds,
+      store_ids: f.store_ids,
       min_spend: 0,
       valid_time_range: { start: '00:00', end: '23:59' },
       valid_weekdays: [1,2,3,4,5,6,7]

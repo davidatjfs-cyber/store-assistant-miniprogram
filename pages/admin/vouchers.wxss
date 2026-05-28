@@ -165,3 +165,9 @@ page { background: #0d0d0d; }
   font-weight: 800 !important;
 }
 .btn-submit::after { border: none; }
+
+.store-checks { display: flex; flex-direction: column; gap: 12rpx; }
+.store-check { display: flex; align-items: center; gap: 12rpx; padding: 12rpx; border-radius: 12rpx; background: rgba(232,224,212,0.04); }
+.store-check-box { width: 36rpx; height: 36rpx; border-radius: 8rpx; border: 2rpx solid rgba(201,169,110,0.24); display: flex; align-items: center; justify-content: center; font-size: 22rpx; color: #0d0d0d; background: rgba(232,224,212,0.06); flex-shrink: 0; }
+.store-check-box.checked { background: linear-gradient(135deg, #c9a96e, #d4b87a); border-color: #d4b87a; color: #0d0d0d; }
+.store-check-name { font-size: 26rpx; color: #e8e0d4; }

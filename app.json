@@ -9,7 +9,8 @@
     "pages/admin/vouchers",
     "pages/admin/customers",
     "pages/shop/index",
-    "pages/user/send-to-wecom/send-to-wecom"
+    "pages/user/send-to-wecom/send-to-wecom",
+    "pages/admin/activityCode/index"
   ],
   "window": {
     "backgroundTextStyle": "light",

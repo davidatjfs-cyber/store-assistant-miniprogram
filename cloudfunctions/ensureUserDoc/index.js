@@ -40,12 +40,13 @@ async function ensureUserByOpenid(openid, scanParams) {
     .get();
 
   if (r.data.length) {
-    const id = r.data[0]._id;
+    const user = r.data[0];
+    const id = user._id;
     if (Object.keys(extra).length) {
       extra.updated_at = db.serverDate();
       await db.collection('users').doc(id).update({ data: extra });
     }
-    return id;
+    return { id: id, phone: user.phone || '' };
   }
 
   const add = await db.collection('users').add({
@@ -60,7 +61,7 @@ async function ensureUserByOpenid(openid, scanParams) {
       extra
     )
   });
-  return add._id;
+  return { id: add._id, phone: '' };
 }
 
 exports.main = async function (event) {
@@ -70,6 +71,7 @@ exports.main = async function (event) {
       return { success: false, errMsg: '缺少 OPENID' };
     }
     const userId = await ensureUserByOpenid(OPENID, event && event.scanParams);
+    const phone = userId.phone || '';
     const scanParams = event && event.scanParams;
     if (scanParams && typeof scanParams === 'object') {
       await syncHrmsGrowthEvent({
@@ -84,7 +86,7 @@ exports.main = async function (event) {
         console.warn('HRMS campaign_scan sync failed', e && e.message);
       });
     }
-    return { success: true, user_id: userId };
+    return { success: true, user_id: userId.id || userId, phone: phone };
   } catch (e) {
     console.error('ensureUserDoc', e);
     return {
