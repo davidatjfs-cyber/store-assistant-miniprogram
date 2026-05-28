@@ -111,6 +111,12 @@ cloudfunctions/updateMarketingRule
 cloudfunctions/seedTestData
 ```
 
+**桌位码功能（如需导出 PDF 必须部署）：**
+```
+cloudfunctions/batchTableCodes
+cloudfunctions/exportTableCodesPdf
+```
+
 ### 3.2 配置定时触发器
 
 1. 进入云开发控制台 → 云函数 → `dailyCheckInactiveUsers`

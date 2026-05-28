@@ -1,0 +1,9 @@
+{
+  "name": "exportTableCodesPdf",
+  "version": "1.0.0",
+  "description": "导出桌位码 PDF",
+  "main": "index.js",
+  "dependencies": {
+    "pdf-lib": "^1.17.1"
+  }
+}

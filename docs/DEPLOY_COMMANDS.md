@@ -30,6 +30,8 @@ cd ../monitorSystem && npm install
 cd ../getMarketingDashboard && npm install
 cd ../seedMaijixianMarketing && npm install
 cd ../verifyMaijixianSetup && npm install
+cd ../batchTableCodes && npm install
+cd ../exportTableCodesPdf && npm install
 ```
 
 ---
@@ -52,6 +54,8 @@ cd ../verifyMaijixianSetup && npm install
    - `cloudfunctions/getMarketingDashboard`（管理端/看板只读聚合，建议仅店长可调用）
    - `cloudfunctions/seedMaijixianMarketing`（门店营销种子，跑完可下架；见 `docs/MAIJIXIAN_MARKETING_SEED.md`）
    - `cloudfunctions/verifyMaijixianSetup`（自检/联调，见 `docs/MAIJIXIAN_MARKETING_SEED.md` 第六节）
+   - `cloudfunctions/batchTableCodes`（桌位码批量生成）
+   - `cloudfunctions/exportTableCodesPdf`（桌位码 PDF 导出，依赖 `pdf-lib`，务必选择“云端安装依赖”或先本地 `npm install` 再上传所有文件）
 
 ---
 

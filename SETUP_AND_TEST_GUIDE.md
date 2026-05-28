@@ -166,6 +166,10 @@ cd /Users/magainze/store-assistant-miniprogram
 - `cloudfunctions/ensureUserDoc`
 - `cloudfunctions/getCallerOpenId`
 
+**桌位码功能**
+- `cloudfunctions/batchTableCodes`
+- `cloudfunctions/exportTableCodesPdf` - PDF 导出依赖 `pdf-lib`，请务必使用「上传并部署：云端安装依赖」或先执行 `npm install`
+
 ### 4.3 配置定时触发器
 
 1. 在云开发控制台进入「云函数」

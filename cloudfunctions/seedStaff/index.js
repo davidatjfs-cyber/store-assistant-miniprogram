@@ -33,12 +33,19 @@ const db = cloud.database();
 const _ = db.command;
 
 var DEFAULT_STAFF = [
-  { phone: '13800000001', name: '张三', role: 'admin',  store_id: '' },
-  { phone: '13800000002', name: '李四', role: 'manager', store_id: '51866138' },
-  { phone: '13800000003', name: '王五', role: 'staff',   store_id: '51866138' },
-  { phone: '13800000004', name: '赵六', role: 'staff',   store_id: '64822111' },
+  // 总部管理员
   { phone: '13817824514', name: '系统管理员A', role: 'admin', store_id: '' },
-  { phone: '18321341205', name: '系统管理员B', role: 'admin', store_id: '' }
+  { phone: '18321341205', name: '系统管理员B', role: 'admin', store_id: '' },
+  // 马己仙 51866138
+  { phone: '17623838951', name: '田海伶', role: 'manager', store_id: '51866138' },
+  { phone: '15000301235', name: '李莉莉', role: 'staff',   store_id: '51866138' },
+  { phone: '18934446145', name: '王开',   role: 'staff',   store_id: '51866138' },
+  { phone: '13461431400', name: '李星星', role: 'staff',   store_id: '51866138' },
+  // 洪潮 64822111
+  { phone: '18112917329', name: '喻烽',   role: 'manager', store_id: '64822111' },
+  { phone: '18559908456', name: '卓思远', role: 'staff',   store_id: '64822111' },
+  { phone: '13669383258', name: '陈占广', role: 'staff',   store_id: '64822111' },
+  { phone: '15186020292', name: '龙斌',   role: 'staff',   store_id: '64822111' }
 ];
 
 exports.main = async (event) => {

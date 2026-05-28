@@ -10,7 +10,8 @@
     "pages/admin/customers",
     "pages/shop/index",
     "pages/user/send-to-wecom/send-to-wecom",
-    "pages/admin/activityCode/index"
+    "pages/admin/activityCode/index",
+    "pages/admin/tableCodes/index"
   ],
   "window": {
     "backgroundTextStyle": "light",

@@ -101,6 +101,13 @@ function buildEntrySections(role) {
           sub: '生成企微活动二维码',
           url: '/pages/admin/activityCode/index',
           icon: '活'
+        },
+        {
+          key: 'tablecodes',
+          title: '桌位码生成',
+          sub: '批量生成桌位点餐码',
+          url: '/pages/admin/tableCodes/index',
+          icon: '桌'
         }
       ]
     });

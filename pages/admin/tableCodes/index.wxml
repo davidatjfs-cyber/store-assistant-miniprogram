@@ -1,0 +1,74 @@
+<view class="page">
+  <view class="ambient ambient-a"></view>
+  <view class="ambient ambient-b"></view>
+  <view class="hero">
+    <view class="hero-shell">
+      <view class="hero-copy">
+        <text class="hero-kicker">TABLE QR CODES</text>
+        <text class="hero-title">{{storeName}}</text>
+        <text class="hint">桌位点餐码 · 共 {{totalTables}} 桌</text>
+      </view>
+      <view class="hero-lens"></view>
+    </view>
+  </view>
+
+  <view class="store-bar">
+    <picker mode="selector" range="{{stores}}" range-key="name" value="{{storeIndex}}" bindchange="onStoreChange">
+      <view class="store-picker">
+        <text class="store-picker-text">{{stores[storeIndex].name}} ▼</text>
+      </view>
+    </picker>
+  </view>
+
+  <view class="btn-bar">
+    <button class="btn-add" bindtap="onGenerateAll" loading="{{generating}}">
+      {{generating ? '生成中…' : (generatedCount ? '重新生成全部' : '生成全部桌码')}}
+    </button>
+    <text class="btn-hint" wx:if="{{generatedCount > 0}}">已生成 {{generatedCount}} / {{totalTables}} 桌</text>
+    <view class="btn-row">
+      <button class="btn-secondary" bindtap="onGenerateSelected" disabled="{{generating || selectedCount === 0}}">
+        生成选中<text wx:if="{{selectedCount > 0}}">（{{selectedCount}}）</text>
+      </button>
+      <button class="btn-ghost" bindtap="onClearSelection" disabled="{{generating || selectedCount === 0}}">
+        清空勾选
+      </button>
+    </view>
+    <view class="btn-row" wx:if="{{generatedCount > 0}}">
+      <button class="btn-secondary" bindtap="onExportSelectedPdf" disabled="{{generating || selectedCount === 0}}">
+        导出选中PDF
+      </button>
+      <button class="btn-ghost" bindtap="onExportAllPdf" disabled="{{generating || generatedCount === 0}}">
+        导出全部PDF
+      </button>
+    </view>
+  </view>
+
+  <scroll-view scroll-y class="list">
+    <view class="zone-card" wx:for="{{zones}}" wx:for-item="zone" wx:key="name">
+      <view class="zone-header">
+        <text class="zone-title">{{zone.name}}</text>
+        <text class="zone-count">{{zone.tables.length}} 桌</text>
+      </view>
+      <view class="qr-grid">
+        <view class="qr-cell" wx:for="{{zone.tables}}" wx:for-item="tbl" wx:key="id">
+          <view class="select-chip {{tbl.selected ? 'is-selected' : ''}}" catchtap="onToggleTableSelection" data-id="{{tbl.id}}">
+            {{tbl.selected ? '已选' : '勾选'}}
+          </view>
+          <image wx:if="{{tbl.qrBase64}}" class="qr-img {{tbl.selected ? 'qr-img-selected' : ''}}" src="data:image/png;base64,{{tbl.qrBase64}}" mode="aspectFit" bindtap="previewQr" data-base64="{{tbl.qrBase64}}" />
+          <view wx:else class="qr-placeholder {{tbl.selected ? 'qr-placeholder-selected' : ''}}">
+            <text class="qr-placeholder-text">{{tbl.id}}</text>
+          </view>
+          <text class="qr-label">{{tbl.id}}</text>
+          <text class="qr-error" wx:if="{{tbl.error}}">生成失败</text>
+          <button class="qr-action" size="mini" bindtap="onGenerateSingle" data-id="{{tbl.id}}" loading="{{tbl.generating}}" disabled="{{generating && !tbl.generating}}">
+            {{tbl.generating ? '生成中' : '生成'}}
+          </button>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <view class="tip-bar" wx:if="{{generatedCount > 0}}">
+    <text class="tip-text">支持勾选后批量生成、单独生成，以及导出 PDF 直接预览打印</text>
+  </view>
+</view>

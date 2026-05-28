@@ -21,6 +21,8 @@ for name in \
   getMarketingDashboard \
   getMarketingRules \
   updateMarketingRule \
+  batchTableCodes \
+  exportTableCodesPdf \
   seedMaijixianMarketing \
   verifyMaijixianSetup
 do
