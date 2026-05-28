@@ -1,0 +1,9 @@
+{
+  "name": "seedStaff",
+  "version": "1.0.0",
+  "description": "批量写入 staff 集合（按手机号自动匹配 openid）",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}
