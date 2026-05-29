@@ -26,13 +26,13 @@ var STORE_CONFIGS = {
     name: '洪潮潮汕传统菜',
     zones: [
       { name: 'V区', tables: ['V1', 'V2'] },
-      { name: 'K区', tables: ['k1', 'k2'] },
+      { name: 'K区', tables: ['K1', 'K2'] },
       { name: '1楼', tables: ['101', '102', '103'] },
       { name: '2楼', tables: ['201', '202', '203'] },
       { name: '3楼', tables: ['301', '302', '303', '305'] },
       { name: '5楼', tables: ['501', '502', '503'] },
       { name: '6楼', tables: ['601', '602'] },
-      { name: '外带', tables: ['外带1', '外带2'] }
+      { name: '外卖区', tables: ['外卖1', '外卖2'] }
     ]
   }
 };

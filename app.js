@@ -22,6 +22,359 @@ var ORDER_MINI_PROGRAM_CONFIGS = {
     extraData: undefined
   }
 };
+var ORDER_TABLE_TOKEN_MAPPINGS = {
+  '51866138': {
+    'A1': {
+      principalAppId: '202410240051534254',
+      token: '6EQ3h03iy8JVu7xAOt',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/11/6/202410240051534254/6EQ3h03iy8JVu7xAOt'
+    },
+    'A2': {
+      principalAppId: '202410240051534254',
+      token: 'xedmBQlYSE4ZBOLKXA',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/11/6/202410240051534254/xedmBQlYSE4ZBOLKXA'
+    },
+    'A3': {
+      principalAppId: '202410240051534254',
+      token: 'hn3rpgUFSHtUprOng1',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/11/6/202410240051534254/hn3rpgUFSHtUprOng1'
+    },
+    'A5': {
+      principalAppId: '202410240051534254',
+      token: 'LoyE0zx2y9kz6u2GCx',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/11/6/202410240051534254/LoyE0zx2y9kz6u2GCx'
+    },
+    'A6': {
+      principalAppId: '202410240051534254',
+      token: 'hjjNgY0QW8ZpIeJwuS',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/11/6/202410240051534254/hjjNgY0QW8ZpIeJwuS'
+    },
+    'A8': {
+      principalAppId: '202410240051534254',
+      token: '1YLjNqQC6NGI7cKKRh',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/11/6/202410240051534254/1YLjNqQC6NGI7cKKRh'
+    },
+    'A9': {
+      principalAppId: '202410240051534254',
+      token: 'bn4qZmI6NOJu8aJMk4',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/11/6/202410240051534254/bn4qZmI6NOJu8aJMk4'
+    },
+    'A10': {
+      principalAppId: '202410240051534254',
+      token: 'RJpcjsqCCYXmSFIXmv',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/11/6/202410240051534254/RJpcjsqCCYXmSFIXmv'
+    },
+    'A11': {
+      principalAppId: '202410240051534254',
+      token: 'fDvRN4qZpasI6tfn02',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/11/6/202410240051534254/fDvRN4qZpasI6tfn02'
+    },
+    'A12': {
+      principalAppId: '202410240051534254',
+      token: 'VU3rSfDWppirK6b5bb',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/11/6/202410240051534254/VU3rSfDWppirK6b5bb'
+    },
+    'A13': {
+      principalAppId: '202410240051534254',
+      token: 'MvsQSWwbbeft73i3Je',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/11/6/202410240051534254/MvsQSWwbbeft73i3Je'
+    },
+    'B1': {
+      principalAppId: '202410240051534254',
+      token: 'LqlyYpMpfV1R6r1lpw',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/11/6/202410240051534254/LqlyYpMpfV1R6r1lpw'
+    },
+    'B2': {
+      principalAppId: '202410240051534254',
+      token: 'VW785TlGu7OOFiai0Y',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/11/6/202410240051534254/VW785TlGu7OOFiai0Y'
+    },
+    'B3': {
+      principalAppId: '202410240051534254',
+      token: '3eE64qEU0pKd6QWTkV',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/11/6/202410240051534254/3eE64qEU0pKd6QWTkV'
+    },
+    'B5': {
+      principalAppId: '202410240051534254',
+      token: 'HMFPUehAudBoCTbxkB',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/11/6/202410240051534254/HMFPUehAudBoCTbxkB'
+    },
+    'B6': {
+      principalAppId: '202410240051534254',
+      token: 'p2TtAZUJaw4LLY5n2L',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/11/6/202410240051534254/p2TtAZUJaw4LLY5n2L'
+    },
+    'B8': {
+      principalAppId: '202410240051534254',
+      token: 'XBXivgp3QNk4CemyTy',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/11/6/202410240051534254/XBXivgp3QNk4CemyTy'
+    },
+    'B9': {
+      principalAppId: '202410240051534254',
+      token: 'yQmr8uRY6210NNtY4u',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/11/6/202410240051534254/yQmr8uRY6210NNtY4u'
+    },
+    'B10': {
+      principalAppId: '202410240051534254',
+      token: 'xeQrWbF9B36eTOP5xW',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/11/6/202410240051534254/xeQrWbF9B36eTOP5xW'
+    },
+    'B11': {
+      principalAppId: '202410240051534254',
+      token: 'lZLgKi1St5SXmgPgZH',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/11/6/202410240051534254/lZLgKi1St5SXmgPgZH'
+    },
+    'B12': {
+      principalAppId: '202410240051534254',
+      token: 'V6BnIaniJKCbHVuT8i',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/11/6/202410240051534254/V6BnIaniJKCbHVuT8i'
+    },
+    'C1': {
+      principalAppId: '202410240051534254',
+      token: 'teVpJqQc0q3RqfHOeV',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/11/6/202410240051534254/teVpJqQc0q3RqfHOeV'
+    },
+    'C2': {
+      principalAppId: '202410240051534254',
+      token: 'DMrNUZeEo52O0HIiVz',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/11/6/202410240051534254/DMrNUZeEo52O0HIiVz'
+    },
+    'C3': {
+      principalAppId: '202410240051534254',
+      token: '3IU3sUcqMrtxLe3B7Q',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/11/6/202410240051534254/3IU3sUcqMrtxLe3B7Q'
+    },
+    'C5': {
+      principalAppId: '202410240051534254',
+      token: 'GjomJs57PkM37fJ4nZ',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/11/6/202410240051534254/GjomJs57PkM37fJ4nZ'
+    },
+    'C6': {
+      principalAppId: '202410240051534254',
+      token: 'HukCxYVCwPpOO7K2Ft',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/11/6/202410240051534254/HukCxYVCwPpOO7K2Ft'
+    },
+    'C8': {
+      principalAppId: '202410240051534254',
+      token: 'cr7mJTwuoh9ye7KvWU',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/11/6/202410240051534254/cr7mJTwuoh9ye7KvWU'
+    },
+    'C9': {
+      principalAppId: '202410240051534254',
+      token: 'mkVtqZ5llp7lzxZEM7',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/11/6/202410240051534254/mkVtqZ5llp7lzxZEM7'
+    },
+    'C10': {
+      principalAppId: '202410240051534254',
+      token: 'DayA9YAfZa4CqiSckf',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/11/6/202410240051534254/DayA9YAfZa4CqiSckf'
+    },
+    'D1': {
+      principalAppId: '202410240051534254',
+      token: 'wCTTFUet549Nb00Qfp',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/11/6/202410240051534254/wCTTFUet549Nb00Qfp'
+    },
+    'D2': {
+      principalAppId: '202410240051534254',
+      token: '2eUs4fMfL5HGKPBmhL',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/11/6/202410240051534254/2eUs4fMfL5HGKPBmhL'
+    },
+    'D3': {
+      principalAppId: '202410240051534254',
+      token: 'Z6uxw2N6pjMMtVlkmY',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/11/6/202410240051534254/Z6uxw2N6pjMMtVlkmY'
+    },
+    'D5': {
+      principalAppId: '202410240051534254',
+      token: 'LVWsyxDnWcVcHxHnAb',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/11/6/202410240051534254/LVWsyxDnWcVcHxHnAb'
+    },
+    'D6': {
+      principalAppId: '202410240051534254',
+      token: 'Vs1ReMz0UiXmdj6cKc',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/11/6/202410240051534254/Vs1ReMz0UiXmdj6cKc'
+    },
+    'D8': {
+      principalAppId: '202410240051534254',
+      token: '9xcD7BFSBjuPZr4zb8',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/11/6/202410240051534254/9xcD7BFSBjuPZr4zb8'
+    },
+    'D9': {
+      principalAppId: '202410240051534254',
+      token: 'zBzoNB4IKWeP3hHU23',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/11/6/202410240051534254/zBzoNB4IKWeP3hHU23'
+    },
+    '外带1': {
+      principalAppId: '202410240051534254',
+      token: '0nJVWC87rbeHoSL7QA',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/11/6/202410240051534254/0nJVWC87rbeHoSL7QA'
+    },
+    '外带2': {
+      principalAppId: '202410240051534254',
+      token: 'gPYJLKFyabR8Hzfamx',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/11/6/202410240051534254/gPYJLKFyabR8Hzfamx'
+    },
+    '外摆1': {
+      principalAppId: '202410240051534254',
+      token: 'GtyIJPxxUwj9FeyLXi',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/11/6/202410240051534254/GtyIJPxxUwj9FeyLXi'
+    },
+    '外摆2': {
+      principalAppId: '202410240051534254',
+      token: 'hDP8tsj5tuV0XdOY17',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/11/6/202410240051534254/hDP8tsj5tuV0XdOY17'
+    },
+    '外摆3': {
+      principalAppId: '202410240051534254',
+      token: '4z0KcUdqxcnmwGAAEO',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/11/6/202410240051534254/4z0KcUdqxcnmwGAAEO'
+    },
+    '外摆5': {
+      principalAppId: '202410240051534254',
+      token: 'big7UTY56dIz3RM0UI',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/11/6/202410240051534254/big7UTY56dIz3RM0UI'
+    },
+    '外摆6': {
+      principalAppId: '202410240051534254',
+      token: 'yF2vktTNLZILSnQYce',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/11/6/202410240051534254/yF2vktTNLZILSnQYce'
+    },
+    '外摆8': {
+      principalAppId: '202410240051534254',
+      token: 's7Sj2uvOrwEXGstBuV',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/11/6/202410240051534254/s7Sj2uvOrwEXGstBuV'
+    }
+  },
+  '64822111': {
+    'V1': {
+      principalAppId: '202505140064702144',
+      token: 'hnKSjk6p5XIj6hBZL0',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/30/21/202505140064702144/hnKSjk6p5XIj6hBZL0'
+    },
+    'V2': {
+      principalAppId: '202505140064702144',
+      token: 'GUe2xdk701nwlIumGH',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/30/21/202505140064702144/GUe2xdk701nwlIumGH'
+    },
+    'K1': {
+      principalAppId: '202505140064702144',
+      token: '4hztmqQw5EimVhilXD',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/30/21/202505140064702144/4hztmqQw5EimVhilXD'
+    },
+    'K2': {
+      principalAppId: '202505140064702144',
+      token: 'tfSYnIzyVwW9Cxicv3',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/30/21/202505140064702144/tfSYnIzyVwW9Cxicv3'
+    },
+    '101': {
+      principalAppId: '202505140064702144',
+      token: 'qqhrPiK8PfbRcODk7a',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/30/21/202505140064702144/qqhrPiK8PfbRcODk7a'
+    },
+    '102': {
+      principalAppId: '202505140064702144',
+      token: 'wq64tqT6gY49LwiVtm',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/30/21/202505140064702144/wq64tqT6gY49LwiVtm'
+    },
+    '103': {
+      principalAppId: '202505140064702144',
+      token: 'mGSUuEMXt5pkEhbZOl',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/30/21/202505140064702144/mGSUuEMXt5pkEhbZOl'
+    },
+    '201': {
+      principalAppId: '202505140064702144',
+      token: 'YdvRTboGdZ0MfHgSft',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/30/21/202505140064702144/YdvRTboGdZ0MfHgSft'
+    },
+    '202': {
+      principalAppId: '202505140064702144',
+      token: '7YBCMRNyGmYeqrLZkW',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/30/21/202505140064702144/7YBCMRNyGmYeqrLZkW'
+    },
+    '203': {
+      principalAppId: '202505140064702144',
+      token: 'GUZXl0fTmMg8wv67M2',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/30/21/202505140064702144/GUZXl0fTmMg8wv67M2'
+    },
+    '301': {
+      principalAppId: '202505140064702144',
+      token: '2vfzQqPJjmizqUo7cp',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/30/21/202505140064702144/2vfzQqPJjmizqUo7cp'
+    },
+    '302': {
+      principalAppId: '202505140064702144',
+      token: 'hLnIAnH7YPFVgWC6e8',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/30/21/202505140064702144/hLnIAnH7YPFVgWC6e8'
+    },
+    '303': {
+      principalAppId: '202505140064702144',
+      token: 'btouoSMNVrdHQPBVQF',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/30/21/202505140064702144/btouoSMNVrdHQPBVQF'
+    },
+    '305': {
+      principalAppId: '202505140064702144',
+      token: 'R718EvQ6FHEYoUYiJ9',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/30/21/202505140064702144/R718EvQ6FHEYoUYiJ9'
+    },
+    '501': {
+      principalAppId: '202505140064702144',
+      token: 'yzHfzQZM1WvgxX5iUS',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/30/21/202505140064702144/yzHfzQZM1WvgxX5iUS'
+    },
+    '502': {
+      principalAppId: '202505140064702144',
+      token: 'ktaIlA2b0ztgBkx6de',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/30/21/202505140064702144/ktaIlA2b0ztgBkx6de'
+    },
+    '503': {
+      principalAppId: '202505140064702144',
+      token: 'YoP4AaO0yjkbnxYIvf',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/30/21/202505140064702144/YoP4AaO0yjkbnxYIvf'
+    },
+    '601': {
+      principalAppId: '202505140064702144',
+      token: 'wNDJRGRTGU5NrOBMJH',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/30/21/202505140064702144/wNDJRGRTGU5NrOBMJH'
+    },
+    '602': {
+      principalAppId: '202505140064702144',
+      token: 'tiJMOSYLDkCPdxTsPx',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/30/21/202505140064702144/tiJMOSYLDkCPdxTsPx'
+    },
+    '外卖1': {
+      principalAppId: '202505140064702144',
+      token: 'vN8e2w9Q0IxOm6wYF8',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/30/21/202505140064702144/vN8e2w9Q0IxOm6wYF8'
+    },
+    '外卖2': {
+      principalAppId: '202505140064702144',
+      token: 'yISLnB0nlBD98GTSV3',
+      qrUrl: 'https://qrse.keruyun.com/p/mini/30/21/202505140064702144/yISLnB0nlBD98GTSV3'
+    }
+  }
+};
+
+function getKeruyunTableTokenMapping(storeId, tableId) {
+  var sid = storeId != null ? String(storeId).trim() : '';
+  var tid = tableId != null ? String(tableId).trim() : '';
+  if (!sid || !tid) return null;
+  var storeMappings = ORDER_TABLE_TOKEN_MAPPINGS[sid];
+  if (!storeMappings) return null;
+  return storeMappings[tid] || storeMappings[tid.toUpperCase()] || storeMappings[tid.toLowerCase()] || null;
+}
+
+function getOrderLaunchParams(scanParams) {
+  var params = Object.assign({}, scanParams || {});
+  var mapping = getKeruyunTableTokenMapping(params.store_id, params.table_id);
+  if (!mapping) return params;
+
+  params.principalAppId = mapping.principalAppId;
+  params.table_token = mapping.token;
+  params.desk_token = mapping.token;
+  params.keruyun_token = mapping.token;
+  params.keruyun_qr_url = mapping.qrUrl;
+  return params;
+}
 
 App({
   onLaunch: function (options) {
@@ -122,6 +475,10 @@ App({
     return ORDER_MINI_PROGRAM_CONFIGS[sid] || ORDER_MINI_PROGRAM_CONFIGS[DEFAULT_STORE_ID];
   },
 
+  getOrderLaunchParams: function(scanParams) {
+    return getOrderLaunchParams(scanParams);
+  },
+
   globalData: {
     userInfo: null,
     isStaff: false,
@@ -135,7 +492,8 @@ App({
     // 非扫码入口的活动ID（分享链接、公众号菜单等）
     campaignId: '',
     // 点餐小程序（按门店分流，默认沿用马己仙配置）
-    orderMiniProgramConfigs: ORDER_MINI_PROGRAM_CONFIGS
+    orderMiniProgramConfigs: ORDER_MINI_PROGRAM_CONFIGS,
+    orderTableTokenMappings: ORDER_TABLE_TOKEN_MAPPINGS
   },
 
   /**

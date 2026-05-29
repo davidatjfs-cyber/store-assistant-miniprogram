@@ -158,6 +158,22 @@ function buildOrderMiniPath(basePath, scanParams, extraStaticQuery) {
   });
   var qs = parts.join('&');
   if (!qs) return basePath;
+  var pathToken = 'path=';
+  var pathIndex = basePath.indexOf(pathToken);
+  if (pathIndex >= 0) {
+    var pathValueStart = pathIndex + pathToken.length;
+    var nextAmp = basePath.indexOf('&', pathValueStart);
+    var encodedInnerPath = nextAmp >= 0
+      ? basePath.slice(pathValueStart, nextAmp)
+      : basePath.slice(pathValueStart);
+    var innerPath = decodeURIComponent(encodedInnerPath);
+    var innerSep = innerPath.indexOf('?') >= 0 ? '&' : '?';
+    var encodedWithQuery = encodeURIComponent(innerPath + innerSep + qs);
+    if (nextAmp >= 0) {
+      return basePath.slice(0, pathValueStart) + encodedWithQuery + basePath.slice(nextAmp);
+    }
+    return basePath.slice(0, pathValueStart) + encodedWithQuery;
+  }
   var sep = basePath.indexOf('?') >= 0 ? '&' : '?';
   return basePath + sep + qs;
 }
@@ -176,7 +192,7 @@ Page({
     roleLoaded: false,
     storeConfig: STORE_CONFIGS['51866138'],
     availableVoucherCount: 0,
-    checkingMember: true
+    checkingMember: true,
   },
 
   refreshRoleEntries: function () {
@@ -490,7 +506,10 @@ Page({
 
   navigateToKeruYun: function() {
     var app = getApp();
-    var params = this.data.scanParams || {};
+    var rawParams = this.data.scanParams || {};
+    var params = (typeof app.getOrderLaunchParams === 'function')
+      ? app.getOrderLaunchParams(rawParams)
+      : rawParams;
     var storeId = params.store_id || app.globalData.staffStoreId || '51866138';
     var config = (typeof app.getOrderMiniProgramConfig === 'function')
       ? app.getOrderMiniProgramConfig(storeId)
@@ -521,40 +540,48 @@ Page({
       // ignore
     }
 
-    var basePath =
-      config.path ||
-      'pages/home/index?origin=minpath&path=pages%2Forderfood%2Findex';
-    var path = buildOrderMiniPath(basePath, params, config.extraStaticQuery);
+    var token = params.table_token || params.desk_token || params.keruyun_token;
+    var principalAppId = params.principalAppId;
+
+    var path;
+    if (token) {
+      var tokenQs = 'deskToken=' + encodeURIComponent(token) +
+        (principalAppId ? '&principalAppId=' + encodeURIComponent(principalAppId) : '');
+      path = 'pages/orderfood/index?' + tokenQs;
+    } else {
+      var basePath = config.path || 'pages/home/index?origin=minpath&path=pages%2Forderfood%2Findex';
+      path = buildOrderMiniPath(basePath, params, config.extraStaticQuery);
+    }
 
     var envVersion = config.envVersion || 'release';
 
-    // console.log('准备跳转点餐小程序', { appId: config.appId, path: path, envVersion: envVersion });
-
-    var navOpts = {
+    wx.navigateToMiniProgram({
       appId: config.appId,
       path: path,
       envVersion: envVersion,
-      success: function() {
-        // console.log('navigateToMiniProgram 已触发');
-      },
+      extraData: (config.extraData && typeof config.extraData === 'object') ? config.extraData : undefined,
       fail: function(err) {
         var errMsg = (err && err.errMsg) ? String(err.errMsg).toLowerCase() : '';
-        if (errMsg.indexOf('cancel') >= 0) {
-          return;
-        }
-        console.error('跳转点餐小程序失败:', err);
-        wx.showModal({
-          title: '跳转点餐小程序失败',
-          content:
-            (err.errMsg || JSON.stringify(err)) +
-            '\n\n请到微信公众平台 → 小程序后台：\n• 设置里配置「跳转其他小程序」白名单，加入对方 AppID\n• 若对方仅有体验版，可把 app.js 里 keruYunConfig.envVersion 改为 trial',
-          showCancel: false
+        if (errMsg.indexOf('cancel') >= 0) return;
+        var fallbackPath = buildOrderMiniPath(
+          config.path || 'pages/home/index?origin=minpath&path=pages%2Forderfood%2Findex',
+          params, config.extraStaticQuery
+        );
+        wx.navigateToMiniProgram({
+          appId: config.appId,
+          path: fallbackPath,
+          envVersion: envVersion,
+          fail: function(err2) {
+            var msg2 = (err2 && err2.errMsg) ? err2.errMsg : JSON.stringify(err2 || {});
+            if (msg2.toLowerCase().indexOf('cancel') >= 0) return;
+            wx.showModal({
+              title: '跳转点餐小程序失败',
+              content: msg2 + '\n\n请检查微信公众平台「跳转其他小程序」白名单是否已加入对方 AppID。',
+              showCancel: false
+            });
+          }
         });
       }
-    };
-    if (config.extraData && typeof config.extraData === 'object') {
-      navOpts.extraData = config.extraData;
-    }
-    wx.navigateToMiniProgram(navOpts);
+    });
   }
 });
