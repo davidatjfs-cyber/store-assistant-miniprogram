@@ -10,6 +10,7 @@
     "pages/admin/customers",
     "pages/shop/index",
     "pages/user/send-to-wecom/send-to-wecom",
+    "pages/user/subscribe-notify/subscribe-notify",
     "pages/admin/activityCode/index",
     "pages/admin/tableCodes/index"
   ],

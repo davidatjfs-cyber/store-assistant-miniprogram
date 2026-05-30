@@ -1,0 +1,30 @@
+<view class="container">
+  <view class="header">
+    <text class="title">订阅通知</text>
+    <text class="desc">授权后，您将收到优惠券和活动通知</text>
+  </view>
+
+  <view class="card">
+    <view class="card-title">订阅授权</view>
+    <view class="card-desc">点击按钮授权，即可接收小程序推送的通知消息</view>
+    <button class="btn primary" bindtap="requestSubscribe">授权订阅通知</button>
+  </view>
+
+  <view class="card">
+    <view class="card-title">测试发送</view>
+    <view class="card-desc">发送一条测试消息到您的微信</view>
+    <button class="btn secondary" bindtap="sendTestMessage">发送测试消息</button>
+  </view>
+
+  <view class="result" wx:if="{{sendResult}}">
+    <text class="success">{{sendResult}}</text>
+  </view>
+
+  <view class="result error" wx:if="{{sendError}}">
+    <text>{{sendError}}</text>
+  </view>
+
+  <view class="hint">
+    <text>提示：需要在微信小程序后台添加订阅消息模板，并替换模板 ID</text>
+  </view>
+</view>

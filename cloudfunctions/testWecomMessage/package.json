@@ -1,0 +1,9 @@
+{
+  "name": "testWecomMessage",
+  "version": "1.0.0",
+  "description": "测试企微发消息功能",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

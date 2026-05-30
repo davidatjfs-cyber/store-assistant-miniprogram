@@ -1,0 +1,9 @@
+{
+  "name": "wecomVerify",
+  "version": "1.0.0",
+  "description": "企微接收消息服务器URL验证",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

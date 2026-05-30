@@ -11,6 +11,21 @@
       "runtime": "Nodejs16.13",
       "memorySize": 256,
       "installDependency": true
+    },
+    {
+      "name": "sendSubscribeMessage",
+      "type": "Event",
+      "handler": "index.main",
+      "timeout": 30,
+      "runtime": "Nodejs18.15",
+      "memorySize": 256,
+      "installDependency": true,
+      "envVariables": {
+        "WX_APPID": "wx8cb030fad5998252",
+        "WX_APPSECRET": "cd7a49215faae28f408afd61d65f62aa",
+        "SUBSCRIBE_TEMPLATE_COUPON": "pyk3FCeBC4MtxptY3ZBeLUOiVx93Lmb_4pxkN8AFowE",
+        "SUBSCRIBE_TEMPLATE_EXPIRING": "y2OgEdK4ADr5ibGuJFJEsy2CNU7ELq9d-If6jUv8ee4"
+      }
     }
   ]
 }
