@@ -75,13 +75,14 @@ function getWecomExternalUserId(accessToken, unionid) {
 function sendWecomTextMessage(accessToken, userId, content, agentId) {
   var https = require('https');
   var msgData = {
-    touser: userId,
+    external_userid: [userId],
+    chat_type: 'single',
     msgtype: 'text',
-    agentid: agentId || WE_COM_APP_ID,
-    text: { content: content }
+    text: { content: content },
+    allow_select: false
   };
   var postData = JSON.stringify(msgData);
-  var url = 'https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=' + accessToken;
+  var url = 'https://qyapi.weixin.qq.com/cgi-bin/externalcontact/message/send?access_token=' + accessToken;
 
   return new Promise(function (resolve) {
     var req = https.request(url, {
