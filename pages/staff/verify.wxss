@@ -108,3 +108,12 @@ page { background: #0d0d0d; }
 .result-icon.ok { background: linear-gradient(135deg, #c9a96e, #d4b87a); }
 .result-icon.bad { background: linear-gradient(135deg, #8f4a39, #c27b5f); }
 .result-msg { font-size: 30rpx; color: #e8e0d4; }
+
+.regular-modal { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; }
+.regular-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.6); }
+.regular-card { position: relative; z-index: 1; width: 560rpx; padding: 48rpx 40rpx 40rpx; border-radius: 32rpx; text-align: center; background: linear-gradient(160deg, #241c16, #14110d); border: 1rpx solid rgba(212,184,122,0.4); box-shadow: 0 24rpx 64rpx rgba(0,0,0,0.5); }
+.regular-kicker { display: block; font-size: 28rpx; color: #d4b87a; letter-spacing: 2rpx; }
+.regular-name { display: block; margin-top: 20rpx; font-size: 48rpx; font-weight: 800; color: #f6ece0; }
+.regular-line { display: block; margin-top: 12rpx; font-size: 28rpx; color: rgba(246,236,224,0.78); }
+.regular-btn { margin-top: 32rpx; height: 80rpx; line-height: 80rpx; border-radius: 999rpx; border: none; background: linear-gradient(135deg, #c9a96e, #d4b87a); color: #1a1410; font-size: 30rpx; font-weight: 700; }
+.regular-btn::after { border: none; }

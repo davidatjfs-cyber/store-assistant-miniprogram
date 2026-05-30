@@ -26,6 +26,41 @@ function toTime(v) {
   return isNaN(t) ? 0 : t;
 }
 
+// 服务器为 UTC，统一转北京时间（UTC+8）输出
+function beijingParts(ms) {
+  const d = new Date(ms + 8 * 3600 * 1000);
+  return {
+    y: d.getUTCFullYear(),
+    mo: d.getUTCMonth() + 1,
+    da: d.getUTCDate(),
+    h: d.getUTCHours(),
+    mi: d.getUTCMinutes()
+  };
+}
+
+function pad2(n) {
+  return n < 10 ? '0' + n : String(n);
+}
+
+function formatBeijing(ms, withTime) {
+  if (!ms) return '';
+  const p = beijingParts(ms);
+  const date = p.y + '-' + pad2(p.mo) + '-' + pad2(p.da);
+  if (!withTime) return date;
+  return date + ' ' + pad2(p.h) + ':' + pad2(p.mi);
+}
+
+function formatLastVisit(iso) {
+  const t = toTime(iso);
+  if (!t) return '首次到店';
+  const now = beijingParts(Date.now());
+  const v = beijingParts(t);
+  if (now.y === v.y && now.mo === v.mo && now.da === v.da) {
+    return '今天 ' + pad2(v.h) + ':' + pad2(v.mi);
+  }
+  return v.y + '-' + pad2(v.mo) + '-' + pad2(v.da);
+}
+
 function maxDateIso(a, b) {
   const ta = toTime(a);
   const tb = toTime(b);
@@ -334,6 +369,30 @@ exports.main = async function (event) {
       } else {
         throw logErr;
       }
+    }
+
+    // 熟客（消费≥2次）到店 → 飞书提醒本店全体在职员工（fire-and-forget）
+    if (!recentLog && total_orders >= 2) {
+      const phone = userRow.phone != null ? String(userRow.phone).trim() : '';
+      const displayName = phone.length >= 4 ? '顾客' + phone.slice(-4) : '顾客';
+      const tableId =
+        event && event.table_id != null ? String(event.table_id).trim() : '';
+      cloud
+        .callFunction({
+          name: 'notifyRegularCustomerArrival',
+          data: {
+            store_id: storeId,
+            display_name: displayName,
+            total_visits: total_orders,
+            favorite_dish: favoriteDish || '',
+            table_id: tableId,
+            arrival_time_text: formatBeijing(Date.now(), true),
+            last_visit_text: formatLastVisit(profile.last_visit_time)
+          }
+        })
+        .catch(function (e) {
+          console.warn('notifyRegularCustomerArrival failed', e && e.message);
+        });
     }
 
     await syncHrmsGrowthEvent({

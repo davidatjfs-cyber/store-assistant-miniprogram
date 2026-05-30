@@ -53,4 +53,16 @@
     <view class="result-icon {{lastOk ? 'ok' : 'bad'}}">{{lastOk ? '✓' : '!'}}</view>
     <text class="result-msg">{{lastMessage}}</text>
   </view>
+
+  <!-- 熟客到店实时弹窗 -->
+  <view class="regular-modal" wx:if="{{regularTipVisible}}">
+    <view class="regular-backdrop" bindtap="closeRegularTip"></view>
+    <view class="regular-card">
+      <text class="regular-kicker">🔔 熟客到店</text>
+      <text class="regular-name">{{regularTip.display_name}}</text>
+      <text class="regular-line">累计到店 {{regularTip.total_visits}} 次</text>
+      <text class="regular-line" wx:if="{{regularTip.favorite_dish}}">偏好：{{regularTip.favorite_dish}}</text>
+      <button class="regular-btn" bindtap="closeRegularTip">知道了</button>
+    </view>
+  </view>
 </view>

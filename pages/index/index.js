@@ -258,7 +258,7 @@ Page({
       .then(function() {
         return wx.cloud.callFunction({
           name: 'detectUserArrival',
-          data: { store_id: sid }
+          data: { store_id: sid, table_id: scanParams.table_id || '' }
         });
       })
       .then(function(res) {
