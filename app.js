@@ -256,12 +256,12 @@ var ORDER_TABLE_TOKEN_MAPPINGS = {
       token: 'GUe2xdk701nwlIumGH',
       qrUrl: 'https://qrse.keruyun.com/p/mini/30/21/202505140064702144/GUe2xdk701nwlIumGH'
     },
-    'K1': {
+    'k1': {
       principalAppId: '202505140064702144',
       token: '4hztmqQw5EimVhilXD',
       qrUrl: 'https://qrse.keruyun.com/p/mini/30/21/202505140064702144/4hztmqQw5EimVhilXD'
     },
-    'K2': {
+    'k2': {
       principalAppId: '202505140064702144',
       token: 'tfSYnIzyVwW9Cxicv3',
       qrUrl: 'https://qrse.keruyun.com/p/mini/30/21/202505140064702144/tfSYnIzyVwW9Cxicv3'
@@ -341,12 +341,12 @@ var ORDER_TABLE_TOKEN_MAPPINGS = {
       token: 'tiJMOSYLDkCPdxTsPx',
       qrUrl: 'https://qrse.keruyun.com/p/mini/30/21/202505140064702144/tiJMOSYLDkCPdxTsPx'
     },
-    '外卖1': {
+    '外带1': {
       principalAppId: '202505140064702144',
       token: 'vN8e2w9Q0IxOm6wYF8',
       qrUrl: 'https://qrse.keruyun.com/p/mini/30/21/202505140064702144/vN8e2w9Q0IxOm6wYF8'
     },
-    '外卖2': {
+    '外带2': {
       principalAppId: '202505140064702144',
       token: 'yISLnB0nlBD98GTSV3',
       qrUrl: 'https://qrse.keruyun.com/p/mini/30/21/202505140064702144/yISLnB0nlBD98GTSV3'

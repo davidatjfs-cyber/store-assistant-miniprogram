@@ -1,7 +1,7 @@
 {
   "$schema": "https://static.cloudbase.net/cli/cloudbaserc.schema.json",
   "envId": "cloud1-2gqo1169d58023d7",
-  "functionRoot": "./functions",
+  "functionRoot": "./cloudfunctions",
   "functions": [
     {
       "name": "exportTableCodesPdf",
@@ -25,6 +25,19 @@
         "WX_APPSECRET": "cd7a49215faae28f408afd61d65f62aa",
         "SUBSCRIBE_TEMPLATE_COUPON": "pyk3FCeBC4MtxptY3ZBeLUOiVx93Lmb_4pxkN8AFowE",
         "SUBSCRIBE_TEMPLATE_EXPIRING": "y2OgEdK4ADr5ibGuJFJEsy2CNU7ELq9d-If6jUv8ee4"
+      }
+    },
+    {
+      "name": "updateCustomerProfile",
+      "type": "Event",
+      "handler": "index.main",
+      "timeout": 15,
+      "runtime": "Nodejs18.15",
+      "memorySize": 256,
+      "installDependency": true,
+      "envVariables": {
+        "HRMS_GROWTH_EVENT_URL": "https://nnyx.cc/api/miniprogram/events",
+        "HRMS_GROWTH_EVENT_SECRET": "5bde6e733281f2b42305a525ccb7411a6fb5f911341703929c3f384ab6047e33"
       }
     }
   ]

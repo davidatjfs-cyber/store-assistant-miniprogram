@@ -137,43 +137,43 @@ function testMajixianA1AddsKeruyunTokenParams() {
 function testMajixianJdAndOuterTablesExistInAdminList() {
   const source = read('pages/admin/tableCodes/index.js');
   assert.ok(
-    source.includes("'京东外卖1号'"),
-    'admin table list should include 京东外卖桌位 for 马己仙'
+    source.includes("'外带1'") && source.includes("'外带2'"),
+    'admin table list should include the Maijixian takeaway tables from the exported QR package'
   );
   assert.ok(
-    source.includes("'外摆10'"),
-    'admin table list should include the extra outside tables from the exported QR package'
+    source.includes("'外摆1'") && source.includes("'外摆8'"),
+    'admin table list should include the Maijixian outside tables from the exported QR package'
   );
 }
 
 function testHongchaoK1AddsKeruyunTokenParams() {
   const getOrderLaunchParams = loadOrderLaunchParamsResolver();
   const enriched = getOrderLaunchParams({
-    table_id: 'K1',
+    table_id: 'k1',
     store_id: '64822111'
   });
 
   assert.strictEqual(
     enriched.principalAppId,
     '202505140064702144',
-    'K1 should resolve the Keruyun principalAppId for Hongchao'
+    'k1 should resolve the Keruyun principalAppId for Hongchao'
   );
   assert.strictEqual(
     enriched.table_token,
     '4hztmqQw5EimVhilXD',
-    'K1 should resolve the official Hongchao Keruyun table token'
+    'k1 should resolve the official Hongchao Keruyun table token'
   );
 }
 
 function testHongchaoAdminListMatchesExportedTables() {
   const source = read('pages/admin/tableCodes/index.js');
   assert.ok(
-    source.includes("'K1'") && source.includes("'K2'"),
-    'Hongchao admin table list should use the exported uppercase K tables'
+    source.includes("'k1'") && source.includes("'k2'"),
+    'Hongchao admin table list should use the latest lowercase k tables'
   );
   assert.ok(
-    source.includes("'外卖1'") && source.includes("'外卖2'"),
-    'Hongchao admin table list should include the exported takeaway tables'
+    source.includes("'外带1'") && source.includes("'外带2'"),
+    'Hongchao admin table list should include the latest takeaway tables'
   );
 }
 

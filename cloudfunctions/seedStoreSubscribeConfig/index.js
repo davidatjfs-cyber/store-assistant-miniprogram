@@ -6,15 +6,15 @@ var db = cloud.database();
 exports.main = async function (event, context) {
   var stores = event.stores || [
     {
-      store_id: '64822111',
+      store_id: '51866138',
       store_display_name: '马己仙广东小馆音乐广场店',
       store_name: '马己仙',
       template_received: 'pyk3FCeBC4MtxptY3ZBeLUOiVx93Lmb_4pxkN8AFowE',
       template_expiring: 'y2OgEdK4ADr5ibGuJFJEsy2CNU7ELq9d-If6jUv8ee4'
     },
     {
-      store_id: '64822112',
-      store_display_name: '洪潮传统潮汕菜大宁久光店',
+      store_id: '64822111',
+      store_display_name: '洪潮潮汕传统菜',
       store_name: '洪潮',
       template_received: 'pyk3FCeBC4MtxptY3ZBeLUOiVx93Lmb_4pxkN8AFowE',
       template_expiring: 'y2OgEdK4ADr5ibGuJFJEsy2CNU7ELq9d-If6jUv8ee4'

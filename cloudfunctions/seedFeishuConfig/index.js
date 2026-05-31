@@ -19,6 +19,11 @@ var cloud = require('wx-server-sdk');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 var db = cloud.database();
 
+function isDbCollectionMissingError(err) {
+  var s = String((err && (err.message || err.errMsg)) || err || '');
+  return s.indexOf('-502005') !== -1 || s.indexOf('not exist') !== -1 || s.indexOf('ResourceNotFound') !== -1;
+}
+
 exports.main = async function (event) {
   if (event.confirm !== 'CONFIRM_SEED_FEISHU') {
     return { success: false, message: '请传入 confirm: "CONFIRM_SEED_FEISHU" 以确认执行' };
@@ -41,7 +46,16 @@ exports.main = async function (event) {
   };
 
   try {
-    var existing = await db.collection('store_feishu_configs').where({ store_id: storeId }).limit(1).get();
+    var existing;
+    try {
+      existing = await db.collection('store_feishu_configs').where({ store_id: storeId }).limit(1).get();
+    } catch (queryErr) {
+      if (isDbCollectionMissingError(queryErr)) {
+        existing = { data: [] };
+      } else {
+        throw queryErr;
+      }
+    }
     if (existing.data.length) {
       await db.collection('store_feishu_configs').doc(existing.data[0]._id).update({ data: data });
       return { success: true, action: 'updated', store_id: storeId };
