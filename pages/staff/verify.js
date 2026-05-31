@@ -9,7 +9,13 @@ Page({
     arrivals: [],
     arrivalsLoaded: false,
     regularTipVisible: false,
-    regularTip: null
+    regularTip: null,
+    profileEditVisible: false,
+    editUserId: '',
+    editName: '',
+    editSurname: '',
+    editGender: '',
+    profileSaving: false
   },
 
   // 已见到店记录（user_id|created_at），用于检测新熟客
@@ -77,6 +83,65 @@ Page({
 
   closeRegularTip: function () {
     this.setData({ regularTipVisible: false, regularTip: null });
+  },
+
+  // 打开「补全资料」弹窗，预填已存的姓/性别
+  openProfileEdit: function (e) {
+    var d = e.currentTarget.dataset || {};
+    this.setData({
+      profileEditVisible: true,
+      editUserId: String(d.userId || ''),
+      editName: String(d.name || ''),
+      editSurname: String(d.surname || ''),
+      editGender: String(d.gender || '')
+    });
+  },
+
+  closeProfileEdit: function () {
+    this.setData({ profileEditVisible: false, profileSaving: false });
+  },
+
+  onSurnameInput: function (e) {
+    // 仅保留中文，最多 2 字（含复姓）
+    var v = String(e.detail.value).replace(/[^一-龥]/g, '').slice(0, 2);
+    this.setData({ editSurname: v });
+  },
+
+  selectGender: function (e) {
+    this.setData({ editGender: String(e.currentTarget.dataset.gender || '') });
+  },
+
+  saveProfile: function () {
+    var self = this;
+    var surname = String(this.data.editSurname || '').trim();
+    var gender = String(this.data.editGender || '').trim();
+    if (!/^[一-龥]{1,2}$/.test(surname)) {
+      return wx.showToast({ title: '请输入中文姓氏', icon: 'none' });
+    }
+    if (gender !== 'male' && gender !== 'female') {
+      return wx.showToast({ title: '请选择性别', icon: 'none' });
+    }
+    if (!wx.cloud || !wx.cloud.callFunction) {
+      return wx.showToast({ title: '云能力未初始化', icon: 'none' });
+    }
+    this.setData({ profileSaving: true });
+    wx.cloud.callFunction({
+      name: 'updateCustomerProfile',
+      data: { user_id: self.data.editUserId, surname: surname, gender: gender }
+    }).then(function (res) {
+      var r = (res && res.result) || {};
+      if (r.success) {
+        wx.showToast({ title: '已保存：' + (r.title || ''), icon: 'success' });
+        self.setData({ profileEditVisible: false, profileSaving: false });
+        self.loadRecentArrivals();
+      } else {
+        self.setData({ profileSaving: false });
+        wx.showToast({ title: r.message || '保存失败', icon: 'none' });
+      }
+    }).catch(function (err) {
+      self.setData({ profileSaving: false });
+      wx.showToast({ title: (err && err.errMsg) || '调用失败', icon: 'none' });
+    });
   },
 
   // 检测本次返回中是否有「新出现」的熟客（来店≥2次），有则弹窗

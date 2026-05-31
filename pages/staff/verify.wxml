@@ -32,6 +32,11 @@
       <view class="arrival-tags" wx:if="{{item.tag_labels.length}}">
         <text class="tag" wx:for="{{item.tag_labels}}" wx:for-item="tg" wx:for-index="ti" wx:key="ti">{{tg}}</text>
       </view>
+      <view class="arrival-profile">
+        <text class="arrival-profile-tip" wx:if="{{item.title}}">称呼：{{item.title}}</text>
+        <text class="arrival-profile-tip arrival-profile-tip--todo" wx:else>未完善姓名/性别</text>
+        <text class="arrival-profile-btn" data-user-id="{{item.user_id}}" data-name="{{item.display_name}}" data-surname="{{item.surname}}" data-gender="{{item.gender}}" bindtap="openProfileEdit">{{item.title ? '修改' : '补全资料'}}</text>
+      </view>
     </view>
   </view>
 
@@ -52,6 +57,28 @@
   <view class="glass-card result" wx:if="{{lastMessage}}">
     <view class="result-icon {{lastOk ? 'ok' : 'bad'}}">{{lastOk ? '✓' : '!'}}</view>
     <text class="result-msg">{{lastMessage}}</text>
+  </view>
+
+  <!-- 补全资料弹窗 -->
+  <view class="regular-modal" wx:if="{{profileEditVisible}}">
+    <view class="regular-backdrop" bindtap="closeProfileEdit"></view>
+    <view class="regular-card">
+      <text class="regular-kicker">完善顾客资料</text>
+      <text class="regular-name">{{editName}}</text>
+      <view class="field">
+        <text class="field-label">姓（如「张」，复姓可填2字）</text>
+        <input class="field-input" maxlength="2" placeholder="请输入中文姓氏" value="{{editSurname}}" bindinput="onSurnameInput" />
+      </view>
+      <view class="field">
+        <text class="field-label">性别</text>
+        <view class="gender-row">
+          <text class="gender-opt {{editGender === 'male' ? 'gender-opt--on' : ''}}" data-gender="male" bindtap="selectGender">先生</text>
+          <text class="gender-opt {{editGender === 'female' ? 'gender-opt--on' : ''}}" data-gender="female" bindtap="selectGender">女士</text>
+        </view>
+      </view>
+      <button class="regular-btn" loading="{{profileSaving}}" disabled="{{profileSaving}}" bindtap="saveProfile">保存</button>
+      <text class="arrival-profile-tip" bindtap="closeProfileEdit" style="margin-top:12rpx;">取消</text>
+    </view>
   </view>
 
   <!-- 熟客到店实时弹窗 -->

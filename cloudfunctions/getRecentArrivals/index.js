@@ -76,21 +76,31 @@ function tagLabels(tags) {
   return out;
 }
 
-async function displayNameForUser(userId) {
+// 返回 { name, surname, gender, title }，title 为已补全的中文称谓（如「张先生」）
+async function profileForUser(userId) {
+  let name = '';
+  let surname = '';
+  let gender = '';
+  let title = '';
   try {
     const doc = await db.collection('users').doc(userId).get();
     const u = doc.data;
-    if (!u) return '顾客';
-    const phone = u.phone != null ? String(u.phone).trim() : '';
-    if (phone.length >= 4) {
-      return '顾客' + phone.slice(-4);
+    if (u) {
+      surname = u.surname != null ? String(u.surname).trim() : '';
+      gender = u.gender != null ? String(u.gender).trim() : '';
+      title = u.title != null ? String(u.title).trim() : '';
+      const phone = u.phone != null ? String(u.phone).trim() : '';
+      if (phone.length >= 4) {
+        name = '顾客' + phone.slice(-4);
+      } else if (u.nickName) {
+        name = String(u.nickName).slice(0, 12);
+      }
     }
-    if (u.nickName) return String(u.nickName).slice(0, 12);
   } catch (e) {
     // ignore
   }
-  const s = String(userId);
-  return '顾客' + s.slice(-4);
+  if (!name) name = '顾客' + String(userId).slice(-4);
+  return { name: name, surname: surname, gender: gender, title: title };
 }
 
 exports.main = async function (event, context) {
@@ -128,7 +138,8 @@ exports.main = async function (event, context) {
       const row = snap.data[i];
       const uid = row.user_id;
       const profile = row.profile || {};
-      const name = await displayNameForUser(uid);
+      const prof = await profileForUser(uid);
+      const name = prof.name;
       const lastT = profile.last_visit_time || row.created_at;
       const tags = Array.isArray(profile.tags) ? profile.tags : [];
       const isVip =
@@ -137,6 +148,9 @@ exports.main = async function (event, context) {
       items.push({
         user_id: uid,
         display_name: name,
+        surname: prof.surname,
+        gender: prof.gender,
+        title: prof.title,
         level_suffix: isVip ? '（VIP）' : '',
         is_new: !!profile.is_new,
         total_visits: profile.total_visits != null ? profile.total_visits : 0,

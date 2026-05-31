@@ -117,3 +117,17 @@ page { background: #0d0d0d; }
 .regular-line { display: block; margin-top: 12rpx; font-size: 28rpx; color: rgba(246,236,224,0.78); }
 .regular-btn { margin-top: 32rpx; height: 80rpx; line-height: 80rpx; border-radius: 999rpx; border: none; background: linear-gradient(135deg, #c9a96e, #d4b87a); color: #1a1410; font-size: 30rpx; font-weight: 700; }
 .regular-btn::after { border: none; }
+
+.arrival-profile { margin-top: 14rpx; display: flex; align-items: center; justify-content: space-between; gap: 12rpx; }
+.arrival-profile-tip { font-size: 24rpx; color: #95a4c7; }
+.arrival-profile-tip--todo { color: #c27b5f; }
+.arrival-profile-btn {
+  font-size: 24rpx; color: #d4b87a; padding: 8rpx 22rpx; border-radius: 999rpx;
+  border: 1rpx solid rgba(201,169,110,0.4); background: rgba(201,169,110,0.08);
+}
+.gender-row { display: flex; gap: 16rpx; }
+.gender-opt {
+  flex: 1; text-align: center; padding: 18rpx 0; font-size: 28rpx; color: #e8e0d4;
+  border-radius: 16rpx; border: 1rpx solid rgba(201,169,110,0.14); background: rgba(232,224,212,0.06);
+}
+.gender-opt--on { color: #1a1410; background: linear-gradient(135deg, #c9a96e, #d4b87a); border-color: transparent; font-weight: 700; }

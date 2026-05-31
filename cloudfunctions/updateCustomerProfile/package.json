@@ -1,0 +1,9 @@
+{
+  "name": "update-customer-profile",
+  "version": "1.0.0",
+  "description": "店员补全到店老客资料：姓+性别",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

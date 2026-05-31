@@ -15,6 +15,7 @@ for name in \
   getCallerOpenId \
   detectUserArrival \
   getRecentArrivals \
+  updateCustomerProfile \
   runMarketingEngine \
   dailyCheckInactiveUsers \
   monitorSystem \
