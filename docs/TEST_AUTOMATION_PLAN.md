@@ -16,7 +16,7 @@
 
 | 测试项 | 云函数 | 测试方式 |
 |--------|---------|----------|
-| 基础连接 | getCallerOpenId | ✅ 完全自动化 |
+| 基础连接 | ensureUserDoc | ✅ 完全自动化 |
 | 测试数据管理 | seedTestData | ✅ 完全自动化 |
 | 用户档案 | ensureUserDoc | ✅ 完全自动化 |
 | 到店检测 | detectUserArrival | ✅ 完全自动化 |

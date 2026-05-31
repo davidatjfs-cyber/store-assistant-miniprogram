@@ -111,10 +111,18 @@ const suite = new TestSuite();
 
 // 测试1: 基础连接测试
 suite.runTest('基础连接测试', async () => {
-  const result = await callFunction('getCallerOpenId', {});
+  const result = await callFunction('ensureUserDoc', {
+    scanParams: {
+      store_id: CONFIG.storeId,
+      table_id: 'T01',
+      store_display_name: '测试门店'
+    }
+  });
   assert(result.success === true, '返回 success 应为 true');
-  assert(result.openid === CONFIG.testOpenid, 'OPENID 应匹配');
-  log('info', `OPENID: ${result.openid}`);
+  assert(result.user_id, '应返回 user_id');
+  CONFIG.testUserId = result.user_id;
+  suite.testUserId = result.user_id;
+  log('info', `用户ID: ${result.user_id}`);
 });
 
 // 测试2: 测试数据播种

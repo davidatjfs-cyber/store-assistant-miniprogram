@@ -164,7 +164,6 @@ cd /Users/magainze/store-assistant-miniprogram
 - `cloudfunctions/detectUserArrival`
 - `cloudfunctions/getRecentArrivals`
 - `cloudfunctions/ensureUserDoc`
-- `cloudfunctions/getCallerOpenId`
 
 **桌位码功能**
 - `cloudfunctions/batchTableCodes`

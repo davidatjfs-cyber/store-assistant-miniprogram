@@ -41,10 +41,11 @@ call_function() {
 # 测试1: 基础连接测试
 test_basic_connection() {
     log_info "========== 测试1: 基础连接测试 =========="
-    local result=$(call_function "getCallerOpenId" "{}")
+    local result=$(call_function "ensureUserDoc" '{"scanParams":{"store_id":"'"$STORE_ID"'","table_id":"T01"}}')
     echo "$result" | grep -q '"success":true'
     if [ $? -eq 0 ]; then
         log_info "✓ 基础连接测试通过"
+        TEST_USER_ID=$(echo "$result" | grep -o '"user_id":"[^"]*"' | cut -d'"' -f4)
     else
         log_error "✗ 基础连接测试失败"
         return 1

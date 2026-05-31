@@ -12,7 +12,6 @@ for name in \
   revertVoucher \
   migrateUsers \
   getStaffProfile \
-  getCallerOpenId \
   detectUserArrival \
   getRecentArrivals \
   updateCustomerProfile \

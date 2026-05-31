@@ -42,11 +42,17 @@ async function test1_basicConnection() {
   const testName = '基础连接测试';
   try {
     const result = await cloud.callFunction({
-      name: 'getCallerOpenId',
-      data: {}
+      name: 'ensureUserDoc',
+      data: {
+        scanParams: {
+          store_id: 'store_test_001',
+          table_id: 'T01'
+        }
+      }
     });
     assert(result.result.success === true, testName, '返回 success 应为 true');
-    log(testName, 'PASS', '基础连接正常', { openid: result.result.openid });
+    assert(result.result.user_id, testName, '应返回 user_id');
+    log(testName, 'PASS', '基础连接正常', { user_id: result.result.user_id });
   } catch (error) {
     log(testName, 'FAIL', error.message);
   }
