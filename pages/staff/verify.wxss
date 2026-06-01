@@ -75,8 +75,13 @@ page { background: #0d0d0d; }
 
 .level-tag { font-size: 22rpx; font-weight: 700; padding: 6rpx 16rpx; border-radius: 12rpx; letter-spacing: 1rpx; }
 .level-tag--vip { color: #0d0d0d; background: linear-gradient(135deg, #c9a96e, #d4b87a); }
+.level-tag--active,
 .level-tag--regular { color: #d4b87a; background: rgba(201,169,110,0.08); border: 1rpx solid rgba(201,169,110,0.14); }
 .level-tag--new { color: #8a7e72; background: rgba(232,224,212,0.06); border: 1rpx solid rgba(232,224,212,0.1); }
+.level-tag--prospect { color: #94a3b8; background: rgba(148,163,184,0.10); border: 1rpx solid rgba(148,163,184,0.16); }
+.level-tag--at_risk { color: #f0b35a; background: rgba(240,179,90,0.10); border: 1rpx solid rgba(240,179,90,0.16); }
+.level-tag--dormant { color: #d97676; background: rgba(217,118,118,0.10); border: 1rpx solid rgba(217,118,118,0.16); }
+.level-tag--churned { color: #b7aca1; background: rgba(183,172,161,0.10); border: 1rpx solid rgba(183,172,161,0.16); }
 
 .arrival-line { display: block; font-size: 26rpx; color: #99a8c8; margin-top: 6rpx; }
 .arrival-tags { margin-top: 12rpx; display: flex; flex-wrap: wrap; gap: 10rpx; }

@@ -12,13 +12,15 @@ var TRIGGER_TYPES = [
 ];
 
 var TARGET_TAGS = [
+  { value: 'prospect', label: '潜在新客' },
   { value: 'new', label: '新客' },
+  { value: 'active', label: '活跃客' },
+  { value: 'at_risk', label: '临界客' },
+  { value: 'dormant', label: '沉睡老客' },
+  { value: 'churned', label: '流失客' },
   { value: 'vip', label: 'VIP' },
-  { value: 'frequent', label: '高频客' },
-  { value: 'inactive', label: '沉睡客' },
-  { value: 'high_value', label: '高价值' },
-  { value: 'low_value', label: '低价值' },
-  { value: 'general', label: '普通' }
+  { value: 'regular', label: '常规价值' },
+  { value: 'low', label: '低价值' }
 ];
 
 function formatRoi(v) {

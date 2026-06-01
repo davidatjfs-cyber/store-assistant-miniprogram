@@ -225,7 +225,7 @@ exports.main = async function (event, context) {
         name: '复购驱动-普通用户',
         trigger_type: 'payment',
         trigger_value: 3000,
-        target_tags: ['general'],
+        target_tags: ['active'],
         action_type: 'send_voucher',
         action_config: { template_id: TEMPLATE_IDS.return_user },
         priority: 80,
@@ -246,7 +246,7 @@ exports.main = async function (event, context) {
         name: '7天召回',
         trigger_type: 'inactivity',
         trigger_value: 7,
-        target_tags: ['inactive'],
+        target_tags: ['dormant'],
         action_type: 'send_voucher',
         action_config: { template_id: TEMPLATE_IDS.recall },
         priority: 90,
@@ -298,7 +298,7 @@ exports.main = async function (event, context) {
         results: ruleResults
       },
       note:
-        '券模板使用 is_active（非 status）。复购规则 target_tags 为 general：需在第二单及以后由 updateUserTags 写入 general（已合入 runMarketingEngine/userLifecycle）。'
+        '券模板使用 is_active（非 status）。复购规则 target_tags 为 active：需由 updateUserTags 按 HRMS 生命周期写入 active。'
     };
   } catch (err) {
     console.error('seedMaijixianMarketing', err);

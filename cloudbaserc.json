@@ -57,6 +57,112 @@
         "HRMS_GROWTH_EVENT_URL": "https://nnyx.cc/api/miniprogram/events",
         "HRMS_GROWTH_EVENT_SECRET": "5bde6e733281f2b42305a525ccb7411a6fb5f911341703929c3f384ab6047e33"
       }
+    },
+    {
+      "name": "paymentCallback",
+      "type": "Event",
+      "handler": "index.main",
+      "timeout": 30,
+      "runtime": "Nodejs18.15",
+      "memorySize": 256,
+      "installDependency": true,
+      "envVariables": {
+        "HRMS_GROWTH_EVENT_URL": "https://nnyx.cc/api/miniprogram/events",
+        "HRMS_GROWTH_EVENT_SECRET": "5bde6e733281f2b42305a525ccb7411a6fb5f911341703929c3f384ab6047e33"
+      }
+    },
+    {
+      "name": "verifyVoucher",
+      "type": "Event",
+      "handler": "index.main",
+      "timeout": 30,
+      "runtime": "Nodejs18.15",
+      "memorySize": 256,
+      "installDependency": true,
+      "envVariables": {
+        "HRMS_GROWTH_EVENT_URL": "https://nnyx.cc/api/miniprogram/events",
+        "HRMS_GROWTH_EVENT_SECRET": "5bde6e733281f2b42305a525ccb7411a6fb5f911341703929c3f384ab6047e33"
+      }
+    },
+    {
+      "name": "runMarketingEngine",
+      "type": "Event",
+      "handler": "index.main",
+      "timeout": 30,
+      "runtime": "Nodejs18.15",
+      "memorySize": 256,
+      "installDependency": true,
+      "envVariables": {
+        "HRMS_GROWTH_EVENT_URL": "https://nnyx.cc/api/miniprogram/events",
+        "HRMS_GROWTH_EVENT_SECRET": "5bde6e733281f2b42305a525ccb7411a6fb5f911341703929c3f384ab6047e33"
+      }
+    },
+    {
+      "name": "verifyMaijixianSetup",
+      "type": "Event",
+      "handler": "index.main",
+      "timeout": 60,
+      "runtime": "Nodejs18.15",
+      "memorySize": 256,
+      "installDependency": true
+    },
+    {
+      "name": "createMarketingRule",
+      "type": "Event",
+      "handler": "index.main",
+      "timeout": 15,
+      "runtime": "Nodejs18.15",
+      "memorySize": 256,
+      "installDependency": true
+    },
+    {
+      "name": "detectUserArrival",
+      "type": "Event",
+      "handler": "index.main",
+      "timeout": 30,
+      "runtime": "Nodejs18.15",
+      "memorySize": 256,
+      "installDependency": true,
+      "envVariables": {
+        "HRMS_GROWTH_EVENT_URL": "https://nnyx.cc/api/miniprogram/events",
+        "HRMS_GROWTH_EVENT_SECRET": "5bde6e733281f2b42305a525ccb7411a6fb5f911341703929c3f384ab6047e33"
+      }
+    },
+    {
+      "name": "getRecentArrivals",
+      "type": "Event",
+      "handler": "index.main",
+      "timeout": 15,
+      "runtime": "Nodejs18.15",
+      "memorySize": 256,
+      "installDependency": true
+    },
+    {
+      "name": "getMarketingDashboard",
+      "type": "Event",
+      "handler": "index.main",
+      "timeout": 30,
+      "runtime": "Nodejs18.15",
+      "memorySize": 256,
+      "installDependency": true
+    },
+    {
+      "name": "seedMaijixianMarketing",
+      "type": "Event",
+      "handler": "index.main",
+      "timeout": 60,
+      "runtime": "Nodejs18.15",
+      "memorySize": 256,
+      "installDependency": true
+    },
+    {
+      "name": "seedHongchaoMarketing",
+      "type": "Event",
+      "handler": "index.main",
+      "timeout": 60,
+      "runtime": "Nodejs18.15",
+      "memorySize": 256,
+      "installDependency": true
     }
   ]
 }

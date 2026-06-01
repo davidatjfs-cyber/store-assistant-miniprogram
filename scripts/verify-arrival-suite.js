@@ -76,7 +76,7 @@ function main() {
     user_id: userId,
     store_id: storeId,
     created_at: new Date(now - 60 * 1000),
-    profile: { is_new: true, total_visits: 0, user_level: 'new', favorite_dish: '' }
+    profile: { is_new: false, total_visits: 0, lifecycle_stage: 'prospect', user_level: 'prospect', favorite_dish: '' }
   };
 
   console.log('第一次调用（预期）：');
@@ -142,7 +142,8 @@ function main() {
   const storedProfile = {
     is_new: false,
     total_visits: 3,
-    user_level: 'regular',
+    lifecycle_stage: 'active',
+    user_level: 'active',
     favorite_dish: '烧鹅',
     tags: []
   };
@@ -202,7 +203,9 @@ function main() {
     total_visits: 'number',
     recent_label: 'string（今天|昨天|N天前|—）',
     tag_labels: 'string[]',
-    user_level: 'string（new|regular|vip）',
+    user_level: 'string（prospect|new|active|at_risk|dormant|churned）',
+    user_level_label: 'string（潜在新客|新客|活跃客|临界客|沉睡老客|流失客）',
+    value_tier: 'string（vip|regular|low，可空）',
     favorite_dish: 'string',
     created_at: 'Date | serverDate'
   };
@@ -213,7 +216,7 @@ function main() {
 
   console.log([
     '1. 模块容器：wx:if="{{arrivalsLoaded && arrivals.length}}" → 无数据整块不渲染。',
-    '2. 每条：display_name + level_suffix（VIP 括号）；右侧/同行 level-tag 由 user_level 着色（VIP/新客/常客）。',
+    '2. 每条：display_name + level_suffix（VIP 价值层级括号）；右侧/同行 level-tag 由 HRMS lifecycle user_level 着色。',
     '3. 来店次数：total_visits；最近：recent_label。',
     '4. 偏好：wx:if="{{item.favorite_dish}}" 时显示「偏好：xxx」。',
     '5. tag_labels 非空时展示标签 chips。'

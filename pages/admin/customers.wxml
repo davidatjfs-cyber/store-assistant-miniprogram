@@ -39,7 +39,7 @@
           <text class="customer-kicker">CUSTOMER PROFILE</text>
           <view class="customer-name-row">
             <text class="customer-phone">{{item.phone || '未授权'}}</text>
-            <text class="level-tag level-tag--{{item.user_level || 'new'}}">{{item.user_level === 'vip' ? 'VIP' : item.user_level === 'active' ? '活跃' : '新客'}}</text>
+            <text class="level-tag level-tag--{{item.user_level || 'prospect'}}">{{item.user_level_label || '潜在新客'}}</text>
           </view>
           <text class="customer-join">加入于 {{item.joinDate || '—'}}</text>
         </view>

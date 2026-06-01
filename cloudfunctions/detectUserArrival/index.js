@@ -10,6 +10,8 @@ const db = cloud.database();
 const _ = db.command;
 
 const TEN_MIN_MS = 10 * 60 * 1000;
+const FOURTEEN_MS = 14 * 24 * 60 * 60 * 1000;
+const THIRTY_MS = 30 * 24 * 60 * 60 * 1000;
 
 function isDbCollectionMissingError(err) {
   const s = String((err && (err.message || err.errMsg)) || err || '');
@@ -66,6 +68,16 @@ function maxDateIso(a, b) {
   const tb = toTime(b);
   if (ta === 0 && tb === 0) return null;
   return new Date(Math.max(ta, tb)).toISOString();
+}
+
+function deriveHrmsLifecycleStage(totalOrders, lastPaymentAt, lastVerifyAt, lastActiveAt) {
+  const orders = Math.max(0, parseInt(totalOrders, 10) || 0);
+  if (orders <= 0) return 'prospect';
+  const lastVisit = Math.max(toTime(lastPaymentAt), toTime(lastVerifyAt), toTime(lastActiveAt), Date.now());
+  const ageMs = Date.now() - lastVisit;
+  if (ageMs <= FOURTEEN_MS) return orders === 1 ? 'new' : 'active';
+  if (ageMs <= THIRTY_MS) return 'at_risk';
+  return orders >= 2 ? 'dormant' : 'churned';
 }
 
 async function getTotalOrdersFromUsersCapital(db, openid) {
@@ -271,27 +283,21 @@ function buildProfile(
   totalOrders,
   lastPaymentAt,
   lastVerifyAt,
-  spent30dFen,
+  lastActiveAt,
+  valueTier,
   tagList,
   favoriteDish
 ) {
-  const spent30 = parseInt(spent30dFen, 10) || 0;
-  let user_level = 'regular';
-  if (spent30 > 50000) {
-    user_level = 'vip';
-  } else if (totalOrders === 0) {
-    user_level = 'new';
-  } else {
-    user_level = 'regular';
-  }
-
-  const is_new = totalOrders === 0;
+  const lifecycleStage = deriveHrmsLifecycleStage(totalOrders, lastPaymentAt, lastVerifyAt, lastActiveAt);
+  const is_new = lifecycleStage === 'new';
 
   return {
     is_new: is_new,
     total_visits: totalOrders,
     last_visit_time: maxDateIso(lastPaymentAt, lastVerifyAt),
-    user_level: user_level,
+    lifecycle_stage: lifecycleStage,
+    value_tier: valueTier || '',
+    user_level: lifecycleStage,
     tags: tagList.slice(),
     favorite_dish: favoriteDish != null && String(favoriteDish).trim() ? String(favoriteDish).trim() : ''
   };
@@ -326,8 +332,8 @@ exports.main = async function (event) {
     const total_orders = await getTotalOrdersFromUsersCapital(db, OPENID);
     const last_payment_at = userRow.last_payment_at || null;
     const last_verify_at = userRow.last_verify_at || null;
-    const total_spent_30d =
-      userRow.total_spent_30d != null ? userRow.total_spent_30d : 0;
+    const last_active_at = userRow.last_active_at || null;
+    const value_tier = userRow.value_tier || '';
 
     const tagList = await loadUserTags(db, user_id);
     const favoriteDish = await computeFavoriteDish(db, OPENID);
@@ -349,7 +355,8 @@ exports.main = async function (event) {
       total_orders,
       last_payment_at,
       last_verify_at,
-      total_spent_30d,
+      last_active_at,
+      value_tier,
       tagList,
       favoriteDish
     );

@@ -267,7 +267,7 @@ exports.main = async (event, context) => {
         try {
           seg = await userLifecycle.resolveUserSegmentForUser(db, row.user_id);
         } catch (e0) {
-          seg = 'general';
+          seg = 'prospect';
         }
       }
       const statStore = row.store_id != null ? String(row.store_id).trim() : '';

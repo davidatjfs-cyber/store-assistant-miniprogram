@@ -83,13 +83,13 @@ const EXPECTED_RULES = {
   },
   mjx_rule_repurchase: {
     priority: 80,
-    target_tags: ['general'],
+    target_tags: ['active'],
     template_id: 'mjx_tpl_return_001',
     trigger_type: 'payment'
   },
   mjx_rule_recall_7d: {
     priority: 90,
-    target_tags: ['inactive'],
+    target_tags: ['dormant'],
     template_id: 'mjx_tpl_recall_001',
     trigger_type: 'inactivity'
   },
@@ -521,7 +521,7 @@ exports.main = async function (event, context) {
   });
   report.part2_user_context.user_tags_after_sync = tagList;
   report.part2_user_context.has_new_tag = tagList.indexOf('new') >= 0;
-  report.part2_user_context.has_general_tag = tagList.indexOf('general') >= 0;
+  report.part2_user_context.has_active_tag = tagList.indexOf('active') >= 0;
 
   let enginePayload;
   if (event.skip_engine_call) {
@@ -614,7 +614,7 @@ exports.main = async function (event, context) {
     repurchase_fire_count: repurchaseFires.length,
     incorrectly_triggered: repurchaseFires.length > 0,
     reason_ok:
-      '新客仅有 new 无 general，mjx_rule_repurchase 的 target_tags 为 [general]，不应命中'
+      '新客仅有 new 无 active，mjx_rule_repurchase 的 target_tags 为 [active]，不应命中'
   };
 
   report.part5_stats_after_issue = await aggregateStatsForRuleToday(db, 'mjx_rule_new_convert');

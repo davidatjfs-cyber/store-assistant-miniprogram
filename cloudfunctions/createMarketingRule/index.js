@@ -17,7 +17,7 @@ function normalizeRole(row) {
 
 var VALID_TRIGGER_TYPES = ['payment', 'inactivity', 'manual'];
 var VALID_ACTION_TYPES = ['send_voucher'];
-var VALID_TARGET_TAGS = ['new', 'vip', 'frequent', 'inactive', 'high_value', 'low_value', 'general'];
+var VALID_TARGET_TAGS = ['prospect', 'new', 'active', 'at_risk', 'dormant', 'churned', 'vip', 'regular', 'low'];
 
 exports.main = async function (event) {
   const { OPENID } = cloud.getWXContext();

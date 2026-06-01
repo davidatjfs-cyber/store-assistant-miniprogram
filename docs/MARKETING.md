@@ -15,7 +15,7 @@
 | `priority` | number | 可选；**数字越大优先级越高**。同一用户同一天（上海日历日）在 `payment` / `inactivity` 路径上**只执行最高优先级且实际发券成功的一条**；其余命中规则会记 `marketing_blocked`，`reason: lower_priority_suppressed` |
 | `daily_user_limit` | number | 可选；单用户**当天**（上海日）该规则最多触发次数；超出则不发券并记 `marketing_blocked`，`reason: daily_user_limit` |
 | `global_daily_limit` | number | 可选；该规则**当天**全局最多发放次数（见 `marketing_stats.issued_count`）；超出则不发券并记 `marketing_blocked`，`reason: global_daily_limit` |
-| `target_tags` | string[] | 可选；**非空**时，用户 `user_tags` 中须**至少命中其一**才允许触发；未配置或空数组表示不限制。示例：`["inactive"]` 召回券、`["vip"]` 高价值券 |
+| `target_tags` | string[] | 可选；**非空**时，用户 `user_tags` / `users.lifecycle_stage` / `users.value_tier` 中须**至少命中其一**才允许触发；未配置或空数组表示不限制。标签口径以 HRMS 为准：生命周期 `prospect` / `new` / `active` / `at_risk` / `dormant` / `churned`，价值层级 `vip` / `regular` / `low` |
 | `auto_disable_roi_threshold` | number | 可选；**近 3 日**（上海日）汇总 ROI（`revenue / issued_value`）**持续低于**该阈值且 `issued_value` 样本足够时，`daily_reconcile` 将 **`active=false`** 并写 `analytics_logs`：`rule_auto_disabled` |
 | `dynamic_priority` | number | 可选；**动态排序分**，在 `daily_reconcile` 中按近 3 日 ROI 自动升降；执行规则时与 `priority` 二选一参与排序：**有 `dynamic_priority` 用其值，否则用 `priority`** |
 | `created_at` | date | 创建时间 |
@@ -41,7 +41,7 @@
 | `rule_id` | `marketing_rules._id` |
 | `date` | 上海日历日 `YYYY-MM-DD` |
 | `store_id` | 发券上下文门店（与 `user_vouchers.store_id` 一致；无则 `''`） |
-| `user_segment` | 发券时刻用户分群：`vip` / `new` / `inactive` / `high_value` / `frequent` / `low_value` / `general`（按标签优先级解析，见代码 `resolveUserSegment`） |
+| `user_segment` | 发券时刻用户生命周期分群：`prospect` / `new` / `active` / `at_risk` / `dormant` / `churned`（以 HRMS lifecycle 为准；`value_tier` 只用于规则筛选，不覆盖统计分群） |
 | `issued_count` | 当日该规则发放张数（营销发券成功时 `+1`） |
 | `issued_value` | 当日发放券的**面值合计**（**分**；取 `voucher_templates.value` × 张数） |
 | `cost` | 当日券**成本**合计（**分**；模板有 `cost_fen` 则用其累加，否则默认与面值增量相同） |
@@ -62,7 +62,7 @@
 | `hook` | 说明 |
 |--------|------|
 | `post_payment` | 入参：`user_id`, `openid`, `order_id`, `store_id`, `amount_fen`, `is_first_order`。先校验近 7 日 `marketing_rule_fires` **是否已达 3 次**（**≥3 则整单营销跳过**，`marketing_blocked` / `marketing_frequency_cap`）。规则按 `priority` 降序；**同一用户同一天仅一条成功发券**；成功时累加 `marketing_stats`（`issued_count`、`issued_value`、`cost`），并 `syncMarketingTouchAfterFire` |
-| `inactivity_scan` | 全量扫描；同上优先级与单日一条；命中用户先 **`updateUserTags`**（含 `inactive`），再校验频控后发券 |
+| `inactivity_scan` | 全量扫描；同上优先级与单日一条；命中用户先 **`updateUserTags`**（写入 HRMS 生命周期标签，如 `dormant` / `churned`），再校验频控后发券 |
 | `manual` | 入参：`user_id`, `rule_id`, 可选 `openid`、`store_id`；频控 + `tryExecuteRule`；成功后 **`updateUserTags`** |
 | `daily_reconcile` | 可选 `limit`（默认 300，最大 500）、`skip`：分批 **全量重算** `users` 的 `total_spent_30d` / `visit_count_30d` 并写 `last_30d_reset_at`；对**上海当日与昨日**的 `marketing_stats` 重算 **`roi`**；**规则维护**：近 3 日 ROI 低于 `auto_disable_roi_threshold` 则自动关规则（`rule_auto_disabled`）；并按 ROI 调整各规则 **`dynamic_priority`** |
 
@@ -92,19 +92,20 @@
 | 字段 | 说明 |
 |------|------|
 | `user_id` | `users._id` |
-| `tag` | `high_value` / `inactive` / `new` / **`vip`** / **`frequent`** / **`low_value`** / **`general`**（复购普通客，`Users.total_orders >= 2` 且非 new/vip 时由 `updateUserTags` 写入） |
+| `tag` | HRMS 生命周期标签：`prospect` / `new` / `active` / `at_risk` / `dormant` / `churned`；可选 HRMS 价值层级标签：`vip` / `regular` / `low` |
 | `updated_at` | 更新时间 |
 
 **分段标签（自动，统一函数 `updateUserTags`）**
 
-以下标签由 **`updateUserTags(user_id)`** 统一计算：先删除该用户在 `user_tags` 中的**托管标签**，再按规则重写（托管集合：`vip`、`frequent`、`low_value`、`inactive`、`new`、`high_value`）。
+以下标签由 **`updateUserTags(user_id)`** 统一计算：先删除该用户在 `user_tags` 中的**托管标签**，再按 HRMS 规则重写，同时同步 `users.lifecycle_stage` / `users.value_tier`。
 
-- **`vip`**：`total_spent_30d` **> 50000**
-- **`frequent`**：`visit_count_30d` **≥ 5**
-- **`low_value`**：`total_spent_30d` **< 5000**（与 `vip` 互斥）
-- **`inactive`**：与**当前启用的 inactivity 类 `marketing_rules`** 一致——若用户对**任意一条**规则满足「注册满 N 天、N 天内无核销、且有过支付」则打标（内部复用与扫描相同的判定）
-- **`new`**：`Users.total_orders === 1`，或支付回调传入 `is_first_order` 且订单数未大于 1
-- **`high_value`**：当次支付 `single_pay_fen ≥ 10000`，或近一年已支付订单中存在单笔 **≥ 10000 分**
+- **`prospect`**：累计下单数为 0。
+- **`new`**：累计下单 1 次，且最近 14 天内到店/支付/核销。
+- **`active`**：累计下单 ≥ 2 次，且最近 14 天内到店/支付/核销。
+- **`at_risk`**：最近 14-30 天未到店/支付/核销。
+- **`dormant`**：30 天以上未到店/支付/核销，且累计下单 ≥ 2 次。
+- **`churned`**：30 天以上未到店/支付/核销，且历史仅下过 1 单。
+- **`vip` / `regular` / `low`**：价值层级按 HRMS `value_tier` 写入；小程序不再用 30 天消费阈值自造 VIP/高低价值。
 
 同步时机：**`paymentCallback`**（带 `is_first_order`、`single_pay_fen`）、**`verifyVoucher`**、**`runMarketingEngine`**（`inactivity_scan` 命中用户 / `manual` 发券后 / `daily_reconcile` 每用户兜底）。
 
@@ -145,11 +146,11 @@
 }
 ```
 
-**仅 inactive 用户的 7 天召回**
+**仅 dormant 用户的召回**
 
 ```json
 {
-  "_id": "mkt_inactive_7d",
+  "_id": "mkt_dormant_winback",
   "name": "7天未核销召回",
   "trigger_type": "inactivity",
   "trigger_value": "7天",
@@ -157,7 +158,7 @@
   "action_config": "tpl_recall_20",
   "active": true,
   "priority": 5,
-  "target_tags": ["inactive"],
+  "target_tags": ["dormant"],
   "created_at": { "$date": "2026-03-29T00:00:00.000Z" }
 }
 ```

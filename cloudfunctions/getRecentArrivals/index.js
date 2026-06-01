@@ -60,13 +60,15 @@ function daysAgoLabel(isoOrDate) {
 
 function tagLabels(tags) {
   const map = {
-    vip: 'VIP',
-    frequent: '常客',
-    inactive: '未活跃',
+    prospect: '潜在新客',
     new: '新客',
-    high_value: '高价值',
-    low_value: '低价值',
-    general: '普通'
+    active: '活跃客',
+    at_risk: '临界客',
+    dormant: '沉睡老客',
+    churned: '流失客',
+    vip: 'VIP',
+    regular: '常规价值',
+    low: '低价值'
   };
   const out = [];
   (tags || []).forEach(function (t) {
@@ -74,6 +76,25 @@ function tagLabels(tags) {
     out.push(map[k] || k);
   });
   return out;
+}
+
+function lifecycleLabel(stage) {
+  const map = {
+    prospect: '潜在新客',
+    new: '新客',
+    active: '活跃客',
+    at_risk: '临界客',
+    dormant: '沉睡老客',
+    churned: '流失客'
+  };
+  return map[stage] || map.prospect;
+}
+
+function normalizeLifecycleStage(stage) {
+  const s = String(stage || '').trim();
+  if (s === 'prospect' || s === 'new' || s === 'active' || s === 'at_risk' || s === 'dormant' || s === 'churned') return s;
+  if (s === 'regular' || s === 'vip') return 'active';
+  return 'prospect';
 }
 
 // 返回 { name, surname, gender, title }，title 为已补全的中文称谓（如「张先生」）
@@ -142,8 +163,9 @@ exports.main = async function (event, context) {
       const name = prof.name;
       const lastT = profile.last_visit_time || row.created_at;
       const tags = Array.isArray(profile.tags) ? profile.tags : [];
+      const stage = normalizeLifecycleStage(profile.lifecycle_stage || profile.user_level);
       const isVip =
-        profile.user_level === 'vip' || tags.indexOf('vip') >= 0;
+        profile.value_tier === 'vip' || tags.indexOf('vip') >= 0;
       const fav = profile.favorite_dish != null ? String(profile.favorite_dish).trim() : '';
       items.push({
         user_id: uid,
@@ -152,11 +174,13 @@ exports.main = async function (event, context) {
         gender: prof.gender,
         title: prof.title,
         level_suffix: isVip ? '（VIP）' : '',
-        is_new: !!profile.is_new,
+        is_new: stage === 'new',
         total_visits: profile.total_visits != null ? profile.total_visits : 0,
         recent_label: daysAgoLabel(lastT),
         tag_labels: tagLabels(tags),
-        user_level: profile.user_level || 'regular',
+        user_level: stage,
+        user_level_label: lifecycleLabel(stage),
+        value_tier: profile.value_tier || '',
         favorite_dish: fav,
         created_at: row.created_at
       });

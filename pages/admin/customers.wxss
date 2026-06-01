@@ -64,6 +64,10 @@ page { background: #0d0d0d; }
 .level-tag--vip { background: linear-gradient(135deg, #c9a96e, #d4b87a); color: #0d0d0d; }
 .level-tag--active { background: rgba(201,169,110,0.10); color: #d4b87a; border: 1rpx solid rgba(201,169,110,0.16); }
 .level-tag--new { background: rgba(232,224,212,0.08); color: #8a7e72; }
+.level-tag--prospect { background: rgba(148,163,184,0.10); color: #94a3b8; border: 1rpx solid rgba(148,163,184,0.16); }
+.level-tag--at_risk { background: rgba(240,179,90,0.10); color: #f0b35a; border: 1rpx solid rgba(240,179,90,0.16); }
+.level-tag--dormant { background: rgba(217,118,118,0.10); color: #d97676; border: 1rpx solid rgba(217,118,118,0.16); }
+.level-tag--churned { background: rgba(183,172,161,0.10); color: #b7aca1; border: 1rpx solid rgba(183,172,161,0.16); }
 
 .customer-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12rpx; border-top: 1rpx solid rgba(201,169,110,0.08); padding-top: 16rpx; }
 .customer-stat { text-align: center; }

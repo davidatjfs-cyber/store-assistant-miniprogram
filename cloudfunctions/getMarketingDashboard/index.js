@@ -37,7 +37,7 @@ function mergeRow(agg, row) {
   agg.revenue_fen += row.revenue || 0;
   agg.issued_value_fen += row.issued_value || 0;
   agg.cost_fen += row.cost || 0;
-  const seg = row.user_segment || 'general';
+  const seg = row.user_segment || 'prospect';
   if (!agg.by_segment[seg]) {
     agg.by_segment[seg] = {
       issued_count: 0,

@@ -21,9 +21,7 @@
       <view class="arrival-head">
         <view class="arrival-name-row">
           <text class="arrival-name">{{item.display_name}}{{item.level_suffix}}</text>
-          <text class="level-tag level-tag--vip" wx:if="{{item.user_level === 'vip'}}">VIP</text>
-          <text class="level-tag level-tag--new" wx:elif="{{item.user_level === 'new'}}">新客</text>
-          <text class="level-tag level-tag--regular" wx:else>常客</text>
+          <text class="level-tag level-tag--{{item.user_level || 'prospect'}}">{{item.user_level_label || '潜在新客'}}</text>
         </view>
       </view>
       <text class="arrival-line">来店：{{item.total_visits}}次</text>

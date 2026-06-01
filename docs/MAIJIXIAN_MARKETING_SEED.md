@@ -37,9 +37,9 @@
 - 已补充 **`price`**（与面值同分，便于 `createPayment` 上架购买）、**`stock: -1`**、**`usage_rule`**。
 - 营销发券的过期时间：引擎已支持按模板 **`valid_days`** 计算（未设则默认 30 天）。
 
-### `general` 标签与「复购规则」
+### `active` 生命周期与「复购规则」
 
-规则 2 的 `target_tags` 为 **`["general"]`**。代码已在 `updateUserTags` 中于 **`Users.total_orders >= 2`** 且非 `vip`、非 `new` 时写入 **`general`**，与复购场景一致。
+规则 2 的 `target_tags` 为 **`["active"]`**。代码已在 `updateUserTags` 中按 HRMS 生命周期写入 **`active`**（累计下单 ≥ 2 且最近 14 天内有到店/支付/核销），与 HRMS 客户定义一致。
 
 ---
 
@@ -65,7 +65,7 @@
 | `user_vouchers` | 新增 1 条，`template_id === mjx_tpl_new_001`，`marketing_rule_id === mjx_rule_new_convert`，`store_id` 与订单一致 |
 | `marketing_rule_fires` | 新增 1 条，`rule_id`、`user_id`、`fire_day` 为当日上海日 |
 | `analytics_logs` | `action === marketing_triggered`，`metadata.rule_id` 为 `mjx_rule_new_convert` |
-| **不会** | 复购规则要求 `general` + 实付≥3000：首单仅有 `new`，**不应**走复购规则 |
+| **不会** | 复购规则要求 `active` + 实付≥3000：首单仅有 `new`，**不应**走复购规则 |
 
 ### SQL/控制台核对（示例字段）
 

@@ -1,10 +1,18 @@
 /**
- * 30d 指标（增量 + 日切全量兜底）、user_tags 统一覆盖、营销统计 cost/roi、触达频控
+ * 30d 指标（增量 + 日切全量兜底）、HRMS lifecycle 标签统一覆盖、营销统计 cost/roi、触达频控
  * paymentCallback / verifyVoucher 目录下同名文件请保持与本文件一致
  */
 const THIRTY_MS = 30 * 24 * 60 * 60 * 1000;
+const FOURTEEN_MS = 14 * 24 * 60 * 60 * 1000;
 
 const MANAGED_USER_TAGS = [
+  'prospect',
+  'active',
+  'at_risk',
+  'dormant',
+  'churned',
+  'regular',
+  'low',
   'vip',
   'frequent',
   'low_value',
@@ -13,6 +21,9 @@ const MANAGED_USER_TAGS = [
   'high_value',
   'general'
 ];
+
+const HRMS_LIFECYCLE_STAGES = ['prospect', 'new', 'active', 'at_risk', 'dormant', 'churned'];
+const HRMS_VALUE_TIERS = ['vip', 'regular', 'low'];
 
 let _inactivityRulesCache = { at: 0, rules: [] };
 const INACTIVITY_RULES_TTL_MS = 120000;
@@ -115,13 +126,12 @@ function resolveUserSegment(tagNames) {
   for (let i = 0; i < tagNames.length; i++) {
     set[tagNames[i]] = true;
   }
-  if (set.vip) return 'vip';
-  if (set.new) return 'new';
-  if (set.inactive) return 'inactive';
-  if (set.high_value) return 'high_value';
-  if (set.frequent) return 'frequent';
-  if (set.low_value) return 'low_value';
-  return 'general';
+  for (let j = 0; j < HRMS_LIFECYCLE_STAGES.length; j++) {
+    if (set[HRMS_LIFECYCLE_STAGES[j]]) return HRMS_LIFECYCLE_STAGES[j];
+  }
+  if (set.inactive) return 'dormant';
+  if (set.general || set.frequent || set.high_value) return 'active';
+  return 'prospect';
 }
 
 async function fetchUserTagNames(db, userId) {
@@ -139,6 +149,79 @@ async function fetchUserTagNames(db, userId) {
 async function resolveUserSegmentForUser(db, userId) {
   const tags = await fetchUserTagNames(db, userId);
   return resolveUserSegment(tags);
+}
+
+function toMs(v) {
+  if (!v) return 0;
+  if (typeof v === 'number') return v;
+  if (v instanceof Date) return v.getTime();
+  if (typeof v.toDate === 'function') return v.toDate().getTime();
+  const t = new Date(v).getTime();
+  return isNaN(t) ? 0 : t;
+}
+
+function maxTime(values) {
+  let max = 0;
+  for (let i = 0; i < values.length; i++) {
+    const t = toMs(values[i]);
+    if (t > max) max = t;
+  }
+  return max;
+}
+
+function getOrderCount(user, hints) {
+  const fields = [
+    user && user.total_orders,
+    user && user.payment_count,
+    user && user.pos_order_count,
+    user && user.order_count
+  ];
+  const hinted = parseInt(hints && hints.total_orders, 10);
+  if (!isNaN(hinted) && hinted >= 0) return hinted;
+  let max = 0;
+  for (let i = 0; i < fields.length; i++) {
+    const n = parseInt(fields[i], 10);
+    if (!isNaN(n) && n > max) max = n;
+  }
+  if (hints && hints.is_first_order && max <= 1) return 1;
+  return max;
+}
+
+function deriveHrmsLifecycleStage(user, hints) {
+  user = user || {};
+  hints = hints || {};
+  const orderCount = getOrderCount(user, hints);
+  if (orderCount <= 0) return 'prospect';
+
+  const lastVisitMs = maxTime([
+    hints.last_visit_at,
+    user.last_visit_at,
+    user.last_visit,
+    user.last_verify_at,
+    user.last_payment_at,
+    user.last_active_at
+  ]);
+  const ageMs = lastVisitMs ? Date.now() - lastVisitMs : Infinity;
+
+  if (ageMs <= FOURTEEN_MS) {
+    return orderCount === 1 ? 'new' : 'active';
+  }
+  if (ageMs <= THIRTY_MS) return 'at_risk';
+  return orderCount >= 2 ? 'dormant' : 'churned';
+}
+
+function normalizeHrmsValueTier(value) {
+  const s = String(value || '').trim();
+  if (s === 'vip' || s === 'regular' || s === 'low') return s;
+  return '';
+}
+
+function normalizeTargetTag(tag) {
+  const s = String(tag || '').trim();
+  if (s === 'inactive') return 'dormant';
+  if (s === 'general' || s === 'frequent' || s === 'high_value') return 'active';
+  if (s === 'low_value') return 'low';
+  return s;
 }
 
 function effectiveRulePriority(rule) {
@@ -269,7 +352,7 @@ async function bumpMarketingStatsIssued(
     const seg =
       userSegment != null && String(userSegment).trim()
         ? String(userSegment).trim()
-        : 'general';
+        : 'prospect';
     const q = await db
       .collection('marketing_stats')
       .where({
@@ -323,7 +406,7 @@ async function bumpMarketingStatsUsed(db, _, ruleId, revenueFen, storeId, userSe
     const seg =
       userSegment != null && String(userSegment).trim()
         ? String(userSegment).trim()
-        : 'general';
+        : 'prospect';
     const q = await db
       .collection('marketing_stats')
       .where({
@@ -443,10 +526,21 @@ async function userMatchesTargetTags(db, userId, targetTags) {
     .get();
   const have = {};
   for (let i = 0; i < snap.data.length; i++) {
-    have[snap.data[i].tag] = true;
+    have[normalizeTargetTag(snap.data[i].tag)] = true;
+  }
+  try {
+    const udoc = await db.collection('users').doc(userId).get();
+    const u = udoc && udoc.data;
+    if (u) {
+      have[normalizeTargetTag(u.lifecycle_stage || deriveHrmsLifecycleStage(u, {}))] = true;
+      const tier = normalizeHrmsValueTier(u.value_tier);
+      if (tier) have[tier] = true;
+    }
+  } catch (e) {
+    console.warn('userMatchesTargetTags users fallback', e);
   }
   for (let j = 0; j < targetTags.length; j++) {
-    if (have[targetTags[j]]) return true;
+    if (have[normalizeTargetTag(targetTags[j])]) return true;
   }
   return false;
 }
@@ -613,39 +707,14 @@ async function updateUserTags(db, _, userId, hints) {
     }
   }
 
-  const spent30 = user.total_spent_30d != null ? user.total_spent_30d : 0;
-  const visits = user.visit_count_30d != null ? user.visit_count_30d : 0;
-
-  const desired = [];
-
-  if (spent30 > 50000) {
-    desired.push('vip');
-  } else if (spent30 < 5000) {
-    desired.push('low_value');
-  }
-
-  if (visits >= 5) {
-    desired.push('frequent');
-  }
-
-  if (await userQualifiesAnyInactivity(db, user)) {
-    desired.push('inactive');
-  }
-
-  if (totalOrders === 1 || (hints.is_first_order && totalOrders <= 1)) {
-    desired.push('new');
-  }
-
-  const singlePay = hints.single_pay_fen != null ? parseInt(hints.single_pay_fen, 10) : NaN;
-  if (!isNaN(singlePay) && singlePay >= 10000) {
-    desired.push('high_value');
-  } else if (await hasHighValueOrderRecently(db, _, openid)) {
-    desired.push('high_value');
-  }
-
-  if (totalOrders >= 2 && desired.indexOf('vip') < 0 && desired.indexOf('new') < 0) {
-    desired.push('general');
-  }
+  const lifecycleStage = deriveHrmsLifecycleStage(user, {
+    total_orders: totalOrders,
+    is_first_order: hints.is_first_order,
+    last_visit_at: hints.last_visit_at
+  });
+  const valueTier = normalizeHrmsValueTier(hints.value_tier || user.value_tier);
+  const desired = [lifecycleStage];
+  if (valueTier) desired.push(valueTier);
 
   const uniq = {};
   const finalTags = [];
@@ -678,6 +747,13 @@ async function updateUserTags(db, _, userId, hints) {
         }
       });
     }
+    await db.collection('users').doc(userId).update({
+      data: {
+        lifecycle_stage: lifecycleStage,
+        value_tier: valueTier || user.value_tier || '',
+        updated_at: db.serverDate()
+      }
+    }).catch(function () {});
   } catch (e3) {
     console.error('updateUserTags', e3);
   }
@@ -773,6 +849,8 @@ module.exports = {
   effectiveRulePriority,
   resolveUserSegment,
   resolveUserSegmentForUser,
+  deriveHrmsLifecycleStage,
+  normalizeHrmsValueTier,
   aggregateRuleStatsForDates,
   recomputeUserActivity30dFull,
   applyPaymentIncrement30d,

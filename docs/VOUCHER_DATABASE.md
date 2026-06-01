@@ -66,7 +66,7 @@
 | `used_at` | date | 核销时间；未核销为 `null` |
 | `qr_code` | string | 扫码内容，格式 `voucher:{voucher_id}` |
 | `marketing_rule_id` | string | 可选；营销引擎发放的券对应 `marketing_rules._id` |
-| `marketing_user_segment` | string | 可选；营销发券时的用户分群（`vip` / `new` / `inactive` 等），核销统计 `marketing_stats` 时优先用此字段与发券 `store_id` 对齐分桶 |
+| `marketing_user_segment` | string | 可选；营销发券时的 HRMS 生命周期分群（`prospect` / `new` / `active` / `at_risk` / `dormant` / `churned`），核销统计 `marketing_stats` 时优先用此字段与发券 `store_id` 对齐分桶 |
 | `created_at` | date | 发券时间 |
 | `updated_at` | date | 最后更新时间（核销、过期标记等时写入，可选） |
 
