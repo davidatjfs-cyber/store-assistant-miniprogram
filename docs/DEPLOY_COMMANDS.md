@@ -23,6 +23,7 @@ cd ../getUserVouchers && npm install
 cd ../verifyVoucher && npm install
 cd ../revertVoucher && npm install
 cd ../migrateUsers && npm install
+cd ../getCustomerList && npm install
 cd ../getStaffProfile && npm install
 cd ../runMarketingEngine && npm install
 cd ../dailyCheckInactiveUsers && npm install
@@ -47,6 +48,7 @@ cd ../exportTableCodesPdf && npm install
    - `cloudfunctions/verifyVoucher`
    - `cloudfunctions/revertVoucher`
    - `cloudfunctions/migrateUsers`（迁移完成后可删除部署）
+   - `cloudfunctions/getCustomerList`（客户管理列表）
    - `cloudfunctions/getStaffProfile`
    - `cloudfunctions/runMarketingEngine`
    - `cloudfunctions/dailyCheckInactiveUsers`（上传后请在云开发控制台确认**定时触发器**已创建）

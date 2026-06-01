@@ -1,5 +1,20 @@
 var roleUtil = require('../../utils/role.js');
 
+function buildCustomerListRequestData(keyword, app) {
+  var gd = (app && app.globalData) || {};
+  var role = gd.userRole || '';
+  var storeId = '';
+
+  if (role !== 'admin') {
+    storeId = (gd.staffStoreId || (gd.scanParams || {}).store_id) || '';
+  }
+
+  return {
+    keyword: keyword || '',
+    store_id: storeId
+  };
+}
+
 Page({
   data: {
     customers: [],
@@ -27,11 +42,10 @@ Page({
   loadData: function() {
     var self = this;
     var app = getApp();
-    var storeId = (app.globalData.staffStoreId || (app.globalData.scanParams || {}).store_id) || '';
     self.setData({ loading: true });
     wx.cloud.callFunction({
       name: 'getCustomerList',
-      data: { keyword: self.data.keyword, store_id: storeId },
+      data: buildCustomerListRequestData(self.data.keyword, app),
       success: function(res) {
         var r = res.result || {};
         if (r.success) {
@@ -68,8 +82,8 @@ Page({
 
     var self = this;
     var app = getApp();
-    var app = getApp();
-    var storeId = (app.globalData.staffStoreId || (app.globalData.scanParams || {}).store_id) || '';
+    var requestData = buildCustomerListRequestData('', app);
+    var storeId = requestData.store_id;
 
     wx.cloud.callFunction({
       name: 'getVoucherTemplates',

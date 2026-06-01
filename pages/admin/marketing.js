@@ -26,6 +26,42 @@ function formatRoi(v) {
   return Number(v).toFixed(2);
 }
 
+function formatYuanFromFen(fen) {
+  var n = parseInt(fen, 10) || 0;
+  if (n % 100 === 0) return String(n / 100);
+  return (n / 100).toFixed(2);
+}
+
+function formatVoucherTemplateOption(t) {
+  t = t || {};
+  var valueFen = t.value != null ? t.value : (t.face_value != null ? t.face_value : 0);
+  var parts = [];
+  if (valueFen) parts.push('面值' + formatYuanFromFen(valueFen) + '元');
+  if (t.min_spend) parts.push('满' + formatYuanFromFen(t.min_spend) + '元可用');
+  if (t.store_display_name || t.storeName) parts.push(t.store_display_name || t.storeName);
+  var suffix = parts.length ? '（' + parts.join('，') + '）' : '';
+  return {
+    id: t._id,
+    name: (t.name || t.template_name || t._id || '未命名券模板') + suffix
+  };
+}
+
+function formatTriggerValueDisplay(triggerType, triggerValue) {
+  if (triggerType === 'payment') {
+    var fen = parseInt(triggerValue, 10) || 0;
+    if (fen <= 0) return '支付成功后发券（无消费门槛）';
+    return '实付满' + formatYuanFromFen(fen) + '元后发券';
+  }
+  if (triggerType === 'inactivity') {
+    var days = parseInt(triggerValue, 10) || 7;
+    return days + '天未到店后发券';
+  }
+  if (triggerType === 'manual') {
+    return '手动选择客户后发券';
+  }
+  return '';
+}
+
 function buildStoreChecks(selectedIds) {
   return STORES.map(function (s) {
     return { id: s.id, name: s.name, checked: selectedIds.indexOf(s.id) >= 0 };
@@ -99,8 +135,7 @@ Page({
           var r = res.result || {};
           var raw = (r.success && r.data) || [];
           var list = raw.filter(function (t) { return t.is_active !== false; }).map(function (t) {
-            var label = t.name + ' (\u00a5' + ((t.price || 0) / 100).toFixed(2) + ')';
-            return { id: t._id, name: label };
+            return formatVoucherTemplateOption(t);
           });
           self.setData({ templateOptions: list });
           resolve();
@@ -145,13 +180,8 @@ Page({
               return tv;
             }).join('\u3001');
           }
-          var triggerValDisplay = '';
-          if (x.trigger_type === 'payment') {
-            triggerValDisplay = x.trigger_value ? '\u00a5' + (parseInt(x.trigger_value, 10) / 100).toFixed(2) : '\u65e0\u95e8\u69db';
-          } else if (x.trigger_type === 'inactivity') {
-            triggerValDisplay = x.trigger_value ? x.trigger_value + '\u5929' : '7\u5929';
-          }
-          var templateName = x.template_id;
+          var triggerValDisplay = formatTriggerValueDisplay(x.trigger_type, x.trigger_value);
+          var templateName = x.template_name || x.template_id;
           for (var m = 0; m < templateOptions.length; m++) {
             if (templateOptions[m].id === x.template_id) { templateName = templateOptions[m].name; break; }
           }

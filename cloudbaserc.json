@@ -13,6 +13,24 @@
       "installDependency": true
     },
     {
+      "name": "getCustomerList",
+      "type": "Event",
+      "handler": "index.main",
+      "timeout": 15,
+      "runtime": "Nodejs16.13",
+      "memorySize": 256,
+      "installDependency": true
+    },
+    {
+      "name": "getMarketingRules",
+      "type": "Event",
+      "handler": "index.main",
+      "timeout": 15,
+      "runtime": "Nodejs16.13",
+      "memorySize": 256,
+      "installDependency": true
+    },
+    {
       "name": "sendSubscribeMessage",
       "type": "Event",
       "handler": "index.main",

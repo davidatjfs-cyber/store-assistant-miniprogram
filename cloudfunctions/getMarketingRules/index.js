@@ -8,6 +8,7 @@ cloud.init({
 });
 
 const db = cloud.database();
+const _ = db.command;
 
 function shanghaiDateKey() {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Shanghai' });
@@ -39,6 +40,17 @@ function isDbCollectionMissingError(err) {
     s.indexOf('not exist') !== -1 ||
     s.indexOf('ResourceNotFound') !== -1
   );
+}
+
+function pickTemplateId(doc) {
+  if (!doc) return '';
+  if (doc.action_config && doc.action_config.template_id) {
+    return String(doc.action_config.template_id);
+  }
+  if (typeof doc.action_config === 'string') {
+    return doc.action_config;
+  }
+  return '';
 }
 
 exports.main = async function (event, context) {
@@ -84,6 +96,28 @@ exports.main = async function (event, context) {
       rulesWhere.store_id = store_id;
     }
     const rulesSnap = await db.collection('marketing_rules').where(rulesWhere).limit(200).get();
+    const templateIds = [];
+    const seenTemplateIds = {};
+    for (let i0 = 0; i0 < rulesSnap.data.length; i0++) {
+      const tid = pickTemplateId(rulesSnap.data[i0]);
+      if (tid && !seenTemplateIds[tid]) {
+        seenTemplateIds[tid] = true;
+        templateIds.push(tid);
+      }
+    }
+    const templateNameById = {};
+    if (templateIds.length) {
+      const templateSnap = await db
+        .collection('voucher_templates')
+        .where({ _id: _.in(templateIds.slice(0, 100)) })
+        .limit(100)
+        .get()
+        .catch(function () { return { data: [] }; });
+      for (let t = 0; t < templateSnap.data.length; t++) {
+        const tpl = templateSnap.data[t];
+        templateNameById[tpl._id] = tpl.name || tpl.template_name || '';
+      }
+    }
     const rules = [];
     for (let j = 0; j < rulesSnap.data.length; j++) {
       const doc = rulesSnap.data[j];
@@ -91,6 +125,7 @@ exports.main = async function (event, context) {
       const agg = aggByRule[id] || { issued_value_fen: 0, revenue_fen: 0 };
       const roi =
         agg.issued_value_fen > 0 ? agg.revenue_fen / agg.issued_value_fen : null;
+      const templateId = pickTemplateId(doc);
       rules.push({
         rule_id: id,
         name: doc.name || '',
@@ -100,7 +135,8 @@ exports.main = async function (event, context) {
         store_id: doc.store_id || '',
         trigger_type: doc.trigger_type || '',
         action_type: doc.action_type || '',
-        template_id: (doc.action_config && doc.action_config.template_id) || '',
+        template_id: templateId,
+        template_name: templateNameById[templateId] || '',
         target_tags: doc.target_tags || [],
         trigger_value: doc.trigger_value != null ? String(doc.trigger_value) : '',
         daily_user_limit: doc.daily_user_limit != null ? doc.daily_user_limit : null,

@@ -3,6 +3,7 @@ var ENABLE_ONLOAD_DEBUG_MODAL = false;
 
 // 开发模式：无扫码参数时模拟扫码（仅开发调试用，上线前改为 false）
 var DEV_SIMULATE_SCAN = false;
+var ORDER_SUBSCRIBE_TEMPLATE_IDS = ['pyk3FCeBC4MtxptY3ZBeLUOiVx93Lmb_4pxkN8AFowE'];
 
 var roleUtil = require('../../utils/role.js');
 
@@ -24,6 +25,25 @@ var STORE_CONFIGS = {
 function getStoreConfig(scanParams) {
   var sid = (scanParams && scanParams.store_id) || '';
   return STORE_CONFIGS[sid] || STORE_CONFIGS['51866138'];
+}
+
+function canNavigateToOrder(pageData) {
+  pageData = pageData || {};
+  if (pageData.isFromScan && !pageData.hasAuthorizedMember) {
+    return false;
+  }
+  return true;
+}
+
+function getAcceptedSubscribeTemplateId(res, templateIds) {
+  res = res || {};
+  templateIds = templateIds || [];
+  for (var i = 0; i < templateIds.length; i++) {
+    if (res[templateIds[i]] === 'accept') {
+      return templateIds[i];
+    }
+  }
+  return '';
 }
 
 function buildEntrySections(role) {
@@ -459,6 +479,7 @@ Page({
 
         self.silentAssociateWecom();
         self.loadAvailableVouchers();
+        self.navigateToKeruYun();
       },
       fail: function(err) {
         wx.hideLoading();
@@ -504,7 +525,55 @@ Page({
     });
   },
 
+  requestOrderSubscribeThen: function(onAccepted) {
+    if (!wx.requestSubscribeMessage) {
+      wx.showModal({
+        title: '需要开启通知',
+        content: '当前微信版本暂不支持订阅消息授权，请升级微信后再扫码点餐。',
+        showCancel: false
+      });
+      return;
+    }
+
+    wx.requestSubscribeMessage({
+      tmplIds: ORDER_SUBSCRIBE_TEMPLATE_IDS,
+      success: function(res) {
+        if (getAcceptedSubscribeTemplateId(res, ORDER_SUBSCRIBE_TEMPLATE_IDS)) {
+          if (typeof onAccepted === 'function') onAccepted();
+          return;
+        }
+        wx.showModal({
+          title: '需要同意消息通知',
+          content: '请同意服务通知后继续点餐，门店会用于发送优惠券到账、到期提醒等服务消息。',
+          showCancel: false,
+          confirmText: '我知道了'
+        });
+      },
+      fail: function(err) {
+        var msg = (err && err.errMsg) ? err.errMsg : '订阅消息授权失败';
+        wx.showModal({
+          title: '订阅授权未完成',
+          content: msg + '\n\n请重新点击「去点餐」并同意消息通知。',
+          showCancel: false
+        });
+      }
+    });
+  },
+
   navigateToKeruYun: function() {
+    var self = this;
+    if (!canNavigateToOrder(self.data)) {
+      this.setData({ showAuthModal: true });
+      wx.showToast({ title: '请先授权手机号入会', icon: 'none' });
+      return;
+    }
+
+    self.requestOrderSubscribeThen(function() {
+      self.openKeruYunMiniProgram();
+    });
+  },
+
+  openKeruYunMiniProgram: function() {
     var app = getApp();
     var rawParams = this.data.scanParams || {};
     var params = (typeof app.getOrderLaunchParams === 'function')

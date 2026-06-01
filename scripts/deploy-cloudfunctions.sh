@@ -11,6 +11,7 @@ for name in \
   verifyVoucher \
   revertVoucher \
   migrateUsers \
+  getCustomerList \
   getStaffProfile \
   detectUserArrival \
   getRecentArrivals \

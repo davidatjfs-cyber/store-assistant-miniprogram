@@ -83,7 +83,7 @@
       </view>
 
       <view class="form-group" wx:if="{{createForm.trigger_type === 'payment'}}">
-        <text class="form-label">最低消费金额（元，0=无门槛）</text>
+        <text class="form-label">支付后发券门槛（实付金额，元；0=支付成功即发）</text>
         <input class="form-input" type="digit" placeholder="0" value="{{createForm.trigger_value}}" bindinput="onInputTriggerValue" />
       </view>
 
