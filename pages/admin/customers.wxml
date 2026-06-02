@@ -88,9 +88,6 @@
             <text class="level-tag level-tag--{{item.user_level || 'prospect'}}">{{item.user_level_label || '潜在新客'}}</text>
           </view>
           <text class="customer-join">加入于 {{item.joinDate || '—'}}</text>
-          <view class="customer-tags" wx:if="{{item.tagLabels.length}}">
-            <text class="customer-tag" wx:for="{{item.tagLabels}}" wx:for-item="t" wx:key="*this">{{t}}</text>
-          </view>
         </view>
       </view>
       <view class="customer-stats">
