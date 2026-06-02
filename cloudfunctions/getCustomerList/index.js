@@ -22,18 +22,30 @@ function normalizeLifecycleStage(stage) {
   return 'prospect'
 }
 
-// 标签中文名（与 HRMS / getRecentArrivals 一致）
+// 标签中文名（与 HRMS userLifecycle 写入 user_tags 的口径一致）
+// user_tags 实际写入：生命周期阶段(prospect/new/active/at_risk/dormant/churned) + 价值分层(vip/regular/low)
 const TAG_LABEL_MAP = {
-  vip: 'VIP',
+  // 生命周期阶段
+  prospect: '潜在新客',
+  new: '新客',
+  active: '活跃客',
+  at_risk: '临界客',
+  dormant: '沉睡老客',
+  churned: '流失客',
+  // 价值分层
+  vip: '高价值会员',
+  regular: '常客',
+  low: '低价值',
+  // 兼容历史旧标签
+  high_value: '高价值会员',
+  low_value: '低价值',
   frequent: '常客',
   inactive: '未活跃',
-  new: '新客',
-  high_value: '高价值',
-  low_value: '低价值',
   general: '普通'
 }
 function tagLabel(t) {
-  return TAG_LABEL_MAP[String(t)] || String(t)
+  // 不在映射表的标签也强制给中文兜底，避免前端出现英文 chip
+  return TAG_LABEL_MAP[String(t)] || '其他'
 }
 
 // 聚合标签：user_tags 集合 + users.tags 字段
@@ -112,7 +124,15 @@ exports.main = async (event, context) => {
     // 当前门店范围内出现过的全部标签（供前端做筛选 chips）
     const availableTagSet = new Set()
     scopedUsers.forEach(u => tagsForUser(u, tagMap).forEach(t => availableTagSet.add(t)))
-    const availableTags = Array.from(availableTagSet).map(t => ({ key: t, label: tagLabel(t) }))
+    // 按中文标签去重，避免 low/low_value 等历史别名产生重复 chip
+    const seenLabel = {}
+    const availableTags = []
+    Array.from(availableTagSet).forEach(t => {
+      const label = tagLabel(t)
+      if (seenLabel[label]) return
+      seenLabel[label] = true
+      availableTags.push({ key: t, label: label })
+    })
 
     // 标签筛选
     const tagFilter = tag ? String(tag).trim() : ''
