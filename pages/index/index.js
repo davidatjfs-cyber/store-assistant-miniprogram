@@ -62,13 +62,14 @@ function buildEntrySections(role) {
       ]
     });
   }
+  // 店长（manager）：保留「门店数据看板」+「核销」两个功能；其余总部权限仅管理员可见。
   if (role === 'manager') {
     sections.push({
-      title: '店长',
+      title: '门店',
       items: [
         {
           key: 'storedash',
-          title: '门店数据',
+          title: '门店数据看板',
           sub: '今日发券与收入',
           url: '/pages/admin/dashboard',
           icon: '店'

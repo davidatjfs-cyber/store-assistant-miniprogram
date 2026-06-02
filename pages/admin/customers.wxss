@@ -91,3 +91,72 @@ page { background: #0d0d0d; }
   font-weight: 800 !important;
 }
 .send-btn::after { border: none; }
+
+.store-switch {
+  display: flex;
+  padding: 6rpx;
+  margin-bottom: 24rpx;
+  border-radius: 999rpx;
+  background: rgba(232,224,212,0.05);
+  border: 1rpx solid rgba(201,169,110,0.14);
+}
+.store-switch-item {
+  flex: 1;
+  text-align: center;
+  padding: 16rpx 0;
+  border-radius: 999rpx;
+  font-size: 26rpx;
+  color: #8a7e72;
+  transition: color 0.2s ease;
+}
+.store-switch-item--active {
+  color: #0d0d0d;
+  font-weight: 800;
+  background: linear-gradient(135deg, #c9a96e, #d4b87a);
+  box-shadow: 0 6rpx 16rpx rgba(201,169,110,0.28);
+}
+
+/* 标签筛选 chips */
+.tag-bar { white-space: nowrap; margin-bottom: 20rpx; }
+.tag-chip {
+  display: inline-block; padding: 10rpx 24rpx; margin-right: 12rpx;
+  border-radius: 999rpx; font-size: 24rpx; color: #8a7e72;
+  background: rgba(232,224,212,0.05); border: 1rpx solid rgba(201,169,110,0.14);
+}
+.tag-chip--active {
+  color: #0d0d0d; font-weight: 800;
+  background: linear-gradient(135deg, #c9a96e, #d4b87a);
+  border-color: transparent;
+}
+
+/* 批量操作工具条 */
+.batch-bar { display: flex; align-items: center; gap: 16rpx; margin-bottom: 20rpx; }
+.batch-toggle {
+  padding: 12rpx 26rpx; border-radius: 999rpx; font-size: 24rpx; color: #d4b87a;
+  background: rgba(201,169,110,0.08); border: 1rpx solid rgba(201,169,110,0.22);
+}
+.batch-toggle--on { color: #0d0d0d; font-weight: 800; background: linear-gradient(135deg, #c9a96e, #d4b87a); }
+.batch-action { font-size: 24rpx; color: #8a7e72; padding: 12rpx 8rpx; }
+.batch-count { font-size: 24rpx; color: #d4b87a; margin-left: auto; }
+.batch-send {
+  padding: 12rpx 30rpx; border-radius: 999rpx; font-size: 24rpx; font-weight: 800; color: #0d0d0d;
+  background: linear-gradient(135deg, #c9a96e, #d4b87a);
+}
+.batch-send--disabled { opacity: 0.4; }
+
+/* 客户标签 */
+.customer-tags { display: flex; flex-wrap: wrap; gap: 8rpx; margin-top: 10rpx; }
+.customer-tag {
+  font-size: 20rpx; color: #d4b87a; padding: 4rpx 14rpx; border-radius: 999rpx;
+  background: rgba(201,169,110,0.1); border: 1rpx solid rgba(201,169,110,0.2);
+}
+
+/* 选择态 */
+.customer-item--checked { border-color: rgba(201,169,110,0.5); box-shadow: 0 0 0 2rpx rgba(201,169,110,0.4), 0 20rpx 60rpx rgba(0,0,0,0.4); }
+.select-dot {
+  width: 40rpx; height: 40rpx; border-radius: 50%; margin-right: 16rpx; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24rpx; color: #0d0d0d; font-weight: 800;
+  border: 2rpx solid rgba(201,169,110,0.4); background: rgba(232,224,212,0.04);
+}
+.select-dot--on { background: linear-gradient(135deg, #c9a96e, #d4b87a); border-color: transparent; }

@@ -9,6 +9,45 @@
     </view>
   </view>
 
+  <!-- 门店切换（仅管理员） -->
+  <view class="store-switch" wx:if="{{isAdmin}}">
+    <view
+      class="store-switch-item {{selectedStoreId === item.id ? 'store-switch-item--active' : ''}}"
+      wx:for="{{storeTabs}}"
+      wx:key="id"
+      data-id="{{item.id}}"
+      bindtap="onSelectStore"
+    >{{item.name}}</view>
+  </view>
+
+  <!-- 标签筛选（与 HRMS 同步的客户标签） -->
+  <scroll-view class="tag-bar" scroll-x wx:if="{{availableTags.length}}">
+    <view
+      class="tag-chip {{selectedTag === '' ? 'tag-chip--active' : ''}}"
+      data-tag=""
+      bindtap="onSelectTag"
+    >全部</view>
+    <view
+      class="tag-chip {{selectedTag === item.key ? 'tag-chip--active' : ''}}"
+      wx:for="{{availableTags}}"
+      wx:key="key"
+      data-tag="{{item.key}}"
+      bindtap="onSelectTag"
+    >{{item.label}}</view>
+  </scroll-view>
+
+  <!-- 批量操作工具条（仅管理员） -->
+  <view class="batch-bar" wx:if="{{isAdmin}}">
+    <view class="batch-toggle {{selectMode ? 'batch-toggle--on' : ''}}" bindtap="onToggleSelectMode">
+      {{selectMode ? '退出批量' : '批量发券'}}
+    </view>
+    <block wx:if="{{selectMode}}">
+      <view class="batch-action" bindtap="onSelectAll">全选/反选</view>
+      <view class="batch-count">已选 {{selectedCount}}</view>
+      <view class="batch-send {{selectedCount ? '' : 'batch-send--disabled'}}" bindtap="onBatchSend">发券</view>
+    </block>
+  </view>
+
   <!-- 统计概览 -->
   <view class="stats-grid">
     <view class="stat-card">
@@ -30,8 +69,15 @@
 
   <!-- 客户列表 -->
   <view wx:else class="list">
-    <view class="glass-card customer-item" wx:for="{{customers}}" wx:key="_id">
+    <view
+      class="glass-card customer-item {{item._checked ? 'customer-item--checked' : ''}}"
+      wx:for="{{customers}}"
+      wx:key="_id"
+      data-id="{{item._id}}"
+      bindtap="onToggleCustomer"
+    >
       <view class="customer-header">
+        <view class="select-dot {{item._checked ? 'select-dot--on' : ''}}" wx:if="{{selectMode}}">{{item._checked ? '✓' : ''}}</view>
         <view class="customer-avatar">
           <text class="avatar-text">{{item.phone ? item.phone.slice(-4) : '??'}}</text>
         </view>
@@ -42,6 +88,9 @@
             <text class="level-tag level-tag--{{item.user_level || 'prospect'}}">{{item.user_level_label || '潜在新客'}}</text>
           </view>
           <text class="customer-join">加入于 {{item.joinDate || '—'}}</text>
+          <view class="customer-tags" wx:if="{{item.tagLabels.length}}">
+            <text class="customer-tag" wx:for="{{item.tagLabels}}" wx:for-item="t" wx:key="*this">{{t}}</text>
+          </view>
         </view>
       </view>
       <view class="customer-stats">
@@ -62,8 +111,8 @@
           <text class="c-stat-label">最近到店</text>
         </view>
       </view>
-      <view class="action-row">
-        <button class="send-btn" size="mini" data-phone="{{item.phone}}" bindtap="onSendVoucher">
+      <view class="action-row" wx:if="{{!selectMode}}">
+        <button class="send-btn" size="mini" data-id="{{item._id}}" catchtap="onSendVoucher">
           🎁 赠送优惠券
         </button>
       </view>

@@ -4,7 +4,7 @@ cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
 
 exports.main = async (event, context) => {
-  const { phone, templateId, store_id } = event
+  const { phone, templateId, store_id, user_id } = event
   const { OPENID } = cloud.getWXContext()
 
   try {
@@ -21,31 +21,37 @@ exports.main = async (event, context) => {
     const staffStoreId = String(staffRow.store_id || staffRow.storeId || '').trim()
     const effectiveStoreId = staffStoreId || (store_id ? String(store_id).trim() : '')
 
-    // 2. 清洗手机号（去除空格、横杠等）
-    const cleanPhone = phone.replace(/[\s\-]/g, '')
-    if (!cleanPhone || cleanPhone.length < 7) return { success: false, msg: '手机号格式不正确' }
+    // 3. 查找用户：优先按 user_id（批量发券，避免回传完整手机号），否则按手机号
+    let user = null
+    if (user_id) {
+      const byId = await db.collection('users').doc(String(user_id)).get().catch(() => null)
+      if (byId && byId.data) user = byId.data
+      if (!user) return { success: false, msg: '用户不存在（user_id 无效）' }
+    } else {
+      // 清洗手机号（去除空格、横杠等）
+      const cleanPhone = String(phone || '').replace(/[\s\-]/g, '')
+      if (!cleanPhone || cleanPhone.length < 7) return { success: false, msg: '手机号格式不正确' }
 
-    // 3. 查找用户（精确匹配）
-    let userRes = await db.collection('users').where({ phone: cleanPhone }).get()
-    
-    // 如果精确匹配失败，尝试模糊匹配（兼容带区号或空格的旧数据）
-    if (userRes.data.length === 0) {
-      const _ = db.command
-      userRes = await db.collection('users').where({
-        phone: _.regex({ regexp: cleanPhone.slice(-4), options: 'i' })
-      }).get()
-      
-      // 过滤出最匹配的结果
-      userRes.data = userRes.data.filter(u => u.phone && u.phone.replace(/[\s\-]/g, '') === cleanPhone)
-    }
+      // 精确匹配
+      let userRes = await db.collection('users').where({ phone: cleanPhone }).get()
 
-    if (userRes.data.length === 0) {
-      return { 
-        success: false, 
-        msg: '用户不存在。请确认该手机号已在小程序授权过，或引导用户先扫码绑定。' 
+      // 如果精确匹配失败，尝试模糊匹配（兼容带区号或空格的旧数据）
+      if (userRes.data.length === 0) {
+        const _ = db.command
+        userRes = await db.collection('users').where({
+          phone: _.regex({ regexp: cleanPhone.slice(-4), options: 'i' })
+        }).get()
+        userRes.data = userRes.data.filter(u => u.phone && u.phone.replace(/[\s\-]/g, '') === cleanPhone)
       }
+
+      if (userRes.data.length === 0) {
+        return {
+          success: false,
+          msg: '用户不存在。请确认该手机号已在小程序授权过，或引导用户先扫码绑定。'
+        }
+      }
+      user = userRes.data[0]
     }
-    const user = userRes.data[0]
     
     // 4. 查找模板
     const tplRes = await db.collection('voucher_templates').doc(templateId).get()

@@ -177,9 +177,11 @@ exports.main = async (event, context) => {
     console.log('老会员检测结果:', { isLegacy, hasPoints: !!points, hasLevel: !!member_level });
 
     // ========== 4. 查询用户是否已存在 ==========
+    // 注意：统一按 openid 字段查询（ensureUserDoc / upsertUserByOpenid 写的都是 openid）。
+    // 此前误用 _openid 导致查不到、每次授权都新建一条重复记录。
     const userQuery = await db.collection('users')
       .where({
-        _openid: OPENID
+        openid: OPENID
       })
       .get();
 
@@ -222,7 +224,7 @@ exports.main = async (event, context) => {
     } else {
       // ========== 6. 创建新用户 ==========
       const newUserData = {
-        _openid: OPENID,
+        openid: OPENID,
         ...userData,
         total_spent: userData.total_spent || 0,
         total_orders: 0,
