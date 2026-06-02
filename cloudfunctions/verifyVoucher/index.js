@@ -85,12 +85,26 @@ exports.main = async (event, context) => {
     return fail('无法确定核销门店，请配置员工 store_id 或传入 store_id', {});
   }
 
-  const voucherId = parseVoucherId(qr_code);
-  if (!voucherId) {
-    return fail('无效的二维码', {});
-  }
+  let voucherId = parseVoucherId(qr_code);
 
   try {
+    // 「到店报码」极简核销：非 voucher: 二维码时，按 6 位短码查未使用券
+    if (!voucherId) {
+      const code = String(qr_code || '').trim();
+      if (/^[0-9]{6}$/.test(code)) {
+        const byCode = await db
+          .collection('user_vouchers')
+          .where({ short_code: code, status: 'unused' })
+          .orderBy('created_at', 'desc')
+          .limit(1)
+          .get();
+        if (byCode.data && byCode.data.length) voucherId = byCode.data[0]._id;
+      }
+    }
+    if (!voucherId) {
+      return fail('无效的券码或二维码', {});
+    }
+
     const since = new Date(Date.now() - RATE_WINDOW_MS);
     const burst = await db
       .collection('voucher_logs')

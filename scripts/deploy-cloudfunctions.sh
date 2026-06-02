@@ -25,7 +25,9 @@ for name in \
   batchTableCodes \
   exportTableCodesPdf \
   seedMaijixianMarketing \
-  verifyMaijixianSetup
+  verifyMaijixianSetup \
+  sendWinbackCampaign \
+  reconcileRedemptions
 do
   if [[ -d "$CF/$name" ]]; then
     echo "==> npm install in $name"

@@ -15,7 +15,8 @@ Page({
     editName: '',
     editSurname: '',
     editGender: '',
-    profileSaving: false
+    profileSaving: false,
+    manualCode: ''
   },
 
   // 已见到店记录（user_id|created_at），用于检测新熟客
@@ -193,6 +194,23 @@ Page({
         self.setData({ arrivals: [], arrivalsLoaded: true });
         console.error('loadRecentArrivals failed:', err && err.errMsg);
       });
+  },
+
+  // 到店报码：店员手输客人短信里的 6 位券码
+  onCodeInput: function (e) {
+    var v = (e && e.detail && e.detail.value != null) ? String(e.detail.value) : '';
+    this.setData({ manualCode: v.replace(/[^0-9]/g, '').slice(0, 6) });
+  },
+
+  onVerifyByCode: function () {
+    var code = String(this.data.manualCode || '').trim();
+    if (!/^[0-9]{6}$/.test(code)) {
+      this.setData({ lastOk: false, lastMessage: '请输入客人短信里的 6 位券码' });
+      wx.showToast({ title: '请输入6位券码', icon: 'none' });
+      return;
+    }
+    this.verify(code);
+    this.setData({ manualCode: '' });
   },
 
   onScan: function () {
