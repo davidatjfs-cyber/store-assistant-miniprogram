@@ -1,0 +1,9 @@
+{
+  "name": "growthSubscribePush",
+  "version": "1.0.0",
+  "description": "HRMS 指挥 -> 小程序代发订阅消息的 HTTP 网关",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}
