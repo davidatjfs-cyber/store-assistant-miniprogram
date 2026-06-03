@@ -188,6 +188,18 @@
       "envVariables": {
         "MINIPROGRAM_SYNC_SECRET": "5bde6e733281f2b42305a525ccb7411a6fb5f911341703929c3f384ab6047e33"
       }
+    },
+    {
+      "name": "growthMemberCoupon",
+      "type": "Event",
+      "handler": "index.main",
+      "timeout": 30,
+      "runtime": "Nodejs18.15",
+      "memorySize": 256,
+      "installDependency": true,
+      "envVariables": {
+        "MINIPROGRAM_SYNC_SECRET": "5bde6e733281f2b42305a525ccb7411a6fb5f911341703929c3f384ab6047e33"
+      }
     }
   ]
 }

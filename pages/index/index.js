@@ -3,7 +3,14 @@ var ENABLE_ONLOAD_DEBUG_MODAL = false;
 
 // 开发模式：无扫码参数时模拟扫码（仅开发调试用，上线前改为 false）
 var DEV_SIMULATE_SCAN = false;
-var ORDER_SUBSCRIBE_TEMPLATE_IDS = ['pyk3FCeBC4MtxptY3ZBeLUOiVx93Lmb_4pxkN8AFowE'];
+// 一次性订阅：微信规则「授权一次=只能发一条」，且一次 requestSubscribeMessage 最多带 3 个模板。
+// 这里同时请求「券到账(pyk3)」+「到期提醒(y2Og)」两个模板，客人每次扫码可一次攒下两条配额，
+// 供 HRMS 后续分别发券到账通知与到期提醒。两个 ID 与云函数 sendSubscribeMessage 的
+// SUBSCRIBE_TEMPLATE_COUPON / SUBSCRIBE_TEMPLATE_EXPIRING 一一对应。
+var ORDER_SUBSCRIBE_TEMPLATE_IDS = [
+  'pyk3FCeBC4MtxptY3ZBeLUOiVx93Lmb_4pxkN8AFowE', // 券到账
+  'y2OgEdK4ADr5ibGuJFJEsy2CNU7ELq9d-If6jUv8ee4'  // 到期提醒
+];
 
 var roleUtil = require('../../utils/role.js');
 

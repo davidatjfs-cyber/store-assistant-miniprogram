@@ -1,0 +1,9 @@
+{
+  "name": "growthMemberCoupon",
+  "version": "1.0.0",
+  "description": "HRMS 指挥 -> 小程序站内推券（发券进会员卡包）的 HTTP 网关",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}
