@@ -72,7 +72,8 @@ exports.main = async function (event, context) {
       msgContent = '您有一条新的优惠通知，请查看小程序';
     }
 
-    var result = await wecomConfig.sendWecomTextMessage(
+    // 经固定IP中转服务器发送（绕过企微「可信IP」限制）
+    var result = await wecomConfig.sendWecomTextMessageViaRelay(
       tokenRes.access_token,
       externalUserId,
       msgContent,
