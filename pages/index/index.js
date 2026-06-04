@@ -42,17 +42,6 @@ function canNavigateToOrder(pageData) {
   return true;
 }
 
-function getAcceptedSubscribeTemplateId(res, templateIds) {
-  res = res || {};
-  templateIds = templateIds || [];
-  for (var i = 0; i < templateIds.length; i++) {
-    if (res[templateIds[i]] === 'accept') {
-      return templateIds[i];
-    }
-  }
-  return '';
-}
-
 function buildEntrySections(role) {
   var sections = [];
   if (role === 'staff' || role === 'manager' || role === 'admin') {
@@ -539,53 +528,18 @@ Page({
     });
   },
 
-  // 订阅消息为「可选增益」：用于后续发券到账/到期提醒。无论是否授权都不应阻断点餐。
-  // 未授权时给一次温和的「再次开启」确认（即再次发起授权），用户选择不开启也可正常点餐。
+  // 订阅消息为「可选增益」：用于后续发券到账/到期提醒。无论同意/拒绝/调用失败都不阻断、不弹任何提示，
+  // 一律直接进入点餐。客人下次再点「去点餐」时（重新处于点击手势上下文）微信订阅弹窗会自然再次出现，
+  // 这本身即「再次授权」时机；注意 requestSubscribeMessage 只能在点击手势同步栈内调用，不能放进弹窗回调里。
   requestOrderSubscribeThen: function(onAccepted) {
-    var self = this;
     var go = function() { if (typeof onAccepted === 'function') onAccepted(); };
     if (!wx.requestSubscribeMessage) {
-      // 老版本微信不支持订阅消息，直接放行点餐
       go();
       return;
     }
     wx.requestSubscribeMessage({
       tmplIds: ORDER_SUBSCRIBE_TEMPLATE_IDS,
-      success: function(res) {
-        if (getAcceptedSubscribeTemplateId(res, ORDER_SUBSCRIBE_TEMPLATE_IDS)) {
-          go();
-          return;
-        }
-        // 未同意：温和地再次确认是否开启，不阻断点餐
-        self.confirmReSubscribe(go);
-      },
-      fail: function() {
-        // 授权调用失败（如频率限制）：同样给一次再次确认，仍不阻断点餐
-        self.confirmReSubscribe(go);
-      }
-    });
-  },
-
-  // 再次授权确认：用户点「开启通知」则再次发起授权；点「暂不开启」则直接点餐。无论结果都会点餐。
-  confirmReSubscribe: function(go) {
-    var proceed = function() { if (typeof go === 'function') go(); };
-    wx.showModal({
-      title: '开启消息提醒（可选）',
-      content: '开启后可第一时间收到优惠券到账、到期提醒等消息。不开启也可正常点餐。是否开启？',
-      cancelText: '暂不开启',
-      confirmText: '开启通知',
-      success: function(r) {
-        if (r.confirm) {
-          // 再次发起订阅授权，无论用户这次是否同意，都继续点餐，避免反复弹窗
-          wx.requestSubscribeMessage({
-            tmplIds: ORDER_SUBSCRIBE_TEMPLATE_IDS,
-            complete: function() { proceed(); }
-          });
-        } else {
-          proceed();
-        }
-      },
-      fail: function() { proceed(); }
+      complete: function() { go(); }
     });
   },
 
