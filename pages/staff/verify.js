@@ -16,7 +16,8 @@ Page({
     editSurname: '',
     editGender: '',
     profileSaving: false,
-    manualCode: ''
+    manualCode: '',
+    redeemedInfo: null
   },
 
   // 已见到店记录（user_id|created_at），用于检测新熟客
@@ -254,12 +255,32 @@ Page({
         wx.hideLoading();
         var r = res.result || {};
         if (r.success) {
-          self.setData({ lastOk: true, lastMessage: r.message || '核销成功' });
+          self.setData({ lastOk: true, lastMessage: r.message || '核销成功', redeemedInfo: null });
           wx.showToast({ title: '核销成功', icon: 'success' });
           self.loadRecentArrivals();
+        } else if (r.already_redeemed) {
+          // 已核销券再次报码：用常驻弹窗展示核销时间，避免 toast 一闪而过看不清
+          var t = r.redeemed_at_text || '未知时间';
+          var info = {
+            time: t,
+            shortCode: r.short_code || '',
+            valueYuan: r.value_fen ? (r.value_fen / 100) : '',
+            storeId: r.redeemed_store_id || ''
+          };
+          self.setData({ lastOk: false, lastMessage: '该券已于 ' + t + ' 核销', redeemedInfo: info });
+          var detail = '核销时间：' + t;
+          if (info.shortCode) detail += '\n券码：' + info.shortCode;
+          if (info.valueYuan) detail += '\n面额：' + info.valueYuan + ' 元';
+          detail += '\n\n此券为一次性券，不可重复使用。';
+          wx.showModal({
+            title: '⚠️ 该券已核销',
+            content: detail,
+            showCancel: false,
+            confirmText: '我知道了'
+          });
         } else {
           var msg = r.message || '核销失败';
-          self.setData({ lastOk: false, lastMessage: msg });
+          self.setData({ lastOk: false, lastMessage: msg, redeemedInfo: null });
           wx.showToast({ title: msg, icon: 'none' });
         }
       },

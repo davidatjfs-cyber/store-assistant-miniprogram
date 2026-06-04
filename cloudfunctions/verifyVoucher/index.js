@@ -35,6 +35,18 @@ function toDateMs(v) {
   return isNaN(ms) ? null : ms;
 }
 
+// 上海时区把时间戳格式化成「2026-06-04 13:10:44」，给店员展示核销时间
+function formatRedeemTime(v) {
+  const ms = toDateMs(v);
+  if (ms == null) return '未知时间';
+  const parts = new Intl.DateTimeFormat('zh-CN', {
+    timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+  }).formatToParts(new Date(ms));
+  const g = function (t) { return (parts.find(function (p) { return p.type === t; }) || {}).value || ''; };
+  return g('year') + '-' + g('month') + '-' + g('day') + ' ' + g('hour') + ':' + g('minute') + ':' + g('second');
+}
+
 exports.main = async (event, context) => {
   const wxContext = cloud.getWXContext();
   const callerOpenid = wxContext.OPENID || '';
@@ -88,13 +100,14 @@ exports.main = async (event, context) => {
   let voucherId = parseVoucherId(qr_code);
 
   try {
-    // 「到店报码」极简核销：非 voucher: 二维码时，按 6 位短码查未使用券
+    // 「到店报码」极简核销：非 voucher: 二维码时，按 6 位短码查券。
+    // 不限 status：取该码最新一张券；若已核销，下面的状态分支会回出核销时间给店员看。
     if (!voucherId) {
       const code = String(qr_code || '').trim();
       if (/^[0-9]{6}$/.test(code)) {
         const byCode = await db
           .collection('user_vouchers')
-          .where({ short_code: code, status: 'unused' })
+          .where({ short_code: code })
           .orderBy('created_at', 'desc')
           .limit(1)
           .get();
@@ -146,11 +159,23 @@ exports.main = async (event, context) => {
     }
 
     if (row.status === 'used') {
-      return fail('该券已使用', {
-        voucher_user_id: row.user_id,
-        voucher_id: voucherId,
-        verify_store_id: verifyStoreId
+      // 已核销券再次报码：把核销日期+时间(及门店)回给店员，避免重复核销又能当场说清
+      const redeemedAtText = formatRedeemTime(row.used_at);
+      await logAnalytics(db, {
+        user_id: row.user_id,
+        action: 'verify_fail',
+        metadata: { reason: 'already_used', voucher_id: voucherId, store_id: verifyStoreId, used_at: row.used_at }
       });
+      return {
+        success: false,
+        message: '该券已于 ' + redeemedAtText + ' 核销，不可重复使用',
+        already_redeemed: true,
+        redeemed_at: row.used_at || null,
+        redeemed_at_text: redeemedAtText,
+        redeemed_store_id: row.store_id || '',
+        short_code: row.short_code || '',
+        value_fen: row.value_fen || 0
+      };
     }
 
     if (row.status === 'expired') {
@@ -255,7 +280,8 @@ exports.main = async (event, context) => {
       phone: userForSync && userForSync.phone,
       openid: userForSync && (userForSync.openid || userForSync._openid),
       store_id: verifyStoreId,
-      campaign_id: event && event.campaign_id || '',
+      // 归因：报码核销时入参不带 campaign_id，回退到券自带的活动号，保证核销能对回原始投放
+      campaign_id: (event && event.campaign_id) || row.campaign_id || '',
       coupon_id: voucherId,
       order_id: row.order_id || '',
       amount_fen: order_amount_fen != null ? parseInt(order_amount_fen, 10) || 0 : 0,
@@ -263,6 +289,10 @@ exports.main = async (event, context) => {
       metadata: {
         template_id: row.template_id,
         staff_id: staffId,
+        // 短码 + 券额回传：HRMS 据此把「发送日志(按短码)」翻成已核销，并核算券成本
+        short_code: row.short_code || '',
+        coupon_value_fen: row.value_fen || 0,
+        coupon_source: row.source || '',
         marketing_rule_id: row.marketing_rule_id || '',
         marketing_user_segment: row.marketing_user_segment || ''
       }

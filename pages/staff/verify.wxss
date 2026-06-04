@@ -114,6 +114,12 @@ page { background: #0d0d0d; }
 .result-icon.bad { background: linear-gradient(135deg, #8f4a39, #c27b5f); }
 .result-msg { font-size: 30rpx; color: #e8e0d4; }
 
+.redeemed-detail { margin-top: 24rpx; padding: 20rpx 24rpx; border-radius: 16rpx; background: rgba(143,74,57,0.16); border: 1rpx solid rgba(194,123,95,0.4); text-align: left; }
+.redeemed-row { display: flex; justify-content: space-between; align-items: center; padding: 8rpx 0; }
+.redeemed-key { font-size: 26rpx; color: #b8a98f; }
+.redeemed-val { font-size: 28rpx; color: #f0e7d8; font-weight: 600; }
+.redeemed-note { display: block; margin-top: 12rpx; font-size: 24rpx; color: #c27b5f; }
+
 .regular-modal { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; }
 .regular-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.6); }
 .regular-card { position: relative; z-index: 1; width: 560rpx; padding: 48rpx 40rpx 40rpx; border-radius: 32rpx; text-align: center; background: linear-gradient(160deg, #241c16, #14110d); border: 1rpx solid rgba(212,184,122,0.4); box-shadow: 0 24rpx 64rpx rgba(0,0,0,0.5); }

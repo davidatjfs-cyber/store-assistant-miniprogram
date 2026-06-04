@@ -60,6 +60,13 @@
   <view class="glass-card result" wx:if="{{lastMessage}}">
     <view class="result-icon {{lastOk ? 'ok' : 'bad'}}">{{lastOk ? '✓' : '!'}}</view>
     <text class="result-msg">{{lastMessage}}</text>
+    <!-- 已核销券：常驻展示核销详情，避免店员看不清 -->
+    <view class="redeemed-detail" wx:if="{{redeemedInfo}}">
+      <view class="redeemed-row"><text class="redeemed-key">核销时间</text><text class="redeemed-val">{{redeemedInfo.time}}</text></view>
+      <view class="redeemed-row" wx:if="{{redeemedInfo.shortCode}}"><text class="redeemed-key">券码</text><text class="redeemed-val">{{redeemedInfo.shortCode}}</text></view>
+      <view class="redeemed-row" wx:if="{{redeemedInfo.valueYuan}}"><text class="redeemed-key">面额</text><text class="redeemed-val">{{redeemedInfo.valueYuan}} 元</text></view>
+      <text class="redeemed-note">此券为一次性券，不可重复使用</text>
+    </view>
   </view>
 
   <!-- 补全资料弹窗 -->
