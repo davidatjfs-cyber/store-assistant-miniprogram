@@ -221,6 +221,7 @@ Page({
     storeConfig: STORE_CONFIGS['51866138'],
     availableVoucherCount: 0,
     checkingMember: true,
+    isStaffRole: false,
   },
 
   refreshRoleEntries: function () {
@@ -232,10 +233,15 @@ Page({
     }
     app.fetchUserRole(true).then(function () {
       var role = app.globalData.userRole;
-      self.setData({
+      var isStaff = (role === 'staff' || role === 'manager' || role === 'admin');
+      var patch = {
         entrySections: buildEntrySections(role),
-        roleLoaded: true
-      });
+        roleLoaded: true,
+        isStaffRole: isStaff
+      };
+      // 员工身份：不展示面向客人的入会/点餐流程，直接进入员工界面
+      if (isStaff) patch.showAuthModal = false;
+      self.setData(patch);
     });
   },
 
@@ -533,38 +539,53 @@ Page({
     });
   },
 
+  // 订阅消息为「可选增益」：用于后续发券到账/到期提醒。无论是否授权都不应阻断点餐。
+  // 未授权时给一次温和的「再次开启」确认（即再次发起授权），用户选择不开启也可正常点餐。
   requestOrderSubscribeThen: function(onAccepted) {
+    var self = this;
+    var go = function() { if (typeof onAccepted === 'function') onAccepted(); };
     if (!wx.requestSubscribeMessage) {
-      wx.showModal({
-        title: '需要开启通知',
-        content: '当前微信版本暂不支持订阅消息授权，请升级微信后再扫码点餐。',
-        showCancel: false
-      });
+      // 老版本微信不支持订阅消息，直接放行点餐
+      go();
       return;
     }
-
     wx.requestSubscribeMessage({
       tmplIds: ORDER_SUBSCRIBE_TEMPLATE_IDS,
       success: function(res) {
         if (getAcceptedSubscribeTemplateId(res, ORDER_SUBSCRIBE_TEMPLATE_IDS)) {
-          if (typeof onAccepted === 'function') onAccepted();
+          go();
           return;
         }
-        wx.showModal({
-          title: '需要同意消息通知',
-          content: '请同意服务通知后继续点餐，门店会用于发送优惠券到账、到期提醒等服务消息。',
-          showCancel: false,
-          confirmText: '我知道了'
-        });
+        // 未同意：温和地再次确认是否开启，不阻断点餐
+        self.confirmReSubscribe(go);
       },
-      fail: function(err) {
-        var msg = (err && err.errMsg) ? err.errMsg : '订阅消息授权失败';
-        wx.showModal({
-          title: '订阅授权未完成',
-          content: msg + '\n\n请重新点击「去点餐」并同意消息通知。',
-          showCancel: false
-        });
+      fail: function() {
+        // 授权调用失败（如频率限制）：同样给一次再次确认，仍不阻断点餐
+        self.confirmReSubscribe(go);
       }
+    });
+  },
+
+  // 再次授权确认：用户点「开启通知」则再次发起授权；点「暂不开启」则直接点餐。无论结果都会点餐。
+  confirmReSubscribe: function(go) {
+    var proceed = function() { if (typeof go === 'function') go(); };
+    wx.showModal({
+      title: '开启消息提醒（可选）',
+      content: '开启后可第一时间收到优惠券到账、到期提醒等消息。不开启也可正常点餐。是否开启？',
+      cancelText: '暂不开启',
+      confirmText: '开启通知',
+      success: function(r) {
+        if (r.confirm) {
+          // 再次发起订阅授权，无论用户这次是否同意，都继续点餐，避免反复弹窗
+          wx.requestSubscribeMessage({
+            tmplIds: ORDER_SUBSCRIBE_TEMPLATE_IDS,
+            complete: function() { proceed(); }
+          });
+        } else {
+          proceed();
+        }
+      },
+      fail: function() { proceed(); }
     });
   },
 

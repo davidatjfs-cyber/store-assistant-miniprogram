@@ -15,7 +15,20 @@
 
     <view class="hero-spacer"></view>
 
-    <view class="guest-highlight">
+    <!-- 员工身份：直接进入员工界面，不展示面向客人的入会/点餐卡片 -->
+    <view class="staff-welcome" wx:if="{{isStaffRole}}">
+      <view class="card-badge">
+        <text class="card-badge-icon">✦</text>
+        <text class="card-badge-text">员工工作台</text>
+      </view>
+      <view class="card-heading">
+        <text class="card-title">{{storeConfig.name}}</text>
+        <text class="card-script">staff</text>
+      </view>
+      <text class="card-desc">您已以门店员工身份登录，请选择下方功能进行操作。</text>
+    </view>
+
+    <view class="guest-highlight" wx:if="{{!isStaffRole}}">
       <view class="card-badge">
         <text class="card-badge-icon">✦</text>
         <text class="card-badge-text">会员礼遇</text>
@@ -84,8 +97,8 @@
 
     <view class="member-links" wx:if="{{roleLoaded && entrySections.length}}">
       <view class="section-head">
-        <text class="section-title">今晚礼遇</text>
-        <text class="section-script">for your table</text>
+        <text class="section-title">{{isStaffRole ? '门店功能' : '今晚礼遇'}}</text>
+        <text class="section-script">{{isStaffRole ? 'staff tools' : 'for your table'}}</text>
       </view>
       <view class="member-grid">
         <block wx:for="{{entrySections}}" wx:for-item="sec" wx:key="title">
@@ -110,8 +123,8 @@
     <text class="voucher-toast-sub">点餐前可在「我的优惠券」查看</text>
   </view>
 
-  <!-- 授权弹窗 -->
-  <view wx:if="{{showAuthModal && !checkingMember}}" class="modal">
+  <!-- 授权弹窗（仅面向客人；员工身份不展示） -->
+  <view wx:if="{{showAuthModal && !checkingMember && !isStaffRole}}" class="modal">
     <view class="modal-backdrop" bindtap="onModalBackdropTap"></view>
     <view class="brand-modal">
       <image class="modal-bg" src="../../assets/home-hero-bg-toplit.jpg" mode="widthFix"></image>

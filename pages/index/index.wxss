@@ -104,6 +104,7 @@ page {
 }
 
 .guest-highlight,
+.staff-welcome,
 .brand-modal {
   position: relative;
   overflow: hidden;
@@ -113,6 +114,11 @@ page {
   box-shadow:
     0 24rpx 64rpx rgba(0,0,0,0.48),
     inset 0 1rpx 0 rgba(255,255,255,0.14);
+}
+
+.staff-welcome {
+  padding: 32rpx 28rpx 34rpx;
+  margin-top: 0;
 }
 
 .guest-highlight::before,
