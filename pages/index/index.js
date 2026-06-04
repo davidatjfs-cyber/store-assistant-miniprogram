@@ -375,6 +375,8 @@ Page({
   },
 
   onShow: function() {
+    // 从点餐小程序返回 / 取消跳转后回到本页：复位跳转防重入标记，允许再次点「去点餐」
+    this._orderNavigating = false;
     this.refreshRoleEntries();
   },
 
@@ -607,14 +609,28 @@ Page({
 
     var envVersion = config.envVersion || 'release';
 
+    // 防重入：客人取消跳转或重复点「去点餐」会让上一次跳转仍在进行中，
+    // 再次发起就会报 navigateToMiniProgram:fail another navigation is in progress。
+    var self = this;
+    if (self._orderNavigating) return;
+    self._orderNavigating = true;
+    var release = function() { self._orderNavigating = false; };
+
+    // 客人取消跳转、或已有跳转在进行中，都是正常操作，静默忽略不弹任何报错
+    var isBenignNavErr = function(msg) {
+      msg = String(msg || '').toLowerCase();
+      return msg.indexOf('cancel') >= 0 || msg.indexOf('another navigation') >= 0;
+    };
+
     wx.navigateToMiniProgram({
       appId: config.appId,
       path: path,
       envVersion: envVersion,
       extraData: (config.extraData && typeof config.extraData === 'object') ? config.extraData : undefined,
+      success: function() { release(); },
       fail: function(err) {
-        var errMsg = (err && err.errMsg) ? String(err.errMsg).toLowerCase() : '';
-        if (errMsg.indexOf('cancel') >= 0) return;
+        var errMsg = (err && err.errMsg) ? err.errMsg : '';
+        if (isBenignNavErr(errMsg)) { release(); return; }
         var fallbackPath = buildOrderMiniPath(
           config.path || 'pages/home/index?origin=minpath&path=pages%2Forderfood%2Findex',
           params, config.extraStaticQuery
@@ -623,9 +639,11 @@ Page({
           appId: config.appId,
           path: fallbackPath,
           envVersion: envVersion,
+          success: function() { release(); },
           fail: function(err2) {
+            release();
             var msg2 = (err2 && err2.errMsg) ? err2.errMsg : JSON.stringify(err2 || {});
-            if (msg2.toLowerCase().indexOf('cancel') >= 0) return;
+            if (isBenignNavErr(msg2)) return;
             wx.showModal({
               title: '跳转点餐小程序失败',
               content: msg2 + '\n\n请检查微信公众平台「跳转其他小程序」白名单是否已加入对方 AppID。',
