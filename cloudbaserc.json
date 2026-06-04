@@ -22,6 +22,26 @@
       "installDependency": true
     },
     {
+      "name": "syncPosConsumption",
+      "type": "Event",
+      "handler": "index.main",
+      "timeout": 60,
+      "runtime": "Nodejs18.15",
+      "memorySize": 256,
+      "installDependency": true,
+      "envVariables": {
+        "HRMS_POS_CONSUMPTION_URL": "https://nnyx.cc/api/growth/pos/consumption",
+        "HRMS_GROWTH_EVENT_SECRET": "5bde6e733281f2b42305a525ccb7411a6fb5f911341703929c3f384ab6047e33"
+      },
+      "triggers": [
+        {
+          "name": "dailyPosSync",
+          "type": "timer",
+          "config": "0 30 4 * * * *"
+        }
+      ]
+    },
+    {
       "name": "getMarketingRules",
       "type": "Event",
       "handler": "index.main",

@@ -1,0 +1,9 @@
+{
+  "triggers": [
+    {
+      "name": "dailyPosSync",
+      "type": "timer",
+      "config": "0 30 4 * * * *"
+    }
+  ]
+}
