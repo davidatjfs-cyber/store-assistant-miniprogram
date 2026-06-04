@@ -22,6 +22,26 @@
       "installDependency": true
     },
     {
+      "name": "reconcileHrmsEvents",
+      "type": "Event",
+      "handler": "index.main",
+      "timeout": 60,
+      "runtime": "Nodejs18.15",
+      "memorySize": 256,
+      "installDependency": true,
+      "envVariables": {
+        "HRMS_GROWTH_EVENT_URL": "https://nnyx.cc/api/miniprogram/events",
+        "HRMS_GROWTH_EVENT_SECRET": "5bde6e733281f2b42305a525ccb7411a6fb5f911341703929c3f384ab6047e33"
+      },
+      "triggers": [
+        {
+          "name": "reconcileEvery10Min",
+          "type": "timer",
+          "config": "0 */10 * * * * *"
+        }
+      ]
+    },
+    {
       "name": "syncPosConsumption",
       "type": "Event",
       "handler": "index.main",
