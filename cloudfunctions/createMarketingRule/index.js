@@ -15,7 +15,8 @@ function normalizeRole(row) {
   return role;
 }
 
-var VALID_TRIGGER_TYPES = ['payment', 'inactivity', 'manual'];
+// inactivity（沉睡客召回）已下线：召回统一由 HRMS 集中发起，小程序不再创建此类规则。
+var VALID_TRIGGER_TYPES = ['payment', 'manual'];
 var VALID_ACTION_TYPES = ['send_voucher'];
 var VALID_TARGET_TAGS = ['prospect', 'new', 'active', 'at_risk', 'dormant', 'churned', 'vip', 'regular', 'low'];
 

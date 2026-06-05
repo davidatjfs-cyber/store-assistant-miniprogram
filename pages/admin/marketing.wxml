@@ -12,7 +12,11 @@
     </view>
   </view>
 
-  <!-- 储值召回的发起已集中到 HRMS 后台(防误发/统一频控管理),小程序不再提供发起入口 -->
+  <!-- 储值召回 / 沉睡客召回均已集中到 HRMS 后台(防误发、统一频控、管理员审核),小程序不再提供召回入口 -->
+  <view class="notice-card">
+    <text class="notice-title">沉睡客召回已统一至 HRMS</text>
+    <text class="notice-desc">「N天未到店召回」等召回触达统一由 HRMS 后台集中发起（含名单预览、30天频控、管理员审核后才自动执行）。小程序仅保留「支付后实时发券」与「手动发放」。</text>
+  </view>
 
   <button class="btn-add" bindtap="onCreateTap">+ 新增规则</button>
 
@@ -79,7 +83,6 @@
         <text class="form-label">触发类型</text>
         <view class="type-selector">
           <view class="type-option {{createForm.trigger_type === 'payment' ? 'active' : ''}}" bindtap="onSelectTriggerType" data-value="payment">支付后触发</view>
-          <view class="type-option {{createForm.trigger_type === 'inactivity' ? 'active' : ''}}" bindtap="onSelectTriggerType" data-value="inactivity">N天未到店</view>
           <view class="type-option {{createForm.trigger_type === 'manual' ? 'active' : ''}}" bindtap="onSelectTriggerType" data-value="manual">手动发放</view>
         </view>
       </view>
@@ -87,11 +90,6 @@
       <view class="form-group" wx:if="{{createForm.trigger_type === 'payment'}}">
         <text class="form-label">支付后发券门槛（实付金额，元；0=支付成功即发）</text>
         <input class="form-input" type="digit" placeholder="0" value="{{createForm.trigger_value}}" bindinput="onInputTriggerValue" />
-      </view>
-
-      <view class="form-group" wx:if="{{createForm.trigger_type === 'inactivity'}}">
-        <text class="form-label">多少天未到店触发</text>
-        <input class="form-input" type="number" placeholder="7" value="{{createForm.trigger_value}}" bindinput="onInputTriggerValue" />
       </view>
 
       <view class="form-group">

@@ -1,4 +1,6 @@
-// 定时任务：召回扫描 + 30d/ROI 兜底 + 系统监控（可拆分为独立定时器）
+// 定时任务：30d/ROI 兜底对账 + 系统监控。
+// 注意：沉睡客召回（inactivity_scan）已停用——召回统一由 HRMS 集中发起
+// （含预览 + 频控 + 管理员审核），本定时器不再触发小程序侧自动群发。
 const cloud = require('wx-server-sdk');
 
 cloud.init({
@@ -7,14 +9,8 @@ cloud.init({
 
 exports.main = async (event, context) => {
   try {
-    const res = await cloud.callFunction({
-      name: 'runMarketingEngine',
-      data: {
-        hook: 'inactivity_scan'
-      }
-    });
-
-    const payload = res && res.result != null ? res.result : res;
+    // 召回扫描已停用，不再调用 runMarketingEngine 的 inactivity_scan。
+    const payload = { success: true, disabled: true, message: 'inactivity_scan 已停用，召回统一由 HRMS 集中发起' };
 
     let reconcile = null;
     try {
