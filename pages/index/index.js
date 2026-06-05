@@ -36,6 +36,7 @@ function getStoreConfig(scanParams) {
 
 function canNavigateToOrder(pageData) {
   pageData = pageData || {};
+  if (pageData.isStaffRole) return true;
   if (pageData.isFromScan && !pageData.hasAuthorizedMember) {
     return false;
   }

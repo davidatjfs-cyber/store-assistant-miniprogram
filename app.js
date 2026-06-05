@@ -421,6 +421,13 @@ App({
       sceneStr = options.scene;
     }
 
+    Object.keys(query).forEach(function(key) {
+      var val = query[key];
+      if (typeof val === 'string' && val.indexOf('%') >= 0) {
+        try { query[key] = decodeURIComponent(val); } catch(e) {}
+      }
+    });
+
     if (!query.store_id && !query.table_id && sceneStr) {
       try {
         var decoded = decodeURIComponent(sceneStr);

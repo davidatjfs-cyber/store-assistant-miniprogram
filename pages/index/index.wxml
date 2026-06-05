@@ -26,6 +26,17 @@
         <text class="card-script">staff</text>
       </view>
       <text class="card-desc">您已以门店员工身份登录，请选择下方功能进行操作。</text>
+      <view class="scan-context" wx:if="{{isFromScan && scanParams}}">
+        <view class="scan-context-row">
+          <text class="scan-label">门店</text>
+          <text class="scan-value">{{scanParams.store_display_name || storeConfig.name}}</text>
+        </view>
+        <view class="scan-context-row">
+          <text class="scan-label">桌台编号</text>
+          <text class="scan-value">{{scanParams.table_id || '—'}}</text>
+        </view>
+      </view>
+      <button wx:if="{{isFromScan && scanParams}}" class="hero-cta" bindtap="navigateToKeruYun">去点餐</button>
     </view>
 
     <view class="guest-highlight" wx:if="{{!isStaffRole}}">
