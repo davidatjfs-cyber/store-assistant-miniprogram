@@ -21,6 +21,20 @@ page { background: #0d0d0d; }
 }
 .search-input::placeholder { color: rgba(232,224,212,0.3); }
 
+.date-bar { display: flex; align-items: center; gap: 12rpx; margin-bottom: 20rpx; }
+.date-field {
+  background: rgba(232,224,212,0.06); border: 1rpx solid rgba(201,169,110,0.14);
+  border-radius: 999rpx; padding: 12rpx 22rpx; font-size: 24rpx; color: rgba(232,224,212,0.45);
+  text-align: center; min-width: 150rpx;
+}
+.date-field--set { color: #e8e0d4; border-color: rgba(201,169,110,0.32); }
+.date-sep { font-size: 24rpx; color: #8a7e72; }
+.date-clear {
+  margin-left: auto; padding: 12rpx 24rpx; border-radius: 999rpx; font-size: 24rpx;
+  color: #d4b87a; border: 1rpx solid rgba(201,169,110,0.24); background: rgba(201,169,110,0.05);
+}
+.date-clear--disabled { color: rgba(232,224,212,0.25); border-color: rgba(201,169,110,0.08); }
+
 .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16rpx; margin-bottom: 24rpx; }
 .stats-grid .stat-card:last-child { grid-column: 1 / -1; }
 .stat-card {

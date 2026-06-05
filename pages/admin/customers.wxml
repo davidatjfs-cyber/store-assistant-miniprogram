@@ -36,6 +36,18 @@
     >{{item.label}}</view>
   </scroll-view>
 
+  <!-- 自定义日期范围查询新增客户 -->
+  <view class="date-bar">
+    <picker mode="date" value="{{startDate}}" end="{{endDate || ''}}" bindchange="onStartDateChange">
+      <view class="date-field {{startDate ? 'date-field--set' : ''}}">{{startDate || '开始日期'}}</view>
+    </picker>
+    <text class="date-sep">至</text>
+    <picker mode="date" value="{{endDate}}" start="{{startDate || ''}}" bindchange="onEndDateChange">
+      <view class="date-field {{endDate ? 'date-field--set' : ''}}">{{endDate || '结束日期'}}</view>
+    </picker>
+    <view class="date-clear {{(startDate || endDate) ? '' : 'date-clear--disabled'}}" bindtap="onClearDateRange">清除</view>
+  </view>
+
   <!-- 批量操作工具条（仅管理员） -->
   <view class="batch-bar" wx:if="{{isAdmin}}">
     <view class="batch-toggle {{selectMode ? 'batch-toggle--on' : ''}}" bindtap="onToggleSelectMode">
@@ -60,7 +72,7 @@
     </view>
     <view class="stat-card">
       <text class="stat-value">{{stats.newUsers}}</text>
-      <text class="stat-label">本月新增</text>
+      <text class="stat-label">{{stats.newUsersLabel || '本月新增'}}</text>
     </view>
   </view>
 

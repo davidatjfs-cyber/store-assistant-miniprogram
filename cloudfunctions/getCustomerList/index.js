@@ -47,9 +47,32 @@ async function buildStoreMembership(storeId) {
   }
 }
 
+// 北京时间（UTC+8）当月起始对应的绝对 UTC 毫秒
+function beijingMonthStartMs() {
+  const nowBJ = new Date(Date.now() + 8 * 3600 * 1000)
+  const y = nowBJ.getUTCFullYear()
+  const m = nowBJ.getUTCMonth()
+  return Date.UTC(y, m, 1) - 8 * 3600 * 1000
+}
+
+// 'YYYY-MM-DD'（北京时间）转为绝对 UTC 毫秒；endOfDay=true 取当日 23:59:59.999
+function beijingDateToMs(dateStr, endOfDay) {
+  const parts = String(dateStr).split('-').map(Number)
+  if (parts.length !== 3 || parts.some(isNaN)) return null
+  let ms = Date.UTC(parts[0], parts[1] - 1, parts[2]) - 8 * 3600 * 1000
+  if (endOfDay) ms += 24 * 3600 * 1000 - 1
+  return ms
+}
+
+function createdAtMs(u) {
+  if (!u.created_at) return NaN
+  const t = new Date(u.created_at).getTime()
+  return isNaN(t) ? NaN : t
+}
+
 exports.main = async (event, context) => {
   try {
-    const { keyword, store_id, tag } = event
+    const { keyword, store_id, tag, start_date, end_date } = event
     let query = {}
     if (keyword) {
       query.phone = db.RegExp({ regexp: keyword, options: 'i' })
@@ -89,9 +112,35 @@ exports.main = async (event, context) => {
 
     // 标签筛选：按生命周期阶段精确匹配
     const tagFilter = tag ? String(tag).trim() : ''
-    const finalUsers = tagFilter
+    const tagFilteredUsers = tagFilter
       ? scopedUsers.filter(u => stageOf(u) === tagFilter)
       : scopedUsers
+
+    // 自定义日期范围（按 created_at / 入会时间过滤，北京时间）
+    const rangeStart = start_date ? beijingDateToMs(start_date, false) : null
+    const rangeEnd = end_date ? beijingDateToMs(end_date, true) : null
+    const hasRange = rangeStart !== null || rangeEnd !== null
+    const inRange = u => {
+      const t = createdAtMs(u)
+      if (isNaN(t)) return false
+      if (rangeStart !== null && t < rangeStart) return false
+      if (rangeEnd !== null && t > rangeEnd) return false
+      return true
+    }
+
+    // 选了日期范围时，列表只展示该区间内新增（入会）的客户
+    const finalUsers = hasRange
+      ? tagFilteredUsers.filter(inRange)
+      : tagFilteredUsers
+
+    // 本月新增：按 created_at 落在「当前北京时间所在自然月」统计（修复此前误用 lifecycle_stage 的 bug）
+    const monthStart = beijingMonthStartMs()
+    const newUsersCount = hasRange
+      ? finalUsers.length
+      : scopedUsers.filter(u => {
+          const t = createdAtMs(u)
+          return !isNaN(t) && t >= monthStart
+        }).length
 
     const customers = finalUsers.map(u => {
       const joinDate = u.created_at ? new Date(u.created_at).toLocaleDateString('zh-CN') : '—'
@@ -111,9 +160,9 @@ exports.main = async (event, context) => {
       }
     })
 
-    // 统计：选了门店或标签则按当前结果统计；否则全局
+    // 统计：选了门店/标签/日期范围则按当前结果统计；否则全局
     let totalUsers
-    if (store_id || tagFilter) {
+    if (store_id || tagFilter || hasRange) {
       totalUsers = finalUsers.length
     } else {
       const totalRes = await db.collection('users').count()
@@ -124,10 +173,12 @@ exports.main = async (event, context) => {
       success: true,
       data: customers,
       availableTags: availableTags,
+      dateRange: hasRange ? { start_date: start_date || '', end_date: end_date || '' } : null,
       stats: {
         totalUsers: totalUsers,
         vipUsers: finalUsers.filter(u => u.value_tier === 'vip').length,
-        newUsers: finalUsers.filter(u => normalizeLifecycleStage(u.lifecycle_stage || u.user_level) === 'new').length
+        newUsers: newUsersCount,
+        newUsersLabel: hasRange ? '区间新增' : '本月新增'
       }
     }
   } catch (err) {

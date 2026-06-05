@@ -7,7 +7,7 @@ var STORE_TABS = [
   { id: '64822111', name: '洪潮' }
 ];
 
-function buildCustomerListRequestData(keyword, app, selectedStoreId, tag) {
+function buildCustomerListRequestData(keyword, app, selectedStoreId, tag, startDate, endDate) {
   var gd = (app && app.globalData) || {};
   var role = gd.userRole || '';
   var storeId = '';
@@ -22,17 +22,22 @@ function buildCustomerListRequestData(keyword, app, selectedStoreId, tag) {
   return {
     keyword: keyword || '',
     store_id: storeId,
-    tag: tag || ''
+    tag: tag || '',
+    start_date: startDate || '',
+    end_date: endDate || ''
   };
 }
 
 Page({
   data: {
     customers: [],
-    stats: { totalUsers: 0, vipUsers: 0, newUsers: 0 },
+    stats: { totalUsers: 0, vipUsers: 0, newUsers: 0, newUsersLabel: '本月新增' },
     loading: true,
     keyword: '',
     isAdmin: false,
+    // 自定义日期范围查询新增客户
+    startDate: '',
+    endDate: '',
     storeTabs: STORE_TABS,
     selectedStoreId: '',
     // #2 标签筛选
@@ -82,7 +87,7 @@ Page({
     self.setData({ loading: true });
     wx.cloud.callFunction({
       name: 'getCustomerList',
-      data: buildCustomerListRequestData(self.data.keyword, app, self.data.selectedStoreId, self.data.selectedTag),
+      data: buildCustomerListRequestData(self.data.keyword, app, self.data.selectedStoreId, self.data.selectedTag, self.data.startDate, self.data.endDate),
       success: function(res) {
         var r = res.result || {};
         if (r.success) {
@@ -95,7 +100,7 @@ Page({
           });
           self.setData({
             customers: list,
-            stats: r.stats || { totalUsers: 0, vipUsers: 0, newUsers: 0 },
+            stats: r.stats || { totalUsers: 0, vipUsers: 0, newUsers: 0, newUsersLabel: '本月新增' },
             availableTags: r.availableTags || [],
             loading: false
           });
@@ -112,6 +117,29 @@ Page({
 
   onSearch: function(e) {
     this.setData({ keyword: e.detail.value });
+    this.loadData();
+  },
+
+  // ---- 自定义日期范围查询新增客户 ----
+  onStartDateChange: function(e) {
+    var start = e.detail.value || '';
+    var end = this.data.endDate;
+    if (start && end && start > end) end = start;
+    this.setData({ startDate: start, endDate: end, selectedIds: [], selectedCount: 0 });
+    this.loadData();
+  },
+
+  onEndDateChange: function(e) {
+    var end = e.detail.value || '';
+    var start = this.data.startDate;
+    if (start && end && end < start) start = end;
+    this.setData({ endDate: end, startDate: start, selectedIds: [], selectedCount: 0 });
+    this.loadData();
+  },
+
+  onClearDateRange: function() {
+    if (!this.data.startDate && !this.data.endDate) return;
+    this.setData({ startDate: '', endDate: '', selectedIds: [], selectedCount: 0 });
     this.loadData();
   },
 
