@@ -12,19 +12,17 @@
     </view>
   </view>
 
-  <!-- 储值召回 / 沉睡客召回均已集中到 HRMS 后台(防误发、统一频控、管理员审核),小程序不再提供召回入口 -->
+  <!-- 营销规则的管理（新增/编辑/删除/启停）已统一收归 HRMS 后台，小程序仅作只读展示 -->
   <view class="notice-card">
-    <text class="notice-title">沉睡客召回已统一至 HRMS</text>
-    <text class="notice-desc">「N天未到店召回」等召回触达统一由 HRMS 后台集中发起（含名单预览、30天频控、管理员审核后才自动执行）。小程序仅保留「支付后实时发券」与「手动发放」。</text>
+    <text class="notice-title">营销规则统一在 HRMS 管理</text>
+    <text class="notice-desc">支付后发券、召回触达等所有营销触发规则均在 HRMS 后台集中配置（统一审核与频控），本页仅展示当前生效规则，约每 2 分钟从 HRMS 同步一次。如需新增 / 修改 / 删除，请前往 HRMS「增长 → 自动营销 → 支付发券」。</text>
   </view>
-
-  <button class="btn-add" bindtap="onCreateTap">+ 新增规则</button>
 
   <view wx:if="{{loading}}" class="state">加载中…</view>
 
   <view wx:elif="{{!rules.length}}" class="empty-state">
     <text class="empty-title">暂无营销规则</text>
-    <text class="empty-desc">点击上方「+ 新增规则」创建第一条</text>
+    <text class="empty-desc">请在 HRMS 后台配置营销规则，生效后将在此展示</text>
   </view>
 
   <scroll-view wx:else scroll-y class="list">
@@ -32,7 +30,7 @@
       <view class="card-shine"></view>
       <view class="row row-top">
         <text class="name">{{item.name || item.rule_id}}</text>
-        <switch checked="{{item.active}}" data-id="{{item.rule_id}}" bindchange="onToggleActive" color="#d4b87a" />
+        <text class="status-badge {{item.active ? 'status-on' : 'status-off'}}">{{item.active ? '启用中' : '已停用'}}</text>
       </view>
       <view class="row row-meta">
         <text class="meta">{{item.storeName}}</text>
@@ -58,93 +56,6 @@
         <text class="detail-block-label">限额：</text>
         <text class="detail-block-value">{{item.daily_user_limit != null ? '每人' + item.daily_user_limit + '次/天' : ''}}{{item.global_daily_limit != null ? ' 全局' + item.global_daily_limit + '张/天' : ''}}</text>
       </view>
-      <view class="row row-actions">
-        <button class="pri-btn" size="mini" data-id="{{item.rule_id}}" bindtap="onPriMinus">−</button>
-        <text class="pri-label">调整优先级</text>
-        <button class="pri-btn" size="mini" data-id="{{item.rule_id}}" bindtap="onPriPlus">+</button>
-        <button class="del-btn" size="mini" data-id="{{item.rule_id}}" data-name="{{item.name}}" bindtap="onDeleteRule">删除</button>
-      </view>
     </view>
   </scroll-view>
-
-  <!-- 新增规则弹窗 -->
-  <view wx:if="{{showCreateModal}}" class="modal">
-    <view class="modal-backdrop" catchtap="onCreateClose"></view>
-    <view class="modal-content">
-      <text class="modal-kicker">NEW RULE</text>
-      <text class="modal-title">新增营销规则</text>
-
-      <view class="form-group">
-        <text class="form-label">规则名称</text>
-        <input class="form-input" placeholder="例如：老板红包5元" value="{{createForm.name}}" bindinput="onInputRuleName" />
-      </view>
-
-      <view class="form-group">
-        <text class="form-label">触发类型</text>
-        <view class="type-selector">
-          <view class="type-option {{createForm.trigger_type === 'payment' ? 'active' : ''}}" bindtap="onSelectTriggerType" data-value="payment">支付后触发</view>
-          <view class="type-option {{createForm.trigger_type === 'manual' ? 'active' : ''}}" bindtap="onSelectTriggerType" data-value="manual">手动发放</view>
-        </view>
-      </view>
-
-      <view class="form-group" wx:if="{{createForm.trigger_type === 'payment'}}">
-        <text class="form-label">支付后发券门槛（实付金额，元；0=支付成功即发）</text>
-        <input class="form-input" type="digit" placeholder="0" value="{{createForm.trigger_value}}" bindinput="onInputTriggerValue" />
-      </view>
-
-      <view class="form-group">
-        <text class="form-label">关联券模板（发券动作）</text>
-        <picker mode="selector" range="{{templateOptions}}" range-key="name" value="{{createForm.templateIndex >= 0 ? createForm.templateIndex : -1}}" bindchange="onSelectTemplate">
-          <view class="form-input form-picker">
-            <text wx:if="{{createForm.templateIndex >= 0 && templateOptions[createForm.templateIndex]}}">{{templateOptions[createForm.templateIndex].name}}</text>
-            <text wx:else style="color:rgba(232,224,212,0.3)">请选择券模板</text>
-          </view>
-        </picker>
-      </view>
-
-      <view class="form-group">
-        <text class="form-label">目标人群（至少选一个）</text>
-        <view class="store-checks">
-          <view class="store-check" wx:for="{{tagChecks}}" wx:key="value" bindtap="onToggleCreateTag" data-value="{{item.value}}">
-            <view class="store-check-box {{item.checked ? 'checked' : ''}}">
-              <text wx:if="{{item.checked}}">✓</text>
-            </view>
-            <text class="store-check-name">{{item.label}}</text>
-          </view>
-        </view>
-      </view>
-
-      <view class="form-group">
-        <text class="form-label">适用门店（至少选一个）</text>
-        <view class="store-checks">
-          <view class="store-check" wx:for="{{storeChecks}}" wx:key="id" bindtap="onToggleCreateStore" data-id="{{item.id}}">
-            <view class="store-check-box {{item.checked ? 'checked' : ''}}">
-              <text wx:if="{{item.checked}}">✓</text>
-            </view>
-            <text class="store-check-name">{{item.name}}</text>
-          </view>
-        </view>
-      </view>
-
-      <view class="form-group">
-        <text class="form-label">优先级（数字越大越优先）</text>
-        <input class="form-input" type="number" placeholder="10" value="{{createForm.priority}}" bindinput="onInputPriority" />
-      </view>
-
-      <view class="form-group">
-        <text class="form-label">每人每天最多触发次数</text>
-        <input class="form-input" type="number" placeholder="1" value="{{createForm.daily_user_limit}}" bindinput="onInputDailyLimit" />
-      </view>
-
-      <view class="form-group">
-        <text class="form-label">全局每日发放上限</text>
-        <input class="form-input" type="number" placeholder="100" value="{{createForm.global_daily_limit}}" bindinput="onInputGlobalLimit" />
-      </view>
-
-      <view class="form-actions">
-        <button class="btn-cancel" bindtap="onCreateClose">取消</button>
-        <button class="btn-submit" bindtap="onSubmitCreate" loading="{{creating}}">创建</button>
-      </view>
-    </view>
-  </view>
 </view>

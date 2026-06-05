@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "openapi": []
+  },
+  "triggers": [
+    {
+      "name": "syncMarketingRulesTimer",
+      "type": "timer",
+      "config": "0 */2 * * * * *"
+    }
+  ]
+}
