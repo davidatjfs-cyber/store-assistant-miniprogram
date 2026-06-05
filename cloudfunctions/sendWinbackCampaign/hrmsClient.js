@@ -52,4 +52,34 @@ async function postWinbackSms(payload) {
   return last;
 }
 
-module.exports = { postWinbackSms };
+// 从 HRMS 拉「储值客户·有余额+沉睡」召回名单(GET)
+function getStoredValueTargets(query) {
+  return new Promise(function (resolve) {
+    const base = process.env.HRMS_STORED_VALUE_TARGETS_URL || '';
+    const secret = process.env.HRMS_GROWTH_EVENT_SECRET || process.env.MINIPROGRAM_SYNC_SECRET || '';
+    if (!base || !secret) return resolve({ ok: false, error: 'targets_url_or_secret_missing' });
+    const qs = Object.keys(query || {}).filter(function (k) { return query[k] != null && query[k] !== ''; })
+      .map(function (k) { return encodeURIComponent(k) + '=' + encodeURIComponent(query[k]); }).join('&');
+    let u;
+    try { u = new URL(base + (qs ? (base.indexOf('?') >= 0 ? '&' : '?') + qs : '')); } catch (e) { return resolve({ ok: false, error: 'bad_url' }); }
+    const lib = u.protocol === 'http:' ? http : https;
+    const req = lib.request({
+      method: 'GET', hostname: u.hostname, port: u.port || (u.protocol === 'http:' ? 80 : 443),
+      path: u.pathname + u.search, timeout: 8000,
+      headers: { 'X-Miniprogram-Sync-Secret': secret }
+    }, function (res) {
+      let body = '';
+      res.on('data', function (c) { body += c; });
+      res.on('end', function () {
+        let parsed = null; try { parsed = JSON.parse(body); } catch (e) {}
+        const ok = res.statusCode >= 200 && res.statusCode < 300 && parsed && parsed.ok;
+        resolve({ ok: !!ok, statusCode: res.statusCode, targets: (parsed && parsed.targets) || [], error: parsed && parsed.error });
+      });
+    });
+    req.on('error', function (e) { resolve({ ok: false, error: e.message }); });
+    req.on('timeout', function () { req.destroy(); resolve({ ok: false, error: 'timeout' }); });
+    req.end();
+  });
+}
+
+module.exports = { postWinbackSms, getStoredValueTargets };

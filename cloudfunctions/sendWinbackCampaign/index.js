@@ -7,7 +7,7 @@
 //   campaign_id 活动标识（用于回流归因，可选）
 //   targets    [{ phone, name? }]  目标会员（手机号来自 HRMS 会员库导出）
 const cloud = require('wx-server-sdk');
-const { postWinbackSms } = require('./hrmsClient');
+const { postWinbackSms, getStoredValueTargets } = require('./hrmsClient');
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
@@ -82,7 +82,11 @@ exports.main = async (event, context) => {
   const valueYuan = Math.max(0, Math.floor(Number(ev.value_yuan || ev.value) || 0));
   const validDays = Math.max(1, Math.floor(Number(ev.valid_days) || 14));
   const campaignId = String(ev.campaign_id || '').trim() || ('winback_' + new Date().toISOString().slice(0, 10).replace(/-/g, ''));
-  const targets = Array.isArray(ev.targets) ? ev.targets : [];
+  let targets = Array.isArray(ev.targets) ? ev.targets : [];
+  // A 方案:不传 targets 时,自动从 HRMS 拉「储值客户·有余额+沉睡」名单
+  const dormantDays = Math.max(1, Math.floor(Number(ev.dormant_days) || 14));
+  const minBalanceYuan = Math.max(0, Math.floor(Number(ev.min_balance_yuan) || 1));
+  const maxTargets = Math.min(Math.max(Number(ev.max_targets) || 200, 1), 2000);
 
   try {
     // 1. 权限：管理员/店长
@@ -93,7 +97,17 @@ exports.main = async (event, context) => {
 
     if (!storeId) return { success: false, msg: '缺少 store_id' };
     if (valueYuan <= 0) return { success: false, msg: '券面额必须大于0' };
-    if (!targets.length) return { success: false, msg: '目标会员名单为空' };
+
+    // 未显式传名单 → 自动从 HRMS 储值客户库拉取
+    if (!targets.length) {
+      const pull = await getStoredValueTargets({
+        store_id: storeId, dormant_days: dormantDays, min_balance_yuan: minBalanceYuan, limit: maxTargets
+      });
+      if (!pull.ok) return { success: false, msg: '拉取储值召回名单失败: ' + (pull.error || pull.statusCode) };
+      targets = (pull.targets || []).map(function (t) { return { phone: t.phone, name: t.member_name || '' }; });
+    }
+    if (!targets.length) return { success: false, msg: '没有符合条件的储值召回对象(有余额+' + dormantDays + '天未消费)' };
+    targets = targets.slice(0, maxTargets);
 
     const templateId = await ensureWinbackTemplate(storeId);
     const validUntilText = formatValidUntil(validDays);

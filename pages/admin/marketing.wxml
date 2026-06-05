@@ -12,6 +12,37 @@
     </view>
   </view>
 
+  <!-- 储值客户召回 -->
+  <view style="margin:24rpx 24rpx 8rpx;padding:24rpx;border-radius:20rpx;background:rgba(255,255,255,0.06);">
+    <text style="font-size:30rpx;font-weight:600;color:#E8E0D4;">💎 储值客户召回</text>
+    <text style="display:block;margin:8rpx 0 16rpx;font-size:22rpx;color:rgba(232,224,212,0.5);">自动圈"有余额+久未消费"的储值客,按门店群发现金抵用券短信</text>
+
+    <view style="display:flex;align-items:center;margin:10rpx 0;">
+      <text style="width:160rpx;font-size:24rpx;color:#E8E0D4;">门店</text>
+      <picker mode="selector" range="{{stores}}" range-key="name" value="{{winbackStoreIndex}}" bindchange="onWinbackStore">
+        <view style="padding:12rpx 20rpx;background:rgba(255,255,255,0.08);border-radius:12rpx;color:#E8E0D4;font-size:24rpx;">{{stores[winbackStoreIndex].name}} ▾</view>
+      </picker>
+    </view>
+    <view style="display:flex;align-items:center;margin:10rpx 0;">
+      <text style="width:160rpx;font-size:24rpx;color:#E8E0D4;">券面额(元)</text>
+      <input type="number" value="{{winbackValue}}" bindinput="onWinbackValue" style="flex:1;padding:12rpx 20rpx;background:rgba(255,255,255,0.08);border-radius:12rpx;color:#E8E0D4;font-size:24rpx;" />
+    </view>
+    <view style="display:flex;align-items:center;margin:10rpx 0;">
+      <text style="width:160rpx;font-size:24rpx;color:#E8E0D4;">有效期(天)</text>
+      <input type="number" value="{{winbackValidDays}}" bindinput="onWinbackValidDays" style="flex:1;padding:12rpx 20rpx;background:rgba(255,255,255,0.08);border-radius:12rpx;color:#E8E0D4;font-size:24rpx;" />
+    </view>
+    <view style="display:flex;align-items:center;margin:10rpx 0;">
+      <text style="width:160rpx;font-size:24rpx;color:#E8E0D4;">多少天未消费</text>
+      <input type="number" value="{{winbackDormantDays}}" bindinput="onWinbackDormant" style="flex:1;padding:12rpx 20rpx;background:rgba(255,255,255,0.08);border-radius:12rpx;color:#E8E0D4;font-size:24rpx;" />
+    </view>
+    <view style="display:flex;align-items:center;margin:10rpx 0;">
+      <text style="width:160rpx;font-size:24rpx;color:#E8E0D4;">余额≥(元)</text>
+      <input type="number" value="{{winbackMinBalance}}" bindinput="onWinbackMinBalance" style="flex:1;padding:12rpx 20rpx;background:rgba(255,255,255,0.08);border-radius:12rpx;color:#E8E0D4;font-size:24rpx;" />
+    </view>
+    <button style="margin-top:16rpx;" type="primary" loading="{{winbackRunning}}" disabled="{{winbackRunning}}" bindtap="onRunWinback">发起召回</button>
+    <text wx:if="{{winbackResult}}" style="display:block;margin-top:12rpx;font-size:22rpx;color:#7FE0B0;">{{winbackResult}}</text>
+  </view>
+
   <button class="btn-add" bindtap="onCreateTap">+ 新增规则</button>
 
   <view wx:if="{{loading}}" class="state">加载中…</view>
