@@ -27,7 +27,8 @@ for name in \
   seedMaijixianMarketing \
   verifyMaijixianSetup \
   sendWinbackCampaign \
-  reconcileRedemptions
+  reconcileRedemptions \
+  runWinbackJobs
 do
   if [[ -d "$CF/$name" ]]; then
     echo "==> npm install in $name"

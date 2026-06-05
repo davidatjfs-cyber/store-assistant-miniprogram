@@ -102,14 +102,7 @@ Page({
       trigger_value: '0',
       daily_user_limit: '1',
       global_daily_limit: '100'
-    },
-    winbackStoreIndex: 0,
-    winbackValue: '30',
-    winbackValidDays: '14',
-    winbackDormantDays: '14',
-    winbackMinBalance: '1',
-    winbackRunning: false,
-    winbackResult: ''
+    }
   },
 
   onLoad: function () {
@@ -403,46 +396,6 @@ Page({
       fail: function () {
         self.setData({ creating: false });
         wx.showToast({ title: '\u521b\u5efa\u5931\u8d25', icon: 'none' });
-      }
-    });
-  },
-
-  // ===== \u50a8\u503c\u5ba2\u6237\u53ec\u56de =====
-  onWinbackStore: function (e) { this.setData({ winbackStoreIndex: Number(e.detail.value) || 0 }); },
-  onWinbackValue: function (e) { this.setData({ winbackValue: e.detail.value }); },
-  onWinbackValidDays: function (e) { this.setData({ winbackValidDays: e.detail.value }); },
-  onWinbackDormant: function (e) { this.setData({ winbackDormantDays: e.detail.value }); },
-  onWinbackMinBalance: function (e) { this.setData({ winbackMinBalance: e.detail.value }); },
-  onRunWinback: function () {
-    var self = this;
-    var store = STORES[this.data.winbackStoreIndex] || STORES[0];
-    var value = Math.floor(Number(this.data.winbackValue) || 0);
-    if (value <= 0) { wx.showToast({ title: '\u8bf7\u8f93\u5165\u5238\u9762\u989d', icon: 'none' }); return; }
-    var days = Math.floor(Number(this.data.winbackValidDays) || 14);
-    var dormant = Math.floor(Number(this.data.winbackDormantDays) || 14);
-    var minBal = Math.floor(Number(this.data.winbackMinBalance) || 1);
-    wx.showModal({
-      title: '\u786e\u8ba4\u53d1\u8d77\u50a8\u503c\u53ec\u56de',
-      content: '\u95e8\u5e97:' + store.name + '\uff1b\u9762\u989d:' + value + '\u5143\uff1b\u6709\u6548\u671f:' + days + '\u5929\uff1b\u5bf9\u8c61:\u6709\u4f59\u989d\u2265' + minBal + '\u5143\u4e14' + dormant + '\u5929\u672a\u6d88\u8d39\u7684\u50a8\u503c\u5ba2\u6237\u3002\u786e\u5b9a\u7fa4\u53d1\u77ed\u4fe1?',
-      success: function (r) {
-        if (!r.confirm) return;
-        self.setData({ winbackRunning: true, winbackResult: '' });
-        wx.showLoading({ title: '\u53ec\u56de\u4e2d\u2026' });
-        wx.cloud.callFunction({
-          name: 'sendWinbackCampaign',
-          data: { store_id: store.id, value_yuan: value, valid_days: days, dormant_days: dormant, min_balance_yuan: minBal },
-          success: function (res) {
-            wx.hideLoading();
-            var d = res.result || {};
-            self.setData({ winbackRunning: false, winbackResult: d.msg || (d.success ? '\u5b8c\u6210' : '\u5931\u8d25') });
-            wx.showToast({ title: d.success ? '\u5df2\u53d1\u8d77' : '\u5931\u8d25', icon: d.success ? 'success' : 'none' });
-          },
-          fail: function (err) {
-            wx.hideLoading();
-            self.setData({ winbackRunning: false, winbackResult: '\u8c03\u7528\u5931\u8d25:' + ((err && err.errMsg) || '') });
-            wx.showToast({ title: '\u8c03\u7528\u5931\u8d25', icon: 'none' });
-          }
-        });
       }
     });
   }
