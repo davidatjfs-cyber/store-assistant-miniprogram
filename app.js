@@ -360,11 +360,22 @@ function getKeruyunTableTokenMapping(storeId, tableId) {
   if (!sid || !tid) return null;
   var storeMappings = ORDER_TABLE_TOKEN_MAPPINGS[sid];
   if (!storeMappings) return null;
-  return storeMappings[tid] || storeMappings[tid.toUpperCase()] || storeMappings[tid.toLowerCase()] || null;
+  var result = storeMappings[tid] || storeMappings[tid.toUpperCase()] || storeMappings[tid.toLowerCase()] || null;
+  if (result) return result;
+  try {
+    var decoded = decodeURIComponent(tid);
+    if (decoded !== tid) {
+      result = storeMappings[decoded] || storeMappings[decoded.toUpperCase()] || storeMappings[decoded.toLowerCase()] || null;
+      if (result) return result;
+    }
+  } catch(e) {}
+  return null;
 }
 
 function getOrderLaunchParams(scanParams) {
   var params = Object.assign({}, scanParams || {});
+  try { if (typeof params.table_id === 'string') params.table_id = decodeURIComponent(params.table_id); } catch(e) {}
+  try { if (typeof params.store_id === 'string') params.store_id = decodeURIComponent(params.store_id); } catch(e) {}
   var mapping = getKeruyunTableTokenMapping(params.store_id, params.table_id);
   if (!mapping) return params;
 
@@ -408,49 +419,53 @@ App({
   parseLaunchOptions(options) {
     options = options || {};
     const scene = options.scene;
-    let query = options.query || {};
+    var query = Object.assign({}, options.query || {});
 
-    // 解析 scene 字符串（支持 options.scene 和 query.scene 两种来源）
-    // wxacode.getUnlimited: scene 字符串在 query.scene 中
-    // wxacode.get: scene 字符串在 query.scene 中（URL 编码）
-    // 旧版兼容: scene 字符串直接在 options.scene 中
     var sceneStr = '';
     if (query.scene && typeof query.scene === 'string' && query.scene.indexOf('=') >= 0) {
       sceneStr = query.scene;
-    } else if (options.scene && typeof options.scene === 'string' && options.scene.indexOf('=') >= 0) {
+    } else if (typeof options.scene === 'string' && options.scene.indexOf('=') >= 0) {
       sceneStr = options.scene;
     }
 
-    Object.keys(query).forEach(function(key) {
-      var val = query[key];
-      if (typeof val === 'string' && val.indexOf('%') >= 0) {
-        try { query[key] = decodeURIComponent(val); } catch(e) {}
+    var i, key, val, decoded, pairs, kv;
+    for (i = 0; i < 2; i++) {
+      for (key in query) {
+        if (!query.hasOwnProperty(key)) continue;
+        val = query[key];
+        if (typeof val !== 'string') continue;
+        try {
+          decoded = decodeURIComponent(val);
+          if (decoded !== val) query[key] = decoded;
+        } catch(e) {}
       }
-    });
+    }
 
     if (!query.store_id && !query.table_id && sceneStr) {
       try {
-        var decoded = decodeURIComponent(sceneStr);
-        decoded.split('&').forEach(function(pair) {
-          var kv = pair.split('=');
-          if (kv.length === 2 && kv[0]) {
-            var key = kv[0];
-            var val = kv[1];
-            if (key === 't') key = 'table_id';
-            if (key === 's') key = 'store_id';
-            query[key] = val;
+        var decodedScene = sceneStr;
+        try { decodedScene = decodeURIComponent(decodedScene); } catch(e2) {}
+        decodedScene.split('&').forEach(function(pair) {
+          var kv2 = pair.split('=');
+          if (kv2.length === 2 && kv2[0]) {
+            var k = kv2[0];
+            var v = kv2[1];
+            if (k === 't') k = 'table_id';
+            if (k === 's') k = 'store_id';
+            try { v = decodeURIComponent(v); } catch(e3) {}
+            query[k] = v;
           }
         });
       } catch(e) {}
     }
 
-    const campaignId = query.campaign_id || query.campaignId || query.scene_param || '';
+    var campaignId = query.campaign_id || query.campaignId || query.scene_param || '';
     if (campaignId) {
       this.globalData.campaignId = campaignId;
     }
 
     var isScanScene = scene === 1047 || scene === 1011 || scene === 1027 || scene === 1012 || scene === 1013 || scene === 1020 || scene === 1036 || scene === 1038 || scene === 1048 || scene === 1049;
-    if (query && (query.table_id || query.store_id || query.store_display_name)) {
+    if (query.table_id || query.store_id || query.store_display_name) {
       this.globalData.scanParams = Object.assign(
         {
           table_id: query.table_id || '',
@@ -460,7 +475,7 @@ App({
         },
         query
       );
-    } else if (isScanScene && query && Object.keys(query).length > 0) {
+    } else if (isScanScene && Object.keys(query).length > 0) {
       this.globalData.scanParams = Object.assign(
         {
           table_id: query.table_id || '',

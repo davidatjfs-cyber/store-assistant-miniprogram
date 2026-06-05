@@ -105,7 +105,7 @@ exports.main = async (event) => {
     var base64 = '';
     var qrBuffer = null;
     try {
-      var pathWithParams = 'pages/index/index?table_id=' + encodeURIComponent(tableId) + '&store_id=' + encodeURIComponent(storeId);
+      var pathWithParams = 'pages/index/index?table_id=' + tableId + '&store_id=' + storeId;
       // 优先 get：直接把 table_id / store_id 写入 query，避免 scene 解析差异导致门店串线
       try {
         console.log('[BatchQR] 尝试 wxacode.get, path=' + pathWithParams);
