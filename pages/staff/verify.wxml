@@ -44,8 +44,8 @@
     <text class="title">门店核销</text>
     <text class="desc">扫描顾客券详情页展示的二维码</text>
     <view class="field">
-      <text class="field-label">本单消费金额（分）</text>
-      <input class="field-input" type="number" placeholder="券模板设了最低消费时必填" value="{{orderAmountFen}}" bindinput="onAmountInput" />
+      <text class="field-label">本单消费金额（元）</text>
+      <input class="field-input" type="digit" placeholder="券模板设了最低消费时必填，按元填写" value="{{orderAmountYuan}}" bindinput="onAmountInput" />
     </view>
     <button class="btn-primary" type="primary" bindtap="onScan">扫一扫核销</button>
     <view class="field" style="margin-top:16rpx;">
@@ -77,7 +77,7 @@
       <text class="regular-name">{{editName}}</text>
       <view class="field">
         <text class="field-label">姓（如「张」，复姓可填2字）</text>
-        <input class="field-input" maxlength="2" placeholder="请输入中文姓氏" value="{{editSurname}}" bindinput="onSurnameInput" />
+        <input class="field-input" maxlength="-1" placeholder="请输入中文姓氏" value="{{editSurname}}" bindinput="onSurnameInput" />
       </view>
       <view class="field">
         <text class="field-label">性别</text>

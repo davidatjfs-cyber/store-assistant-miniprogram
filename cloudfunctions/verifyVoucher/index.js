@@ -215,19 +215,33 @@ exports.main = async (event, context) => {
       });
     }
 
-    const markUsed = await db
-      .collection('user_vouchers')
-      .where({
-        _id: voucherId,
-        status: 'unused'
-      })
-      .update({
-        data: {
-          status: 'used',
-          used_at: db.serverDate(),
-          updated_at: db.serverDate()
-        }
-      });
+    // 多次核销支持：max_uses>1 的券(如长期流失「2张/1码」)，每次核销 used_count+1，
+    // 用满后才置 used。单次券(无 max_uses 或=1)走原逻辑，完全向后兼容。
+    const maxUses = Math.max(1, Number(row.max_uses) || 1);
+    const usedCount = Math.max(0, Number(row.used_count) || 0);
+    const newUsedCount = usedCount + 1;
+    const fullyConsumed = newUsedCount >= maxUses;
+
+    let markUsed;
+    if (maxUses > 1) {
+      // 乐观锁带 used_count：并发核销同一码时只会有一方命中，避免超核
+      markUsed = await db
+        .collection('user_vouchers')
+        .where({ _id: voucherId, status: 'unused', used_count: usedCount })
+        .update({
+          data: Object.assign(
+            { used_count: _.inc(1), updated_at: db.serverDate() },
+            fullyConsumed ? { status: 'used', used_at: db.serverDate() } : {}
+          )
+        });
+    } else {
+      markUsed = await db
+        .collection('user_vouchers')
+        .where({ _id: voucherId, status: 'unused' })
+        .update({
+          data: { status: 'used', used_at: db.serverDate(), updated_at: db.serverDate() }
+        });
+    }
 
     const updated =
       markUsed &&
@@ -285,7 +299,8 @@ exports.main = async (event, context) => {
       coupon_id: voucherId,
       order_id: row.order_id || '',
       amount_fen: order_amount_fen != null ? parseInt(order_amount_fen, 10) || 0 : 0,
-      idempotency_key: 'coupon_redeemed:' + voucherId,
+      // 多次券：每次核销带 used_count 后缀，避免 HRMS 幂等去重把第2次核销吞掉
+      idempotency_key: 'coupon_redeemed:' + voucherId + (maxUses > 1 ? ':' + newUsedCount : ''),
       metadata: {
         template_id: row.template_id,
         staff_id: staffId,
@@ -343,7 +358,8 @@ exports.main = async (event, context) => {
 
     return {
       success: true,
-      message: '核销成功',
+      message: maxUses > 1 ? ('核销成功（第 ' + newUsedCount + '/' + maxUses + ' 次）') : '核销成功',
+      remaining_uses: Math.max(0, maxUses - newUsedCount),
       data: {
         voucher_id: voucherId,
         user_id: row.user_id,

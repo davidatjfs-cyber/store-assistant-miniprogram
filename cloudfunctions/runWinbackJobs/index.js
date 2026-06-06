@@ -1,7 +1,7 @@
 // 定时执行器(每2分钟):拉取 HRMS 冻结好的召回任务 → 逐个生成带短码的券 + 调 HRMS 发短信 → 回写结果。
 // 发起权在 HRMS,本函数只"执行已冻结名单"。timer 触发(无用户 OPENID),不对外暴露发起能力。
 const cloud = require('wx-server-sdk');
-const { getPendingJob, postWinbackSms, postJobResult } = require('./hrmsClient');
+const { getPendingJob, postWinbackSms, postCampaignSms, postJobResult } = require('./hrmsClient');
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
@@ -35,6 +35,30 @@ async function ensureWinbackTemplate(storeId) {
   }).catch(() => {});
   return tplId;
 }
+// 通用发券段模板（VIP/新客/活跃/长期流失）。统一 min_spend=0：礼品/赠菜券无门槛，
+// 也避免「按元/按分」误判导致核销失败（线上曾因门槛核销不了）。一段一门店一模板。
+const CAMPAIGN_TPL_META = {
+  vip_gift:    { name: 'VIP专属·赠菜券',   type: 'gift' },
+  newcomer_4d: { name: '新客回头·赠菜券',  type: 'gift' },
+  newcomer_8d: { name: '新客回头·赠菜券',  type: 'gift' },
+  active:      { name: '活跃客·赠菜券',    type: 'gift' },
+  lost_long:   { name: '长期流失·满额回归券', type: 'cash' },
+};
+async function ensureCampaignTemplate(kind, storeId) {
+  const meta = CAMPAIGN_TPL_META[kind] || { name: '营销发券', type: 'gift' };
+  const tplId = 'campaign_' + kind + '_' + storeId;
+  const exist = await db.collection('voucher_templates').doc(tplId).get().catch(() => null);
+  if (exist && exist.data) return tplId;
+  await db.collection('voucher_templates').add({
+    data: {
+      _id: tplId, name: meta.name, type: meta.type, store_ids: [String(storeId)],
+      min_spend: 0, valid_days: 365, stock: -1,
+      usage_rule: '凭券码到店核销，每桌限用，不与其他优惠同享',
+      source: 'campaign', campaign_key: kind, created_at: db.serverDate(), updated_at: db.serverDate()
+    }
+  }).catch(() => {});
+  return tplId;
+}
 async function findOrCreateUserByPhone(phone) {
   const clean = String(phone || '').replace(/[\s\-]/g, '');
   if (!clean || clean.length < 7) return null;
@@ -57,7 +81,17 @@ exports.main = async () => {
     const campaignId = String(job.campaign_id || '');
     const targets = Array.isArray(job.targets) ? job.targets : [];
 
-    const templateId = await ensureWinbackTemplate(storeId);
+    // kind 区分管道：'winback' 走储值召回(现金券+winback短信)；其余为通用发券段，
+    // 走 campaign 模板 + /campaign/send-sms。coupon_count>1 时同一短码可核销多次(max_uses)。
+    const kind = String(job.kind || 'winback');
+    const isWinback = kind === 'winback';
+    const result = (job.result && typeof job.result === 'object') ? job.result : {};
+    const couponCount = Math.max(1, Math.floor(Number(result.coupon_count) || 1));
+    const source = isWinback ? 'winback' : 'campaign';
+
+    const templateId = isWinback
+      ? await ensureWinbackTemplate(storeId)
+      : await ensureCampaignTemplate(kind, storeId);
     const validUntilText = formatValidUntil(validDays);
     const expireAt = new Date(Date.now() + validDays * 86400000);
     let sent = 0, failed = 0;
@@ -71,20 +105,28 @@ exports.main = async () => {
         if (!user) { failed++; continue; }
         const shortCode = await genUniqueShortCode();
         if (!shortCode) { failed++; continue; }
-        const voucherId = 'wb_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
-        await db.collection('user_vouchers').add({
-          data: {
-            _id: voucherId, user_id: user._id, template_id: templateId, store_id: storeId,
-            status: 'unused', qr_code: 'voucher:' + voucherId, short_code: shortCode,
-            value_fen: valueYuan * 100, campaign_id: campaignId, source: 'winback',
-            created_at: db.serverDate(), expire_at: expireAt, updated_at: db.serverDate()
-          }
-        });
-        const smsRes = await postWinbackSms({
-          phone: phone, store_id: storeId, value_yuan: valueYuan, valid_until: validUntilText,
-          coupon_code: shortCode, name: t.name || '', campaign_id: campaignId,
-          idempotency_key: 'winback_sms:' + shortCode
-        });
+        const voucherId = (isWinback ? 'wb_' : 'cmp_') + Date.now() + '_' + Math.floor(Math.random() * 100000);
+        const voucherData = {
+          _id: voucherId, user_id: user._id, template_id: templateId, store_id: storeId,
+          status: 'unused', qr_code: 'voucher:' + voucherId, short_code: shortCode,
+          value_fen: valueYuan * 100, campaign_id: campaignId, campaign_key: kind, source: source,
+          created_at: db.serverDate(), expire_at: expireAt, updated_at: db.serverDate()
+        };
+        // 多张/一码：max_uses 张数，核销时逐次累计 used_count，用满才置 used
+        if (couponCount > 1) { voucherData.max_uses = couponCount; voucherData.used_count = 0; }
+        await db.collection('user_vouchers').add({ data: voucherData });
+
+        const smsRes = isWinback
+          ? await postWinbackSms({
+              phone: phone, store_id: storeId, value_yuan: valueYuan, valid_until: validUntilText,
+              coupon_code: shortCode, name: t.name || '', campaign_id: campaignId,
+              idempotency_key: 'winback_sms:' + shortCode
+            })
+          : await postCampaignSms({
+              campaign_key: kind, phone: phone, store_id: storeId, value_yuan: valueYuan,
+              valid_until: validUntilText, coupon_code: shortCode, name: t.name || '',
+              campaign_id: campaignId, idempotency_key: kind + ':' + shortCode
+            });
         if (smsRes && smsRes.ok) sent++; else failed++;
       } catch (e) { failed++; }
     }

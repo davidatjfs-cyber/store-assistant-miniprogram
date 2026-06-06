@@ -36,8 +36,19 @@ function getPendingJob() {
 function postWinbackSms(payload) {
   return request('POST', process.env.HRMS_WINBACK_SMS_URL || '', payload);
 }
+// 通用发券短信（VIP/新客/活跃/长期流失）→ HRMS /api/growth/campaign/send-sms。
+// 优先取专用 env；未配置则由 winback 短信 URL 同源推导(只换 path 段)，免去新增环境变量。
+function campaignSmsUrl() {
+  const direct = process.env.HRMS_CAMPAIGN_SMS_URL || '';
+  if (direct) return direct;
+  const wb = process.env.HRMS_WINBACK_SMS_URL || '';
+  return wb ? wb.replace('/winback/send-sms', '/campaign/send-sms') : '';
+}
+function postCampaignSms(payload) {
+  return request('POST', campaignSmsUrl(), payload);
+}
 function postJobResult(payload) {
   return request('POST', process.env.HRMS_WINBACK_JOBRESULT_URL || '', payload);
 }
 
-module.exports = { getPendingJob, postWinbackSms, postJobResult };
+module.exports = { getPendingJob, postWinbackSms, postCampaignSms, postJobResult };

@@ -3,7 +3,7 @@ var roleUtil = require('../../utils/role.js');
 Page({
   data: {
     storeId: '',
-    orderAmountFen: '',
+    orderAmountYuan: '',
     lastMessage: '',
     lastOk: false,
     arrivals: [],
@@ -26,9 +26,23 @@ Page({
   _pollTimer: null,
 
   onAmountInput: function (e) {
-    // 只允许数字输入
-    var val = String(e.detail.value).replace(/[^\d]/g, '');
-    this.setData({ orderAmountFen: val });
+    // 按「元」输入：允许数字 + 最多一个小数点、两位小数（核销时再换算成分）
+    var val = String(e.detail.value).replace(/[^\d.]/g, '');
+    var firstDot = val.indexOf('.');
+    if (firstDot >= 0) {
+      val = val.slice(0, firstDot + 1) + val.slice(firstDot + 1).replace(/\./g, '');
+      val = val.replace(/^(\d*\.\d{0,2}).*$/, '$1');
+    }
+    this.setData({ orderAmountYuan: val });
+  },
+
+  // 「元」字符串 → 「分」整数；空/非法返回 ''（保持原「未填」语义，由后端按需校验）
+  amountFenFromYuan: function () {
+    var y = String(this.data.orderAmountYuan || '').trim();
+    if (!y) return '';
+    var n = Number(y);
+    if (!isFinite(n) || n < 0) return '';
+    return String(Math.round(n * 100));
   },
 
   onLoad: function () {
@@ -249,7 +263,7 @@ Page({
       data: {
         qr_code: qrCode,
         store_id: self.data.storeId || '',
-        order_amount_fen: self.data.orderAmountFen
+        order_amount_fen: self.amountFenFromYuan()
       },
       success: function (res) {
         wx.hideLoading();
