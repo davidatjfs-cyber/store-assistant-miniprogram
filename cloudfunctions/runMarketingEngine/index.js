@@ -12,8 +12,20 @@ exports.main = async (event, context) => {
   const _ = db.command;
   const hook = (event && event.hook) || '';
 
+  // 全局硬开关：支付后自动发券（增长券/营销券）总闸。
+  // 关停原因：店主要求暂停一切对客自动发券，待准备好后再开启。
+  // 设为 true 即可恢复 post_payment 自动发券；此开关不受 syncMarketingRules 镜像影响。
+  const POST_PAYMENT_AUTO_ISSUE_ENABLED = false;
+
   try {
     if (hook === 'post_payment') {
+      if (!POST_PAYMENT_AUTO_ISSUE_ENABLED) {
+        return {
+          success: true,
+          disabled: true,
+          message: 'post_payment 自动发券已硬关停（店主要求暂停对客自动发券）'
+        };
+      }
       if (!event.user_id) {
         return { success: false, message: '缺少 user_id' };
       }
@@ -37,6 +49,24 @@ exports.main = async (event, context) => {
       const snap = await db
         .collection('marketing_rules')
         .where({ trigger_type: 'inactivity', active: true })
+        .get();
+      let n = 0;
+      for (let i = 0; i < snap.data.length; i++) {
+        await db
+          .collection('marketing_rules')
+          .doc(snap.data[i]._id)
+          .update({ data: { active: false, updated_at: db.serverDate() } });
+        n++;
+      }
+      return { success: true, disabled_count: n };
+    }
+
+    if (hook === 'disable_all_rules') {
+      // 维护操作（幂等）：把镜像里所有 active 规则停用。
+      // 用于 HRMS 源已全部停用、但镜像因空列表保护未清理时的兜底清场。
+      const snap = await db
+        .collection('marketing_rules')
+        .where({ active: true })
         .get();
       let n = 0;
       for (let i = 0; i < snap.data.length; i++) {

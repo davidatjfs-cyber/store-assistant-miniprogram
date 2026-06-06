@@ -340,7 +340,10 @@ exports.main = async (event, context) => {
       }
     }
 
-    if (didMarkPaid) {
+    // 全局硬开关：支付后自动下发订阅消息。店主要求暂停一切对客自动推送，
+    // 待准备好后改回 true 即可恢复（此为购买成功的交易确认消息）。
+    const POST_PAYMENT_SUBSCRIBE_MSG_ENABLED = false;
+    if (didMarkPaid && POST_PAYMENT_SUBSCRIBE_MSG_ENABLED) {
       try {
         await cloud.openapi.subscribeMessage.send({
           touser: userOpenid,
