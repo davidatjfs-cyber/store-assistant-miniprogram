@@ -94,7 +94,7 @@ exports.main = async () => {
       : await ensureCampaignTemplate(kind, storeId);
     const validUntilText = formatValidUntil(validDays);
     const expireAt = new Date(Date.now() + validDays * 86400000);
-    let sent = 0, failed = 0;
+    let sent = 0, failed = 0, skipped = 0;
 
     for (let i = 0; i < targets.length; i++) {
       const t = targets[i] || {};
@@ -127,12 +127,17 @@ exports.main = async () => {
               valid_until: validUntilText, coupon_code: shortCode, name: t.name || '',
               campaign_id: campaignId, idempotency_key: kind + ':' + shortCode
             });
-        if (smsRes && smsRes.ok) sent++; else failed++;
+        // 频控/幂等命中时 HRMS 返回 {ok:true, skipped|deduped:true}，未真正发出，
+        // 不计入 sent(避免发送量虚高)，单列 skipped 统计。
+        var body = (smsRes && smsRes.body) || {};
+        if (smsRes && smsRes.ok && (body.skipped || body.deduped)) skipped++;
+        else if (smsRes && smsRes.ok) sent++;
+        else failed++;
       } catch (e) { failed++; }
     }
 
-    await postJobResult({ job_id: job.id, sent: sent, failed: failed, status: 'done', result: { total: targets.length } });
-    return { success: true, job_id: job.id, total: targets.length, sent: sent, failed: failed };
+    await postJobResult({ job_id: job.id, sent: sent, failed: failed, status: 'done', result: { total: targets.length, skipped: skipped } });
+    return { success: true, job_id: job.id, total: targets.length, sent: sent, failed: failed, skipped: skipped };
   } catch (err) {
     console.error('runWinbackJobs error:', err);
     return { success: false, msg: (err && err.message) || String(err) };
