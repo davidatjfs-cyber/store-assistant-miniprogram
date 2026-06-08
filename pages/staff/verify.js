@@ -101,6 +101,9 @@ Page({
     this.setData({ regularTipVisible: false, regularTip: null });
   },
 
+  // 空操作：吸收熟客弹窗背景层的点击，防止误触关闭（必须点「知道了，已确认」才消失）
+  noop: function () {},
+
   // 打开「补全资料」弹窗，预填已存的姓/性别
   openProfileEdit: function (e) {
     var d = e.currentTarget.dataset || {};

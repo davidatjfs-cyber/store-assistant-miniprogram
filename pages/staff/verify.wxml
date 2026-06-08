@@ -93,13 +93,14 @@
 
   <!-- 熟客到店实时弹窗 -->
   <view class="regular-modal" wx:if="{{regularTipVisible}}">
-    <view class="regular-backdrop" bindtap="closeRegularTip"></view>
+    <!-- 背景层不再可点关闭，避免服务员忙碌时误触导致提醒一闪而过 -->
+    <view class="regular-backdrop" catchtap="noop"></view>
     <view class="regular-card">
       <text class="regular-kicker">🔔 熟客到店</text>
       <text class="regular-name">{{regularTip.display_name}}</text>
       <text class="regular-line">累计到店 {{regularTip.total_visits}} 次</text>
       <text class="regular-line" wx:if="{{regularTip.favorite_dish}}">偏好：{{regularTip.favorite_dish}}</text>
-      <button class="regular-btn" bindtap="closeRegularTip">知道了</button>
+      <button class="regular-btn" bindtap="closeRegularTip">知道了，已确认</button>
     </view>
   </view>
 </view>
