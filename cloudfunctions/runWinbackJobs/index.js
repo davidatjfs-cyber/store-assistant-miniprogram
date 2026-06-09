@@ -107,9 +107,20 @@ exports.main = async () => {
       : await ensureCampaignTemplate(kind, storeId);
     const validUntilText = formatValidUntil(validDays);
     const expireAt = new Date(Date.now() + validDays * 86400000);
-    let sent = 0, failed = 0, skipped = 0;
-
-    for (let i = 0; i < targets.length; i++) {
+    // 断点续跑：大任务（数十~上百人）无法在单次云函数超时内发完。按 result.processed 记录
+    // 已处理到的下标，每次只处理「时间预算 + 批量上限」内的一段；未发完则置回 pending，由下一个
+    // 定时触发续跑，已处理的人不再重复建券/发短信，杜绝超时假死与重复打扰。
+    let sent = Math.max(0, Math.floor(Number(result.sent_acc) || 0));
+    let failed = Math.max(0, Math.floor(Number(result.failed_acc) || 0));
+    let skipped = Math.max(0, Math.floor(Number(result.skipped_acc) || 0));
+    const startOffset = Math.max(0, Math.floor(Number(result.processed) || 0));
+    const BUDGET_MS = 50000; // 函数超时设为 60s，留 ~10s 余量回写结果
+    const MAX_BATCH = 300;
+    const deadline = Date.now() + BUDGET_MS;
+    let i = startOffset;
+    for (; i < targets.length; i++) {
+      if (i - startOffset >= MAX_BATCH) break;
+      if (Date.now() > deadline) break;
       const t = targets[i] || {};
       const phone = String(t.phone || '').replace(/[\s\-]/g, '');
       if (!phone) { failed++; continue; }
@@ -149,8 +160,19 @@ exports.main = async () => {
       } catch (e) { failed++; }
     }
 
-    await postJobResult({ job_id: job.id, sent: sent, failed: failed, status: 'done', result: { total: targets.length, skipped: skipped } });
-    return { success: true, job_id: job.id, total: targets.length, sent: sent, failed: failed, skipped: skipped };
+    // 断点续跑回写:i 为已处理到的下标。未发完(processed<total)置回 pending,由下一个定时触发续跑;
+    // 已发完置 done。sent/failed/skipped 为累计值,offset 持久化在 result.processed。
+    const processed = i;
+    const finished = processed >= targets.length;
+    const mergedResult = Object.assign({}, result, {
+      total: targets.length, processed: processed,
+      sent_acc: sent, failed_acc: failed, skipped_acc: skipped, skipped: skipped
+    });
+    await postJobResult({
+      job_id: job.id, sent: sent, failed: failed,
+      status: finished ? 'done' : 'pending', result: mergedResult
+    });
+    return { success: true, job_id: job.id, total: targets.length, processed: processed, finished: finished, sent: sent, failed: failed, skipped: skipped };
   } catch (err) {
     console.error('runWinbackJobs error:', err);
     return { success: false, msg: (err && err.message) || String(err) };
