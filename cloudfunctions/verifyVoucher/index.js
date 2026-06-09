@@ -325,6 +325,10 @@ exports.main = async (event, context) => {
       metadata: {
         template_id: row.template_id,
         staff_id: staffId,
+        // 中文活动名回传：HRMS「到店核销明细」据此显示来自哪个活动（之前无此字段，故显示「—」）
+        coupon_name: couponName,
+        coupon_label: couponLabel,
+        coupon_type: couponType,
         // 短码 + 券额回传：HRMS 据此把「发送日志(按短码)」翻成已核销，并核算券成本
         short_code: row.short_code || '',
         coupon_value_fen: row.value_fen || 0,
