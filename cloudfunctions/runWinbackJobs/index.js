@@ -38,17 +38,30 @@ async function ensureWinbackTemplate(storeId) {
 // 通用发券段模板（VIP/新客/活跃/长期流失）。统一 min_spend=0：礼品/赠菜券无门槛，
 // 也避免「按元/按分」误判导致核销失败（线上曾因门槛核销不了）。一段一门店一模板。
 const CAMPAIGN_TPL_META = {
-  vip_gift:    { name: 'VIP专属·赠菜券',   type: 'gift' },
-  newcomer_4d: { name: '新客回头·赠菜券',  type: 'gift' },
-  newcomer_8d: { name: '新客回头·赠菜券',  type: 'gift' },
-  active:      { name: '活跃客·赠菜券',    type: 'gift' },
-  lost_long:   { name: '长期流失·满额回归券', type: 'cash' },
+  vip_gift:        { name: 'VIP专属·赠菜券',       type: 'gift' },
+  newcomer_4d:     { name: '新客回头·赠菜券',      type: 'gift' },
+  newcomer_8d:     { name: '新客回头·赠菜券',      type: 'gift' },
+  active:          { name: '活跃客·赠菜券',        type: 'gift' },
+  newcomer_recall: { name: '新客二次召回·21-60天', type: 'cash' },
+  regular_cooling: { name: '常客降温唤醒·21-60天', type: 'gift' },
+  vip_winback:     { name: 'VIP专属召回·61-365天', type: 'cash' },
+  dormant_60_90:   { name: '沉睡召回·60-90天',     type: 'cash' },
+  dormant_90_180:  { name: '沉睡召回·90-180天',    type: 'cash' },
+  lost_long:       { name: '长期流失·满额回归券',  type: 'cash' },
 };
 async function ensureCampaignTemplate(kind, storeId) {
   const meta = CAMPAIGN_TPL_META[kind] || { name: '营销发券', type: 'gift' };
   const tplId = 'campaign_' + kind + '_' + storeId;
   const exist = await db.collection('voucher_templates').doc(tplId).get().catch(() => null);
-  if (exist && exist.data) return tplId;
+  if (exist && exist.data) {
+    // 已存在但名称/类型与最新定义不符(如早期用通用名建的)，刷新一次，保证核销时回出正确中文活动名
+    if (CAMPAIGN_TPL_META[kind] && (exist.data.name !== meta.name || exist.data.type !== meta.type)) {
+      await db.collection('voucher_templates').doc(tplId)
+        .update({ data: { name: meta.name, type: meta.type, updated_at: db.serverDate() } })
+        .catch(() => {});
+    }
+    return tplId;
+  }
   await db.collection('voucher_templates').add({
     data: {
       _id: tplId, name: meta.name, type: meta.type, store_ids: [String(storeId)],

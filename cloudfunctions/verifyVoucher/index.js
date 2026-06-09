@@ -144,6 +144,18 @@ exports.main = async (event, context) => {
       .get();
     const template = tplSnap.data || {};
 
+    // 核销回执：把「中文活动名 + 面额」拼好回给店员，便于其在 POS 里手工登记入账
+    // （我们与 POS 未打通，店员核销后需自行在 POS 记账，否则客人无法买单）。
+    var couponValueFen = Number(row.value_fen) || 0;
+    var couponValueYuan = Math.round(couponValueFen / 100);
+    var couponName = template.name || '营销券';
+    var couponType = template.type || '';
+    var couponLabel = couponName + (
+      couponType === 'cash' && couponValueYuan > 0
+        ? '（' + couponValueYuan + '元现金券）'
+        : (couponType === 'gift' ? '（赠菜券）' : '')
+    );
+
     const rules = checkTemplateRules(template, {
       verifyStoreId: verifyStoreId,
       voucher_store_id: row.store_id,
@@ -174,7 +186,10 @@ exports.main = async (event, context) => {
         redeemed_at_text: redeemedAtText,
         redeemed_store_id: row.store_id || '',
         short_code: row.short_code || '',
-        value_fen: row.value_fen || 0
+        value_fen: row.value_fen || 0,
+        coupon_label: couponLabel,
+        coupon_name: couponName,
+        coupon_type: couponType
       };
     }
 
@@ -360,6 +375,13 @@ exports.main = async (event, context) => {
       success: true,
       message: maxUses > 1 ? ('核销成功（第 ' + newUsedCount + '/' + maxUses + ' 次）') : '核销成功',
       remaining_uses: Math.max(0, maxUses - newUsedCount),
+      // 店员据此在 POS 登记：活动中文名 + 面额（如「新客二次召回·21-60天（30元现金券）」）
+      coupon_label: couponLabel,
+      coupon_name: couponName,
+      coupon_type: couponType,
+      value_fen: couponValueFen,
+      value_yuan: couponValueYuan,
+      short_code: row.short_code || '',
       data: {
         voucher_id: voucherId,
         user_id: row.user_id,

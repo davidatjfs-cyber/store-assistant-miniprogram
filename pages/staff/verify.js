@@ -272,8 +272,24 @@ Page({
         wx.hideLoading();
         var r = res.result || {};
         if (r.success) {
-          self.setData({ lastOk: true, lastMessage: r.message || '核销成功', redeemedInfo: null });
-          wx.showToast({ title: '核销成功', icon: 'success' });
+          // 核销成功：弹出常驻弹窗，明确告知「中文活动名 + 面额」，供店员在 POS 登记入账
+          // （与 POS 未打通，店员必须据此手工记账，否则客人无法买单）。
+          var okMsg = r.coupon_label
+            ? (r.message || '核销成功') + '：' + r.coupon_label
+            : (r.message || '核销成功');
+          self.setData({ lastOk: true, lastMessage: okMsg, redeemedInfo: null });
+          var okDetail = '';
+          if (r.coupon_name) okDetail += '活动：' + r.coupon_name + '\n';
+          if (r.coupon_type === 'cash' && r.value_yuan) okDetail += '面额：' + r.value_yuan + ' 元现金券\n';
+          else if (r.coupon_type === 'gift') okDetail += '类型：赠菜券\n';
+          if (r.short_code) okDetail += '券码：' + r.short_code + '\n';
+          okDetail += '\n请在 POS 按此券登记入账后再为客人结账。';
+          wx.showModal({
+            title: '✅ 核销成功',
+            content: okDetail,
+            showCancel: false,
+            confirmText: '已在POS登记'
+          });
           self.loadRecentArrivals();
         } else if (r.already_redeemed) {
           // 已核销券再次报码：用常驻弹窗展示核销时间，避免 toast 一闪而过看不清
