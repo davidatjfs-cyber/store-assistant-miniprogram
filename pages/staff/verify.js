@@ -17,7 +17,8 @@ Page({
     editGender: '',
     profileSaving: false,
     manualCode: '',
-    redeemedInfo: null
+    redeemedInfo: null,
+    redemptions: []
   },
 
   // 已见到店记录（user_id|created_at），用于检测新熟客
@@ -64,6 +65,7 @@ Page({
       } catch (e) {}
       self.setData({ storeId: storeId });
       self.loadRecentArrivals();
+      self.loadRecentRedemptions();
     });
   },
 
@@ -71,6 +73,7 @@ Page({
     if (this.data.storeId || getApp().globalData.staffStoreId) {
       this.loadRecentArrivals();
     }
+    this.loadRecentRedemptions();
     this.startPolling();
   },
 
@@ -214,6 +217,40 @@ Page({
       });
   },
 
+  // 近期核销记录：常驻列表，店员可事后复查、对账 POS
+  loadRecentRedemptions: function () {
+    var self = this;
+    if (!wx.cloud || !wx.cloud.callFunction) return;
+    wx.cloud
+      .callFunction({ name: 'getRecentRedemptions', data: { limit: 20 } })
+      .then(function (res) {
+        var r = (res && res.result) || {};
+        self.setData({ redemptions: r.items || [] });
+      })
+      .catch(function (err) {
+        console.error('loadRecentRedemptions failed:', err && err.errMsg);
+      });
+  },
+
+  // 点击任意一条核销记录，弹出「活动名+面额+券码+时间」必须确认才消失，便于对账 POS
+  onTapRedemption: function (e) {
+    var idx = Number(e.currentTarget.dataset.idx);
+    var it = (this.data.redemptions || [])[idx];
+    if (!it) return;
+    var detail = '';
+    if (it.coupon_name) detail += '活动：' + it.coupon_name + '\n';
+    if (it.coupon_type === 'cash' && it.value_yuan) detail += '面额：' + it.value_yuan + ' 元现金券\n';
+    else if (it.coupon_type === 'gift') detail += '类型：赠菜券\n';
+    if (it.short_code) detail += '券码：' + it.short_code + '\n';
+    if (it.time_text) detail += '核销时间：' + it.time_text;
+    wx.showModal({
+      title: '核销详情',
+      content: detail,
+      showCancel: false,
+      confirmText: '知道了'
+    });
+  },
+
   // 到店报码：店员手输客人短信里的 6 位券码
   onCodeInput: function (e) {
     var v = (e && e.detail && e.detail.value != null) ? String(e.detail.value) : '';
@@ -291,6 +328,7 @@ Page({
             confirmText: '已在POS登记'
           });
           self.loadRecentArrivals();
+          self.loadRecentRedemptions();
         } else if (r.already_redeemed) {
           // 已核销券再次报码：用常驻弹窗展示核销时间，避免 toast 一闪而过看不清
           var t = r.redeemed_at_text || '未知时间';

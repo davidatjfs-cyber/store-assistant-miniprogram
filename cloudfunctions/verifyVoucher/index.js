@@ -279,6 +279,12 @@ exports.main = async (event, context) => {
         staff_id: staffId,
         action: 'verify',
         reverted: false,
+        // 留痕「中文活动名 + 面额 + 券码」，供门店在「近期核销记录」里事后复查、对账 POS
+        coupon_label: couponLabel,
+        coupon_name: couponName,
+        coupon_type: couponType,
+        value_fen: couponValueFen,
+        short_code: row.short_code || '',
         created_at: db.serverDate()
       }
     });

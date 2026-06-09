@@ -69,6 +69,20 @@
     </view>
   </view>
 
+  <!-- 近期核销记录：常驻列表，店员可事后复查、对账 POS（点任意一条重看详情） -->
+  <view class="glass-card" wx:if="{{redemptions.length}}">
+    <view class="panel-shine"></view>
+    <text class="title">近期核销记录</text>
+    <text class="desc">本门店最近核销 · 点任意一条可重看「活动名+面额+券码」，对账 POS 用</text>
+    <view class="redeem-item" wx:for="{{redemptions}}" wx:key="log_id" data-idx="{{index}}" bindtap="onTapRedemption">
+      <view class="redeem-item-main">
+        <text class="redeem-item-label">{{item.coupon_label}}</text>
+        <text class="redeem-item-time">{{item.time_text}}</text>
+      </view>
+      <text class="redeem-item-code" wx:if="{{item.short_code}}">券码 {{item.short_code}}</text>
+    </view>
+  </view>
+
   <!-- 补全资料弹窗 -->
   <view class="regular-modal" wx:if="{{profileEditVisible}}">
     <view class="regular-backdrop" bindtap="closeProfileEdit"></view>

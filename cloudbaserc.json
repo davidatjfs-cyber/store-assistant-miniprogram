@@ -178,6 +178,15 @@
       "installDependency": true
     },
     {
+      "name": "getRecentRedemptions",
+      "type": "Event",
+      "handler": "index.main",
+      "timeout": 15,
+      "runtime": "Nodejs18.15",
+      "memorySize": 256,
+      "installDependency": true
+    },
+    {
       "name": "getMarketingDashboard",
       "type": "Event",
       "handler": "index.main",
