@@ -16,7 +16,7 @@
       "name": "getCustomerList",
       "type": "Event",
       "handler": "index.main",
-      "timeout": 15,
+      "timeout": 30,
       "runtime": "Nodejs16.13",
       "memorySize": 256,
       "installDependency": true
