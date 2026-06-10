@@ -125,7 +125,7 @@
         <button class="profile-btn" size="mini" data-id="{{item._id}}" data-phone="{{item.phone}}" data-surname="{{item.surname}}" data-gender="{{item.gender}}" catchtap="openProfileEdit">
           {{item.title ? '✎ 修改姓名/性别' : '✎ 补全姓名/性别'}}
         </button>
-        <button class="send-btn" size="mini" data-id="{{item._id}}" catchtap="onSendVoucher">
+        <button wx:if="{{isAdmin}}" class="send-btn" size="mini" data-id="{{item._id}}" catchtap="onSendVoucher">
           🎁 赠送优惠券
         </button>
       </view>

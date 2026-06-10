@@ -55,6 +55,14 @@ function buildEntrySections(role) {
           sub: '扫码核销优惠券',
           url: '/pages/staff/verify',
           icon: '核'
+        },
+        {
+          // 客户管理对全体员工开放(维护客人姓名/性别)；发券入口仅管理员可见
+          key: 'customers',
+          title: '客户管理',
+          sub: '维护客人姓名与性别',
+          url: '/pages/admin/customers',
+          icon: '客'
         }
       ]
     });

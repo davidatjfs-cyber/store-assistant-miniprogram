@@ -58,13 +58,15 @@ Page({
 
   onLoad: function () {
     var self = this;
-    roleUtil.checkRoleAccess(['admin']).then(function (ok) {
+    // 客户管理对全体在职员工开放（人人可维护客人姓名/性别）；发券能力仅管理员可见(isAdmin)。
+    roleUtil.checkRoleAccess(['staff', 'manager', 'admin']).then(function (ok) {
       if (!ok) {
         self.setData({ loading: false });
-        wx.showToast({ title: '无访问权限', icon: 'none' });
         return;
       }
-      self.setData({ isAdmin: true });
+      var app = getApp();
+      var role = (app && app.globalData && app.globalData.userRole) || '';
+      self.setData({ isAdmin: role === 'admin' });
       self.loadData();
     });
   },

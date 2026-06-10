@@ -8,13 +8,14 @@ exports.main = async (event, context) => {
   const { OPENID } = cloud.getWXContext()
 
   try {
-    // 1. 权限校验：必须是员工/店长/管理员
+    // 1. 权限校验：发券为管理员专属能力（客户管理页虽对全体员工开放以维护客人姓名/性别，
+    //    但发券入口仅管理员可见，后端在此同样收紧为 admin-only，双重保险防越权调用）。
     const staffRes = await db.collection('staff').where({ openid: OPENID, active: true }).limit(1).get()
     if (staffRes.data.length === 0) return { success: false, msg: '无权限操作' }
     const staffRow = staffRes.data[0]
     const role = (staffRow.role || 'staff').toLowerCase()
-    if (role !== 'staff' && role !== 'manager' && role !== 'admin') {
-      return { success: false, msg: '无权限操作' }
+    if (role !== 'admin') {
+      return { success: false, msg: '仅管理员可发券' }
     }
 
     // 2. 确定门店：优先用员工绑定门店，其次用传入的 store_id
