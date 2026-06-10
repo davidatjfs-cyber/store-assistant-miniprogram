@@ -95,18 +95,21 @@ exports.main = async (event, context) => {
       created_at: true, total_orders: true, total_spent: true, last_visit: true
     })
 
-    // 客户管理只统计已授权手机号的真实会员；未授权（phone 为空）的扫码访客不计入
-    let phoneUsers = allUsers.filter(u => u.phone && String(u.phone).trim())
+    // 客户管理只统计「真实小程序会员」= 有 openid（登录过小程序）的用户。
+    // 只有这些人能登录小程序、看到并使用通过小程序发的券；短信召回(winback_sync)凭手机号
+    // 建的档没有 openid、用不了小程序券，不计入(否则会把数千短信目标误当小程序会员)。
+    const hasOpenid = u => !!((u.openid && String(u.openid).trim()) || (u._openid && String(u._openid).trim()))
+    let memberUsers = allUsers.filter(hasOpenid)
 
     // 关键词（手机号）筛选
     const kw = keyword ? String(keyword).trim() : ''
-    if (kw) phoneUsers = phoneUsers.filter(u => String(u.phone || '').indexOf(kw) >= 0)
+    if (kw) memberUsers = memberUsers.filter(u => String(u.phone || '').indexOf(kw) >= 0)
 
     // 门店归属判定（综合口径，全量分页）
-    let scopedUsers = phoneUsers
+    let scopedUsers = memberUsers
     if (store_id) {
       const belongs = await buildStoreMembership(store_id)
-      scopedUsers = phoneUsers.filter(belongs)
+      scopedUsers = memberUsers.filter(belongs)
     }
 
     // 每位客户的分类 = 当前 HRMS 生命周期阶段
