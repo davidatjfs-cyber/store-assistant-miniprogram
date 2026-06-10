@@ -46,7 +46,14 @@ Page({
     // #3 批量选择
     selectMode: false,
     selectedIds: [],
-    selectedCount: 0
+    selectedCount: 0,
+    // 补全资料弹窗（姓名/性别）——复用 updateCustomerProfile 云函数
+    profileEditVisible: false,
+    profileSaving: false,
+    editUserId: '',
+    editName: '',
+    editSurname: '',
+    editGender: ''
   },
 
   onLoad: function () {
@@ -118,6 +125,68 @@ Page({
   onSearch: function(e) {
     this.setData({ keyword: e.detail.value });
     this.loadData();
+  },
+
+  // ---- 补全资料：客人姓名（姓）+ 性别 ----
+  // 写入 users.surname/gender/title，供短信/营销文案使用（与核销页同一 updateCustomerProfile）。
+  openProfileEdit: function (e) {
+    var d = e.currentTarget.dataset || {};
+    this.setData({
+      profileEditVisible: true,
+      profileSaving: false,
+      editUserId: String(d.id || ''),
+      editName: String(d.phone || ''),
+      editSurname: String(d.surname || ''),
+      editGender: String(d.gender || '')
+    });
+  },
+
+  closeProfileEdit: function () {
+    this.setData({ profileEditVisible: false, profileSaving: false });
+  },
+
+  noop: function () {},
+
+  onSurnameInput: function (e) {
+    var v = String(e.detail.value).replace(/[^一-龥]/g, '').slice(0, 2);
+    this.setData({ editSurname: v });
+  },
+
+  selectGender: function (e) {
+    this.setData({ editGender: String(e.currentTarget.dataset.gender || '') });
+  },
+
+  saveProfile: function () {
+    var self = this;
+    var surname = String(this.data.editSurname || '').trim();
+    var gender = String(this.data.editGender || '').trim();
+    if (!/^[一-龥]{1,2}$/.test(surname)) {
+      return wx.showToast({ title: '请输入中文姓氏', icon: 'none' });
+    }
+    if (gender !== 'male' && gender !== 'female') {
+      return wx.showToast({ title: '请选择性别', icon: 'none' });
+    }
+    if (!wx.cloud || !wx.cloud.callFunction) {
+      return wx.showToast({ title: '云能力未初始化', icon: 'none' });
+    }
+    this.setData({ profileSaving: true });
+    wx.cloud.callFunction({
+      name: 'updateCustomerProfile',
+      data: { user_id: self.data.editUserId, surname: surname, gender: gender }
+    }).then(function (res) {
+      var r = (res && res.result) || {};
+      if (r.success) {
+        wx.showToast({ title: '已保存：' + (r.title || ''), icon: 'success' });
+        self.setData({ profileEditVisible: false, profileSaving: false });
+        self.loadData();
+      } else {
+        self.setData({ profileSaving: false });
+        wx.showToast({ title: r.message || '保存失败', icon: 'none' });
+      }
+    }).catch(function (err) {
+      self.setData({ profileSaving: false });
+      wx.showToast({ title: (err && err.errMsg) || '调用失败', icon: 'none' });
+    });
   },
 
   // ---- 自定义日期范围查询新增客户 ----

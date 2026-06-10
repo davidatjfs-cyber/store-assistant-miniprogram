@@ -92,7 +92,8 @@ exports.main = async (event, context) => {
     const allUsers = await fetchAll('users', {}, {
       _id: true, openid: true, _openid: true, phone: true,
       lifecycle_stage: true, user_level: true, value_tier: true,
-      created_at: true, total_orders: true, total_spent: true, last_visit: true
+      created_at: true, total_orders: true, total_spent: true, last_visit: true,
+      surname: true, gender: true, title: true
     })
 
     // 客户管理只统计「真实小程序会员」= 有 openid（登录过小程序）的用户。
@@ -177,6 +178,7 @@ exports.main = async (event, context) => {
       const joinDate = u.created_at ? new Date(u.created_at).toLocaleDateString('zh-CN') : '—'
       const lastVisit = u.last_visit ? new Date(u.last_visit).toLocaleDateString('zh-CN') : '—'
       const lifecycleStage = stageOf(u)
+      const gender = u.gender === 'male' || u.gender === 'female' ? u.gender : ''
       return {
         _id: u._id,
         phone: u.phone ? u.phone.slice(0, 3) + '****' + u.phone.slice(-4) : '',
@@ -187,7 +189,12 @@ exports.main = async (event, context) => {
         totalSpent: u.total_spent || 0,
         voucherCount: voucherCountMap[u._id] || 0,
         joinDate: joinDate,
-        lastVisit: lastVisit
+        lastVisit: lastVisit,
+        // 姓名/性别：供客户管理页展示与「补全资料」弹窗预填（updateCustomerProfile 写入）
+        surname: u.surname || '',
+        gender: gender,
+        genderLabel: gender === 'male' ? '先生' : gender === 'female' ? '女士' : '',
+        title: u.title || ''
       }
     })
 

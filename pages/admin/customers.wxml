@@ -96,10 +96,11 @@
         <view class="customer-info">
           <text class="customer-kicker">CUSTOMER PROFILE</text>
           <view class="customer-name-row">
+            <text class="customer-realname" wx:if="{{item.title}}">{{item.title}}</text>
             <text class="customer-phone">{{item.phone || '未授权'}}</text>
             <text class="level-tag level-tag--{{item.user_level || 'prospect'}}">{{item.user_level_label || '潜在新客'}}</text>
           </view>
-          <text class="customer-join">加入于 {{item.joinDate || '—'}}</text>
+          <text class="customer-join">加入于 {{item.joinDate || '—'}}{{item.genderLabel ? ' · ' + item.genderLabel : ''}}</text>
         </view>
       </view>
       <view class="customer-stats">
@@ -121,10 +122,35 @@
         </view>
       </view>
       <view class="action-row" wx:if="{{!selectMode}}">
+        <button class="profile-btn" size="mini" data-id="{{item._id}}" data-phone="{{item.phone}}" data-surname="{{item.surname}}" data-gender="{{item.gender}}" catchtap="openProfileEdit">
+          {{item.title ? '✎ 修改姓名/性别' : '✎ 补全姓名/性别'}}
+        </button>
         <button class="send-btn" size="mini" data-id="{{item._id}}" catchtap="onSendVoucher">
           🎁 赠送优惠券
         </button>
       </view>
+    </view>
+  </view>
+
+  <!-- 补全资料弹窗（姓名/性别）-->
+  <view class="profile-modal" wx:if="{{profileEditVisible}}" catchtap="noop">
+    <view class="profile-backdrop" bindtap="closeProfileEdit"></view>
+    <view class="profile-card" catchtap="noop">
+      <text class="profile-kicker">完善顾客资料</text>
+      <text class="profile-name">{{editName || '该顾客'}}</text>
+      <view class="field">
+        <text class="field-label">姓（如「张」，复姓可填2字）</text>
+        <input class="field-input" maxlength="-1" placeholder="请输入中文姓氏" value="{{editSurname}}" bindinput="onSurnameInput" />
+      </view>
+      <view class="field">
+        <text class="field-label">性别</text>
+        <view class="gender-row">
+          <text class="gender-opt {{editGender === 'male' ? 'gender-opt--on' : ''}}" data-gender="male" bindtap="selectGender">先生</text>
+          <text class="gender-opt {{editGender === 'female' ? 'gender-opt--on' : ''}}" data-gender="female" bindtap="selectGender">女士</text>
+        </view>
+      </view>
+      <button class="profile-save" loading="{{profileSaving}}" disabled="{{profileSaving}}" bindtap="saveProfile">保存</button>
+      <text class="profile-cancel" bindtap="closeProfileEdit">取消</text>
     </view>
   </view>
 </view>
