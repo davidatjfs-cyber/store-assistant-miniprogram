@@ -325,6 +325,8 @@ exports.main = async (event, context) => {
       metadata: {
         template_id: row.template_id,
         staff_id: staffId,
+        // 活动key回传：HRMS 按活动统计核销率/ROI 时据此归因（券由 runWinbackJobs 创建时写入）
+        campaign_key: row.campaign_key || '',
         // 中文活动名回传：HRMS「到店核销明细」据此显示来自哪个活动（之前无此字段，故显示「—」）
         coupon_name: couponName,
         coupon_label: couponLabel,
