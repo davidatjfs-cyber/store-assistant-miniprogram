@@ -8,5 +8,6 @@
       "type": "timer",
       "config": "0 30 3 * * * *"
     }
-  ]
+  ],
+  "timeout": 60
 }

@@ -4,5 +4,6 @@
       "subscribeMessage.send"
     ]
   },
-  "triggers": []
+  "triggers": [],
+  "timeout": 30
 }

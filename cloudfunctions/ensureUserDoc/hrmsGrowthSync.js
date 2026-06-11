@@ -13,7 +13,9 @@ function postJson(url, payload, secret) {
       hostname: u.hostname,
       port: u.port || (u.protocol === 'http:' ? 80 : 443),
       path: u.pathname + u.search,
-      timeout: 5000,
+      // 2.5s：HRMS 同步是旁路(失败会落 outbox 由定时器重投)，不能拖垮客人主流程。
+      // 曾因 5s×3次重试叠加把 saveUserPhone 拖过 3s 函数超时，午市高峰客人入会报错。
+      timeout: 2500,
       headers: {
         'Content-Type': 'application/json',
         'Content-Length': Buffer.byteLength(data),
@@ -53,12 +55,13 @@ async function persistToOutbox(payload, result) {
   }
 }
 
-// 加固：超时/网络抖动/5xx 时重试（最多3次,指数退避）；最终仍失败则落 outbox 兜底，绝不静默丢事件。
+// 加固：超时/网络抖动/5xx 时重试（最多2次,短退避）；最终仍失败则落 outbox 兜底，绝不静默丢事件。
+// 次数从3降到2：请求路径里最坏耗时须可控(2×2.5s+0.6s≈5.6s)，更多重试交给 outbox 定时重投。
 async function syncHrmsGrowthEvent(payload) {
   const url = process.env.HRMS_GROWTH_EVENT_URL || process.env.HRMS_MINIPROGRAM_EVENT_URL || '';
   const secret = process.env.HRMS_GROWTH_EVENT_SECRET || process.env.MINIPROGRAM_SYNC_SECRET || '';
   let result = { ok: false, error: 'not_attempted' };
-  for (let attempt = 1; attempt <= 3; attempt++) {
+  for (let attempt = 1; attempt <= 2; attempt++) {
     result = await postJson(url, payload, secret);
     if (result.ok || result.skipped) return result;
     // 4xx（鉴权/参数）属永久性错误，不重试；仅网络/超时/5xx 重试

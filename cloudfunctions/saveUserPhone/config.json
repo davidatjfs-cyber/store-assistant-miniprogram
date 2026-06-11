@@ -4,5 +4,6 @@
       "phonenumber.getPhoneNumber"
     ]
   },
-  "triggers": []
+  "triggers": [],
+  "timeout": 15
 }

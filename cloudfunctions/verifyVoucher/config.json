@@ -2,5 +2,6 @@
   "permissions": {
     "openapi": []
   },
-  "triggers": []
+  "triggers": [],
+  "timeout": 30
 }
