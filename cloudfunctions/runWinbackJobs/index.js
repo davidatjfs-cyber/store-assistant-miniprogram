@@ -48,6 +48,11 @@ const CAMPAIGN_TPL_META = {
   dormant_60_90:   { name: '沉睡召回·60-90天',     type: 'cash' },
   dormant_90_180:  { name: '沉睡召回·90-180天',    type: 'cash' },
   lost_long:       { name: '长期流失·满额回归券',  type: 'cash' },
+  lost_over365:    { name: '长期流失超1年·回归券', type: 'cash' },
+  // 就餐时段标签
+  mj_dinner_weekend:      { name: '晚市/周末专享·现金抵用券', type: 'cash' },
+  mj_dinner_weekend_gift: { name: '晚市/周末专享·赠菜券',     type: 'gift' },
+  hc_weekday_lunch:       { name: '平日午市·赠菜券',          type: 'gift' },
 };
 async function ensureCampaignTemplate(kind, storeId) {
   const meta = CAMPAIGN_TPL_META[kind] || { name: '营销发券', type: 'gift' };
